@@ -134,7 +134,7 @@ const updateChart = () => {
       reversed: true
     },
     colorAxis: {
-      min: dataStore.currentThreshold,
+      min: 0,
       max: 1,
       stops: [
         [0, '#f5f5f7'],
