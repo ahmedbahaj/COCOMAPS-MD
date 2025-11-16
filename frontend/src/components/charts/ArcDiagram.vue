@@ -35,16 +35,40 @@ const updateChart = () => {
   const nodes = new Set()
   const links = []
 
+  // Debug: Check first interaction to see what data we have
+  if (filteredData.length > 0) {
+    console.log('Sample interaction data:', filteredData[0])
+    console.log('Has frames?', 'frames' in filteredData[0], 'frames value:', filteredData[0].frames)
+  }
+
   filteredData.forEach(interaction => {
     nodes.add(interaction.id1)
     nodes.add(interaction.id2)
+
+    // Ensure frames is an array - check both frames and fallback to empty array
+    const frames = Array.isArray(interaction.frames) ? interaction.frames : []
+    
+    // Debug: log if frames is missing (remove after confirming it works)
+    if (frames.length === 0 && interaction.frameCount > 0) {
+      console.log('Warning: Interaction has frameCount but no frames array:', {
+        id1: interaction.id1,
+        id2: interaction.id2,
+        frameCount: interaction.frameCount,
+        hasFramesProperty: 'frames' in interaction,
+        framesValue: interaction.frames,
+        allKeys: Object.keys(interaction)
+      })
+    }
 
     links.push({
       from: interaction.id1,
       to: interaction.id2,
       weight: interaction.frameCount,
       consistency: interaction.consistency,
-      types: interaction.typesArray.join('; ')
+      types: interaction.typesArray.join('; '),
+      typesArray: interaction.typesArray,
+      typePersistence: interaction.typePersistence || {},
+      frames: frames
     })
   })
 
@@ -145,7 +169,10 @@ const updateChart = () => {
         weight: link.weight,
         color: getInteractionColor(link.types, link.consistency, dataStore.currentColorScheme),
         consistency: link.consistency,
-        types: link.types
+        types: link.types,
+        typesArray: link.typesArray,
+        typePersistence: link.typePersistence,
+        frames: link.frames
       })),
       linkOpacity: 0.75,
       offset: '100%',
@@ -161,19 +188,73 @@ const updateChart = () => {
       useHTML: true,
       formatter: function() {
         if (this.point.from) {
+          // Debug: log point data
+          console.log('Tooltip point data:', {
+            from: this.point.from,
+            to: this.point.to,
+            hasFrames: 'frames' in this.point,
+            frames: this.point.frames,
+            allKeys: Object.keys(this.point)
+          })
+          
+          const persistencePercent = Math.round(this.point.consistency * 100)
+          const typesList = this.point.typesArray || []
+          const typePersistence = this.point.typePersistence || {}
+          // Get frames - check both point.frames and ensure it's an array
+          const frames = Array.isArray(this.point.frames) ? this.point.frames : (this.point.frames ? [this.point.frames] : [])
+          const totalFrames = dataStore.totalFrames
+          
+          console.log('Processed frames:', frames, 'totalFrames:', totalFrames)
+          
+          // Create simple frame line - compact visualization
+          const frameLineWidth = 280
+          const frameLineHeight = 10
+          const frameSet = new Set(frames)
+          
+          // Create background pattern using linear gradient stops
+          const gradientStops = []
+          for (let i = 1; i <= totalFrames; i++) {
+            const position = ((i - 1) / totalFrames) * 100
+            const hasInteraction = frameSet.has(i)
+            const color = hasInteraction ? '#42A5F5' : '#e8e8ed'
+            gradientStops.push(`${color} ${position}%`)
+            gradientStops.push(`${color} ${(i / totalFrames) * 100}%`)
+          }
+          
+          const frameLineStyle = `width: ${frameLineWidth}px; height: ${frameLineHeight}px; background: linear-gradient(to right, ${gradientStops.join(', ')}); border-radius: 2px;`
+          
+          // Use per-type persistence if available, otherwise fall back to overall consistency
+          const typesHtml = typesList.map(type => {
+            const typePersist = typePersistence[type] !== undefined 
+              ? typePersistence[type] 
+              : this.point.consistency
+            const typePercent = Math.round(typePersist * 100)
+            return `<div style="margin-bottom: 3px;">
+              <span style="color: #1d1d1f; font-weight: 500;">${type}:</span>
+              <span style="color: #6e6e73; margin-left: 6px;">${typePercent}%</span>
+            </div>`
+          }).join('')
+          
           return `
             <div style="padding: 10px;">
               <div style="font-size: 15px; color: #1d1d1f; font-weight: 600; margin-bottom: 8px;">
                 ${this.point.from} ↔ ${this.point.to}
               </div>
               <div style="margin-bottom: 4px;">
-                <span style="color: #1d1d1f; font-weight: 600;">Consistency: ${Math.round(this.point.consistency * 100)}%</span>
+                <span style="color: #1d1d1f; font-weight: 600;">Overall Consistency: ${persistencePercent}%</span>
               </div>
               <div style="margin-bottom: 4px;">
-                <span style="color: #6e6e73;">Frames: ${this.point.weight} / ${dataStore.totalFrames}</span>
+                <span style="color: #6e6e73;">Frames: ${this.point.weight} / ${totalFrames}</span>
               </div>
-              <div style="color: #6e6e73; font-size: 12px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #e8e8ed;">
-                ${this.point.types}
+              <div style="margin-top: 8px; margin-bottom: 8px; padding-top: 8px; border-top: 1px solid #e8e8ed;">
+                <div style="color: #1d1d1f; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Frame Occurrence:</div>
+                <div style="${frameLineStyle}"></div>
+              </div>
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e8ed;">
+                <div style="color: #1d1d1f; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Interaction Types:</div>
+                <div style="color: #6e6e73; font-size: 12px;">
+                  ${typesHtml}
+                </div>
               </div>
             </div>
           `
@@ -207,4 +288,5 @@ div {
   height: 100%;
 }
 </style>
+
 

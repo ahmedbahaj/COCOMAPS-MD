@@ -102,7 +102,8 @@ def get_interactions(system_id):
                 'id1': f"{entry['chain1']}-{entry['resName1']}{entry['resNum1']}",
                 'id2': f"{entry['chain2']}-{entry['resName2']}{entry['resNum2']}",
                 'typesArray': typesArray,
-                'typePersistence': typePersistence
+                'typePersistence': typePersistence,
+                'frames': sorted(list(frame_set))  # Sorted list of frame numbers where interaction occurs
             })
         
         # Sort by consistency
