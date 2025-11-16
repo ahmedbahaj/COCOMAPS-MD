@@ -60,7 +60,8 @@ def get_interactions(system_id):
                             'resNum2': int(row['Res. Number 2']),
                             'chain2': row['Chain 2'],
                             'frames': [],
-                            'types': set()
+                            'types': set(),
+                            'typeFrames': {}  # Track frames per interaction type
                         }
                     
                     interaction_map[key]['frames'].append(frame_num)
@@ -69,11 +70,26 @@ def get_interactions(system_id):
                         types = [t.strip() for t in row['Type of Interactions'].split(';') if t.strip()]
                         for t in types:
                             interaction_map[key]['types'].add(t)
+                            # Track which frames this type appears in
+                            if t not in interaction_map[key]['typeFrames']:
+                                interaction_map[key]['typeFrames'][t] = []
+                            interaction_map[key]['typeFrames'][t].append(frame_num)
         
         # Convert to array with consistency scores
         interactions = []
         for key, entry in interaction_map.items():
             frame_set = set(entry['frames'])
+            typesArray = list(entry['types'])
+            
+            # Calculate per-type persistence
+            typePersistence = {}
+            for interaction_type in typesArray:
+                if interaction_type in entry['typeFrames']:
+                    type_frame_set = set(entry['typeFrames'][interaction_type])
+                    typePersistence[interaction_type] = len(type_frame_set) / total_frames
+                else:
+                    typePersistence[interaction_type] = 0.0
+            
             interactions.append({
                 'resName1': entry['resName1'],
                 'resNum1': entry['resNum1'],
@@ -85,7 +101,8 @@ def get_interactions(system_id):
                 'consistency': len(frame_set) / total_frames,
                 'id1': f"{entry['chain1']}-{entry['resName1']}{entry['resNum1']}",
                 'id2': f"{entry['chain2']}-{entry['resName2']}{entry['resNum2']}",
-                'typesArray': list(entry['types'])
+                'typesArray': typesArray,
+                'typePersistence': typePersistence
             })
         
         # Sort by consistency

@@ -62,7 +62,10 @@ const updateChart = () => {
         value: interaction.consistency,
         name: `${interaction.id1} ↔ ${interaction.id2}`,
         types: interaction.typesArray.join('; '),
-        frameCount: interaction.frameCount
+        typesArray: interaction.typesArray,
+        frameCount: interaction.frameCount,
+        consistency: interaction.consistency,
+        typePersistence: interaction.typePersistence || {}
       })
     }
   })
@@ -181,19 +184,38 @@ const updateChart = () => {
       borderColor: '#d2d2d7',
       useHTML: true,
       formatter: function() {
+        const persistencePercent = Math.round(this.point.consistency * 100)
+        const typesList = this.point.typesArray || []
+        const typePersistence = this.point.typePersistence || {}
+        
+        // Use per-type persistence if available, otherwise fall back to overall consistency
+        const typesHtml = typesList.map(type => {
+          const typePersist = typePersistence[type] !== undefined 
+            ? typePersistence[type] 
+            : this.point.consistency
+          const typePercent = Math.round(typePersist * 100)
+          return `<div style="margin-bottom: 3px;">
+            <span style="color: #1d1d1f; font-weight: 500;">${type}:</span>
+            <span style="color: #6e6e73; margin-left: 6px;">${typePercent}%</span>
+          </div>`
+        }).join('')
+        
         return `
           <div style="padding: 10px;">
             <div style="font-size: 15px; color: #1d1d1f; font-weight: 600; margin-bottom: 8px;">
               ${this.point.name}
             </div>
             <div style="margin-bottom: 4px;">
-              <span style="color: #1d1d1f; font-weight: 600;">Consistency: ${Math.round(this.point.value * 100)}%</span>
+              <span style="color: #1d1d1f; font-weight: 600;">Overall Consistency: ${persistencePercent}%</span>
             </div>
             <div style="margin-bottom: 4px;">
               <span style="color: #6e6e73;">Frames: ${this.point.frameCount} / ${dataStore.totalFrames}</span>
             </div>
-            <div style="color: #6e6e73; font-size: 12px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #e8e8ed;">
-              ${this.point.types}
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e8ed;">
+              <div style="color: #1d1d1f; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Interaction Types:</div>
+              <div style="color: #6e6e73; font-size: 12px;">
+                ${typesHtml}
+              </div>
             </div>
           </div>
         `
