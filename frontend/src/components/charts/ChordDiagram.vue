@@ -35,14 +35,40 @@ const updateChart = () => {
       nodes.set(interaction.id1, {
         id: interaction.id1,
         name: interaction.id1,
-        color: '#3B6EF5'
+        color: '#3B6EF5',
+        marker: {
+          radius: 8,
+          symbol: 'circle',
+          fillColor: '#3B6EF5',
+          lineWidth: 2,
+          lineColor: '#ffffff',
+          states: {
+            hover: {
+              radius: 10,
+              lineWidth: 3
+            }
+          }
+        }
       })
     }
     if (!nodes.has(interaction.id2)) {
       nodes.set(interaction.id2, {
         id: interaction.id2,
         name: interaction.id2,
-        color: '#FF8A4C'
+        color: '#FF8A4C',
+        marker: {
+          radius: 8,
+          symbol: 'circle',
+          fillColor: '#FF8A4C',
+          lineWidth: 2,
+          lineColor: '#ffffff',
+          states: {
+            hover: {
+              radius: 10,
+              lineWidth: 3
+            }
+          }
+        }
       })
     }
 
@@ -97,13 +123,21 @@ const updateChart = () => {
       dependencywheel: {
         curveFactor: 0.55,
         colorByPoint: false,
-        borderWidth: 1,
+        borderWidth: 2,
         borderColor: '#ffffff',
+        nodeWidth: 20,
+        nodePadding: 2,
         dataLabels: {
           style: {
             fontSize: '11px',
             fontWeight: '600',
             textOutline: 'none'
+          }
+        },
+        states: {
+          hover: {
+            brightness: 0.1,
+            borderWidth: 3
           }
         }
       }
