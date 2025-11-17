@@ -22,7 +22,8 @@ const charts = [
   { id: 'heatmap', label: 'Heatmap' },
   { id: 'filteredHeatmap', label: 'Filtered Heatmap' },
   { id: 'area', label: 'Area Chart' },
-  { id: 'line', label: 'Interaction Trends' }
+  { id: 'line', label: 'Interaction Trends' },
+  { id: 'similarity', label: 'Similarity Matrix' }
 ]
 
 const selectChart = (chartId) => {
