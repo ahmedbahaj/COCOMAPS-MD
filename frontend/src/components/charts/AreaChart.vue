@@ -68,10 +68,12 @@ const updateChart = () => {
     return
   }
 
-  const categories = dataStore.areaData.map(d => `Frame ${d.frame}`)
-  const totalBSAData = dataStore.areaData.map(d => d.totalBSA)
-  const polarBSAData = dataStore.areaData.map(d => d.polarBSA)
-  const nonPolarBSAData = dataStore.areaData.map(d => d.nonPolarBSA)
+  const sortedAreaData = [...dataStore.areaData].sort((a, b) => a.frame - b.frame) //prevents lexicographic order
+
+  const categories = sortedAreaData.map(d => `Frame ${d.frame}`)
+  const totalBSAData = sortedAreaData.map(d => d.totalBSA)
+  const polarBSAData = sortedAreaData.map(d => d.polarBSA)
+  const nonPolarBSAData = sortedAreaData.map(d => d.nonPolarBSA)
 
   if (chart) {
     chart.destroy()
@@ -235,7 +237,7 @@ const updateChart = () => {
         const sortedPoints = [...this.points].sort((a, b) => b.y - a.y)
         sortedPoints.forEach(point => {
           const frameIndex = point.point?.index ?? 0
-          const frameData = dataStore.areaData[frameIndex]
+          const frameData = sortedAreaData[frameIndex]
           const percentField = PERCENT_FIELD_MAP[point.series.name]
           const percentValue = showPercentages.value && frameData && percentField ? frameData[percentField] : null
           const percentText = percentValue !== null && percentValue !== undefined

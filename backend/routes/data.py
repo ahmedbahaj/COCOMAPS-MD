@@ -21,9 +21,11 @@ def get_interactions(system_id):
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
         
-        # Find all frame folders
-        frame_folders = sorted([f for f in system_path.iterdir() 
-                               if f.is_dir() and f.name.startswith('frame_')])
+        # Find all frame folders and sort numerically by frame number
+        frame_folders = sorted(
+            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
+            key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else f.name
+        )
         
         if not frame_folders:
             return jsonify({'error': 'No frames found for this system'}), 404
