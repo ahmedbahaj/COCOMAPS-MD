@@ -266,8 +266,9 @@ onMounted(() => {
 
 watch([
   () => dataStore.currentChartType,
-  () => dataStore.areaData.length,
-  () => showStats.value
+      () => dataStore.areaData.length,
+      () => showStats.value,
+      () => showPercentages.value
 ], () => {
   if (dataStore.currentChartType === 'area') {
     updateChart()
@@ -285,19 +286,20 @@ watch([
 
 .chart-toolbar {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   margin-bottom: 8px;
   padding: 4px 0;
-  gap: 18px;
-  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .toggle-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  justify-content: space-between;
+  gap: 12px;
+  width: 200px;
+  font-size: 16px;
   font-weight: 500;
   color: #1d1d1f;
 }
