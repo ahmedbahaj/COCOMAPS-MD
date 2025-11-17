@@ -50,6 +50,10 @@ const updateChart = () => {
     return numA - numB
   })
 
+  // Extract only the numeric part for labels (e.g., "A-45" -> "45")
+  const chainACategories = chainAArray.map(id => id.match(/\d+/)?.[0] || id)
+  const chainBCategories = chainBArray.map(id => id.match(/\d+/)?.[0] || id)
+
   const heatmapData = []
   filteredData.forEach(interaction => {
     const xIndex = chainAArray.indexOf(interaction.id1)
@@ -99,11 +103,11 @@ const updateChart = () => {
       enabled: false
     },
     xAxis: {
-      categories: chainAArray,
+      categories: chainACategories,
       title: {
         text: 'Chain A Residues',
         style: {
-          fontSize: '15px',
+          fontSize: '18px',
           fontWeight: '600',
           color: '#1d1d1f'
         }
@@ -118,11 +122,11 @@ const updateChart = () => {
       }
     },
     yAxis: {
-      categories: chainBArray,
+      categories: chainBCategories,
       title: {
         text: 'Chain B Residues',
         style: {
-          fontSize: '15px',
+          fontSize: '18px',
           fontWeight: '600',
           color: '#1d1d1f'
         }
