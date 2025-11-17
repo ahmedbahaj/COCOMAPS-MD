@@ -151,6 +151,9 @@ def get_area_data(system_id):
             total_bsa = 0
             polar_bsa = 0
             non_polar_bsa = 0
+            total_percent = 0
+            polar_percent = 0
+            non_polar_percent = 0
             
             # Parse CSV
             with open(csv_file, 'r', encoding='utf-8') as f:
@@ -174,23 +177,44 @@ def get_area_data(system_id):
                         if match:
                             total_bsa = float(match)
                     
+                    # Row 1: Total BSA percentage
+                    elif row_index == 1:
+                        match = __extract_first_number(value)
+                        if match:
+                            total_percent = float(match)
+                    
                     # Row 2: POLAR BSA
                     elif row_index == 2:
                         match = __extract_first_number(value)
                         if match:
                             polar_bsa = float(match)
                     
+                    # Row 3: POLAR percentage
+                    elif row_index == 3:
+                        match = __extract_first_number(value)
+                        if match:
+                            polar_percent = float(match)
+                    
                     # Row 4: NON POLAR BSA
                     elif row_index == 4:
                         match = __extract_first_number(value)
                         if match:
                             non_polar_bsa = float(match)
+                    
+                    # Row 5: NON POLAR percentage
+                    elif row_index == 5:
+                        match = __extract_first_number(value)
+                        if match:
+                            non_polar_percent = float(match)
             
             frames_data.append({
                 'frame': frame_num,
                 'totalBSA': total_bsa,
                 'polarBSA': polar_bsa,
-                'nonPolarBSA': non_polar_bsa
+                'nonPolarBSA': non_polar_bsa,
+                'totalPercent': total_percent,
+                'polarPercent': polar_percent,
+                'nonPolarPercent': non_polar_percent
             })
         
         return jsonify({
@@ -288,10 +312,13 @@ def get_interaction_trends(system_id):
         return jsonify({'error': str(e)}), 500
 
 def __extract_first_number(value_str):
-    """Extract first number from string like '2331.8 / 1165.9'"""
+    """Extract first numeric value from strings like '2331.8 / 1165.9' or '25.35%'"""
     import re
     if not value_str:
         return None
-    match = re.match(r'([0-9.]+)\s*/\s*', value_str)
-    return match.group(1) if match else None
+    slash_match = re.match(r'\s*([0-9]+(?:\.[0-9]+)?)\s*/', value_str)
+    if slash_match:
+        return slash_match.group(1)
+    number_match = re.search(r'([0-9]+(?:\.[0-9]+)?)', value_str)
+    return number_match.group(1) if number_match else None
 

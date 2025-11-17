@@ -8,6 +8,13 @@
           <span class="slider"></span>
         </label>
       </div>
+      <div class="toggle-group">
+        <span>Show Percentages</span>
+        <label class="switch">
+          <input type="checkbox" v-model="showPercentages">
+          <span class="slider"></span>
+        </label>
+      </div>
     </div>
     <div ref="chartContainer" class="chart-container"></div>
   </div>
@@ -22,10 +29,17 @@ import { useDataStore } from '../../stores/dataStore'
 HighchartsMore(Highcharts)
 
 const showStats = ref(true)
+const showPercentages = ref(false)
 const dataStore = useDataStore()
 const chartContainer = ref(null)
 let chart = null
 let hasAnimated = false
+
+const PERCENT_FIELD_MAP = {
+  'Total BSA': 'totalPercent',
+  'Total POLAR Buried Area': 'polarPercent',
+  'Total NON POLAR Buried Area': 'nonPolarPercent'
+}
 
 const calculateStats = (data) => {
   if (!data.length) {
@@ -218,13 +232,21 @@ const updateChart = () => {
         let html = `<div style="padding: 10px;">`
         html += `<div style="font-size: 15px; color: #1d1d1f; font-weight: 600; margin-bottom: 8px;">${this.x}</div>`
         
-        const sortedPoints = this.points.sort((a, b) => b.y - a.y)
+        const sortedPoints = [...this.points].sort((a, b) => b.y - a.y)
         sortedPoints.forEach(point => {
+          const frameIndex = point.point?.index ?? 0
+          const frameData = dataStore.areaData[frameIndex]
+          const percentField = PERCENT_FIELD_MAP[point.series.name]
+          const percentValue = showPercentages.value && frameData && percentField ? frameData[percentField] : null
+          const percentText = percentValue !== null && percentValue !== undefined
+            ? ` (${percentValue.toFixed(2)}%)`
+            : ''
+
           html += `
             <div style="margin-bottom: 4px;">
               <span style="color: ${point.color}; font-weight: 600;">●</span>
               <span style="color: #1d1d1f;">${point.series.name}: </span>
-              <span style="color: #1d1d1f; font-weight: 600;">${point.y.toFixed(2)} Å²</span>
+              <span style="color: #1d1d1f; font-weight: 600;">${point.y.toFixed(2)} Å²${percentText}</span>
             </div>
           `
         })
@@ -265,6 +287,8 @@ watch([
   align-items: center;
   margin-bottom: 8px;
   padding: 4px 0;
+  gap: 18px;
+  flex-wrap: wrap;
 }
 
 .toggle-group {
