@@ -1,15 +1,46 @@
 <template>
-  <div ref="chartContainer"></div>
+  <div class="chart-wrapper">
+    <div class="chart-toolbar">
+      <div class="toggle-group">
+        <span>Mean ± Std Dev</span>
+        <label class="switch">
+          <input type="checkbox" v-model="showStats">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+    <div ref="chartContainer" class="chart-container"></div>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import Highcharts from 'highcharts'
+import HighchartsMore from 'highcharts/highcharts-more'
 import { useDataStore } from '../../stores/dataStore'
 
+HighchartsMore(Highcharts)
+
+const showStats = ref(true)
 const dataStore = useDataStore()
 const chartContainer = ref(null)
 let chart = null
+let hasAnimated = false
+
+const calculateStats = (data) => {
+  if (!data.length) {
+    return { mean: 0, stdDev: 0, lower: 0, upper: 0 }
+  }
+  const mean = data.reduce((sum, value) => sum + value, 0) / data.length
+  const variance = data.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / data.length
+  const stdDev = Math.sqrt(variance)
+  return {
+    mean,
+    stdDev,
+    lower: Math.max(0, mean - stdDev),
+    upper: mean + stdDev
+  }
+}
 
 const updateChart = () => {
   if (!chartContainer.value) return
@@ -30,6 +61,26 @@ const updateChart = () => {
 
   if (chart) {
     chart.destroy()
+  }
+
+  const totalStats = calculateStats(totalBSAData)
+  const polarStats = calculateStats(polarBSAData)
+  const nonPolarStats = calculateStats(nonPolarBSAData)
+
+  const buildRangeSeries = (id, color, stats, baseData) => {
+    if (!stats.stdDev || stats.stdDev === 0) return null
+    const areaData = baseData.map((_, index) => [index, stats.lower, stats.upper])
+    return {
+      type: 'arearange',
+      linkedTo: id,
+      data: areaData,
+      color,
+      fillOpacity: 0.12,
+      lineWidth: 0,
+      enableMouseTracking: false,
+      showInLegend: false,
+      zIndex: 0
+    }
   }
 
   chart = Highcharts.chart(chartContainer.value, {
@@ -103,6 +154,7 @@ const updateChart = () => {
     },
     plotOptions: {
       line: {
+        animation: hasAnimated ? false : { duration: 800 },
         lineWidth: 3,
         marker: {
           enabled: true,
@@ -118,30 +170,43 @@ const updateChart = () => {
       }
     },
     series: [{
+      id: 'total-bsa-line',
       name: 'Total BSA',
       data: totalBSAData,
       color: '#3B6EF5',
       dashStyle: 'Solid',
+      zIndex: 2,
       marker: {
         symbol: 'circle'
       }
     }, {
+      id: 'polar-bsa-line',
       name: 'Total POLAR Buried Area',
       data: polarBSAData,
       color: '#FF3B30',
       dashStyle: 'Dash',
+      zIndex: 2,
       marker: {
         symbol: 'square'
       }
     }, {
+      id: 'nonpolar-bsa-line',
       name: 'Total NON POLAR Buried Area',
       data: nonPolarBSAData,
       color: '#34C759',
       dashStyle: 'Dot',
+      zIndex: 2,
       marker: {
         symbol: 'triangle'
       }
-    }],
+    }].concat(
+      showStats.value
+        ? [buildRangeSeries('total-bsa-line', '#3B6EF5', totalStats, totalBSAData),
+           buildRangeSeries('polar-bsa-line', '#FF3B30', polarStats, polarBSAData),
+           buildRangeSeries('nonpolar-bsa-line', '#34C759', nonPolarStats, nonPolarBSAData)
+          ].filter(Boolean)
+        : []
+    ),
     tooltip: {
       backgroundColor: 'rgba(255, 255, 255, 0.98)',
       borderRadius: 12,
@@ -168,6 +233,7 @@ const updateChart = () => {
       }
     }
   })
+  hasAnimated = true
 }
 
 onMounted(() => {
@@ -176,7 +242,8 @@ onMounted(() => {
 
 watch([
   () => dataStore.currentChartType,
-  () => dataStore.areaData.length
+  () => dataStore.areaData.length,
+  () => showStats.value
 ], () => {
   if (dataStore.currentChartType === 'area') {
     updateChart()
@@ -185,9 +252,80 @@ watch([
 </script>
 
 <style scoped>
-div {
+.chart-wrapper {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+}
+
+.chart-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d2d2d7;
+  transition: .2s;
+  border-radius: 22px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+input:checked + .slider {
+  background-color: #3B6EF5;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.chart-container {
+  flex: 1;
+  width: 100%;
+  height: calc(100% - 40px);
 }
 </style>
 
