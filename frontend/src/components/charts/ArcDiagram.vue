@@ -35,30 +35,12 @@ const updateChart = () => {
   const nodes = new Set()
   const links = []
 
-  // Debug: Check first interaction to see what data we have
-  if (filteredData.length > 0) {
-    console.log('Sample interaction data:', filteredData[0])
-    console.log('Has frames?', 'frames' in filteredData[0], 'frames value:', filteredData[0].frames)
-  }
-
   filteredData.forEach(interaction => {
     nodes.add(interaction.id1)
     nodes.add(interaction.id2)
 
     // Ensure frames is an array - check both frames and fallback to empty array
     const frames = Array.isArray(interaction.frames) ? interaction.frames : []
-    
-    // Debug: log if frames is missing (remove after confirming it works)
-    if (frames.length === 0 && interaction.frameCount > 0) {
-      console.log('Warning: Interaction has frameCount but no frames array:', {
-        id1: interaction.id1,
-        id2: interaction.id2,
-        frameCount: interaction.frameCount,
-        hasFramesProperty: 'frames' in interaction,
-        framesValue: interaction.frames,
-        allKeys: Object.keys(interaction)
-      })
-    }
 
     links.push({
       from: interaction.id1,
@@ -78,19 +60,7 @@ const updateChart = () => {
     name: id,
     color: id.startsWith('A-') ? '#3B6EF5' : '#FF8A4C',
     dataLabels: {
-      enabled: true,
-      format: '{point.name}',
-      style: {
-        fontSize: '11px',
-        fontWeight: '600',
-        textOutline: 'none',
-        color: '#1d1d1f'
-      },
-      rotation: -90,
-      align: 'left',
-      verticalAlign: 'middle',
-      y: 10,
-      x: 0
+      enabled: false
     }
   }))
 
@@ -112,7 +82,7 @@ const updateChart = () => {
       type: 'arcdiagram',
       backgroundColor: 'transparent',
       height: 850,
-      marginBottom: 100,
+      marginBottom: 140,
       marginTop: 80
     },
     title: {
@@ -188,23 +158,12 @@ const updateChart = () => {
       useHTML: true,
       formatter: function() {
         if (this.point.from) {
-          // Debug: log point data
-          console.log('Tooltip point data:', {
-            from: this.point.from,
-            to: this.point.to,
-            hasFrames: 'frames' in this.point,
-            frames: this.point.frames,
-            allKeys: Object.keys(this.point)
-          })
-          
           const persistencePercent = Math.round(this.point.consistency * 100)
           const typesList = this.point.typesArray || []
           const typePersistence = this.point.typePersistence || {}
           // Get frames - check both point.frames and ensure it's an array
           const frames = Array.isArray(this.point.frames) ? this.point.frames : (this.point.frames ? [this.point.frames] : [])
           const totalFrames = dataStore.totalFrames
-          
-          console.log('Processed frames:', frames, 'totalFrames:', totalFrames)
           
           // Create simple frame line - compact visualization
           const frameLineWidth = 280
