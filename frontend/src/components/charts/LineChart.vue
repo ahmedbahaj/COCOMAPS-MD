@@ -11,6 +11,7 @@ import { COLOR_SCHEMES } from '../../utils/constants'
 const dataStore = useDataStore()
 const chartContainer = ref(null)
 let chart = null
+let lastHoveredSeriesName = null
 
 const updateChart = () => {
   if (!chartContainer.value || !dataStore.trends || Object.keys(dataStore.trends).length === 0) return
@@ -46,6 +47,13 @@ const updateChart = () => {
           radius: 5,
           lineWidth: 2,
           lineColor: '#ffffff'
+        },
+        point: {
+          events: {
+            mouseOver: function() {
+              lastHoveredSeriesName = this.series.name
+            }
+          }
         }
       })
     }
@@ -151,7 +159,15 @@ const updateChart = () => {
         let html = `<div style="padding: 10px;">`
         html += `<div style="font-size: 15px; color: #1d1d1f; font-weight: 600; margin-bottom: 8px;">${this.x}</div>`
         
-        const sortedPoints = this.points.sort((a, b) => b.y - a.y)
+        const hoveredPoint = this.points.find(point => point.series.name === lastHoveredSeriesName)
+        const otherPoints = this.points
+          .filter(point => point !== hoveredPoint)
+          .sort((a, b) => b.y - a.y)
+
+        const sortedPoints = hoveredPoint
+          ? [hoveredPoint, ...otherPoints]
+          : otherPoints
+
         sortedPoints.forEach(point => {
           if (point.y > 0) {
             html += `
