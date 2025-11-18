@@ -22,7 +22,6 @@ export const useDataStore = defineStore('data', {
     currentThreshold: 0.6,
     useLogScale: false,
     selectedInteractionTypes: new Set(INTERACTION_TYPES.map(t => t.id)), // Select all by default
-    currentColorScheme: 'classic',
     
     // Loading states
     loading: {
@@ -158,10 +157,6 @@ export const useDataStore = defineStore('data', {
 
     clearInteractionTypes() {
       this.selectedInteractionTypes = new Set()
-    },
-
-    setColorScheme(scheme) {
-      this.currentColorScheme = scheme
     }
   }
 })

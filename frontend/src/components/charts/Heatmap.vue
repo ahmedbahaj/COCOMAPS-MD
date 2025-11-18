@@ -239,8 +239,7 @@ onMounted(() => {
 watch([
   () => dataStore.currentChartType,
   () => dataStore.interactions.length,
-  () => dataStore.selectedInteractionTypes.size,
-  () => dataStore.currentColorScheme
+  () => dataStore.selectedInteractionTypes.size
 ], () => {
   if (dataStore.currentChartType === 'heatmap') {
     updateChart()

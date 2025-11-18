@@ -6,7 +6,7 @@
 import { ref, onMounted, watch } from 'vue'
 import Highcharts from 'highcharts'
 import { useDataStore } from '../../stores/dataStore'
-import { COLOR_SCHEMES } from '../../utils/constants'
+import { getInteractionBaseColor } from '../../utils/chartHelpers'
 
 const dataStore = useDataStore()
 const chartContainer = ref(null)
@@ -17,31 +17,15 @@ const updateChart = () => {
   if (!chartContainer.value || !dataStore.trends || Object.keys(dataStore.trends).length === 0) return
 
   const categories = Array.from({ length: dataStore.totalFrames }, (_, i) => `Frame ${i + 1}`)
-  const scheme = COLOR_SCHEMES[dataStore.currentColorScheme] || COLOR_SCHEMES.classic
-
-  const colorMap = {
-    'H-bonds': `rgb(${scheme['h-bond'].join(',')})`,
-    'Salt-bridges': `rgb(${scheme['salt-bridge'].join(',')})`,
-    'π-π interactions': `rgb(${scheme['pi-pi'].join(',')})`,
-    'Cation-π interactions': `rgb(${scheme['cation-anion-pi'].join(',')})`,
-    'Anion-π interactions': `rgb(${scheme['cation-anion-pi'].join(',')})`,
-    'CH-O/N bonds': `rgb(${scheme['ch-on'].join(',')})`,
-    'CH-π interactions': `rgb(${scheme['ch-on'].join(',')})`,
-    'Halogen bonds': `rgb(${scheme['halogen'].join(',')})`,
-    'Apolar vdW contacts': `rgb(${scheme['vdw'].join(',')})`,
-    'Polar vdW contacts': `rgb(${scheme['vdw'].join(',')})`,
-    'Proximal contacts': `rgb(${scheme['proximal'].join(',')})`,
-    'Clashes': `rgb(${scheme['clash'].join(',')})`
-  }
-
   const series = []
   for (const [type, data] of Object.entries(dataStore.trends)) {
     const hasNonZero = data.some(value => value > 0)
     if (hasNonZero) {
+      const baseColor = getInteractionBaseColor(type)
       series.push({
         name: type,
         data: data,
-        color: colorMap[type] || `rgb(${scheme['h-bond'].join(',')})`,
+        color: baseColor,
         lineWidth: 3,
         marker: {
           radius: 5,
@@ -193,8 +177,7 @@ onMounted(() => {
 watch([
   () => dataStore.currentChartType,
   () => dataStore.trends,
-  () => dataStore.useLogScale,
-  () => dataStore.currentColorScheme
+  () => dataStore.useLogScale
 ], () => {
   if (dataStore.currentChartType === 'line') {
     updateChart()

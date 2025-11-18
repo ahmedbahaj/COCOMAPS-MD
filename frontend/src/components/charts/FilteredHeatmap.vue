@@ -236,7 +236,6 @@ watch([
   () => dataStore.currentChartType,
   () => dataStore.currentThreshold,
   () => dataStore.filteredInteractions.length,
-  () => dataStore.currentColorScheme,
   () => dataStore.selectedInteractionTypes.size
 ], () => {
   if (dataStore.currentChartType === 'filteredHeatmap') {

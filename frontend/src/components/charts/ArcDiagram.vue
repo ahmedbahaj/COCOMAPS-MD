@@ -137,7 +137,7 @@ const updateChart = () => {
         from: link.from,
         to: link.to,
         weight: link.weight,
-        color: getInteractionColor(link.types, link.consistency, dataStore.currentColorScheme),
+        color: getInteractionColor(link.types, link.consistency),
         consistency: link.consistency,
         types: link.types,
         typesArray: link.typesArray,
@@ -232,7 +232,6 @@ watch([
   () => dataStore.currentChartType,
   () => dataStore.currentThreshold,
   () => dataStore.filteredInteractions.length,
-  () => dataStore.currentColorScheme,
   () => dataStore.selectedInteractionTypes.size
 ], () => {
   if (dataStore.currentChartType === 'arc') {

@@ -78,7 +78,7 @@ const updateChart = () => {
       weight: interaction.frameCount,
       consistency: interaction.consistency,
       types: interaction.typesArray.join('; '),
-      color: getInteractionColor(interaction.typesArray.join('; '), interaction.consistency, dataStore.currentColorScheme)
+      color: getInteractionColor(interaction.typesArray.join('; '), interaction.consistency)
     }
   })
 
@@ -180,7 +180,6 @@ watch([
   () => dataStore.currentChartType,
   () => dataStore.currentThreshold,
   () => dataStore.filteredInteractions.length,
-  () => dataStore.currentColorScheme,
   () => dataStore.selectedInteractionTypes.size
 ], () => {
   if (dataStore.currentChartType === 'chord') {

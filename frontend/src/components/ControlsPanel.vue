@@ -43,29 +43,6 @@
       </div>
     </div>
 
-    <!-- Color Scheme Selector -->
-    <div
-      v-if="showColorScheme"
-      class="control-group slider-container-wrapper"
-    >
-      <label for="colorSchemeSelect">Color Scheme</label>
-      <select
-        id="colorSchemeSelect"
-        :value="dataStore.currentColorScheme"
-        @change="updateColorScheme"
-        class="color-scheme-select"
-      >
-        <option value="classic">Classic</option>
-        <option value="vibrant">Vibrant</option>
-        <option value="pastel">Pastel</option>
-        <option value="dark">Dark Mode</option>
-        <option value="scientific">Scientific</option>
-      </select>
-      <p class="slider-description">
-        Choose a color palette for interaction types
-      </p>
-    </div>
-
     <!-- Interaction Type Filter -->
     <div
       v-if="showInteractionFilter"
@@ -144,10 +121,6 @@ const showLogScale = computed(() => {
   return ['area', 'line'].includes(dataStore.currentChartType)
 })
 
-const showColorScheme = computed(() => {
-  return ['arc', 'chord', 'heatmap', 'filteredHeatmap'].includes(dataStore.currentChartType)
-})
-
 const showInteractionFilter = computed(() => {
   return ['arc', 'chord', 'heatmap', 'filteredHeatmap'].includes(dataStore.currentChartType)
 })
@@ -176,10 +149,6 @@ const updateThreshold = (event) => {
 
 const toggleLogScale = (event) => {
   dataStore.setLogScale(event.target.checked)
-}
-
-const updateColorScheme = (event) => {
-  dataStore.setColorScheme(event.target.value)
 }
 
 const toggleInteractionType = (typeId) => {
@@ -297,18 +266,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 14px;
   color: #6e6e73;
   font-weight: 500;
-}
-
-.color-scheme-select {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  border-radius: 8px;
-  border: 1px solid #d2d2d7;
-  background: #ffffff;
-  color: #1d1d1f;
-  font-family: inherit;
-  cursor: pointer;
 }
 
 .filter-buttons {
