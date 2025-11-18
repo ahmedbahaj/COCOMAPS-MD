@@ -6,6 +6,7 @@
 import { ref, onMounted, watch } from 'vue'
 import Highcharts from 'highcharts'
 import { useDataStore } from '../../stores/dataStore'
+import { INTERACTION_TYPES } from '../../utils/constants'
 import { getInteractionBaseColor } from '../../utils/chartHelpers'
 
 const dataStore = useDataStore()
@@ -13,35 +14,62 @@ const chartContainer = ref(null)
 let chart = null
 let lastHoveredSeriesName = null
 
-const updateChart = () => {
-  if (!chartContainer.value || !dataStore.trends || Object.keys(dataStore.trends).length === 0) return
+const buildSeries = (frameCount) => {
+  const series = INTERACTION_TYPES.map((type) => {
+    const trendKey = type.trendLabel || type.label
+    const trendData = dataStore.trends?.[trendKey]
+    const hasTrendData = Array.isArray(trendData) && trendData.length > 0
+    const hasNonZero = hasTrendData ? trendData.some(value => value > 0) : false
 
-  const categories = Array.from({ length: dataStore.totalFrames }, (_, i) => `Frame ${i + 1}`)
-  const series = []
-  for (const [type, data] of Object.entries(dataStore.trends)) {
-    const hasNonZero = data.some(value => value > 0)
-    if (hasNonZero) {
-      const baseColor = getInteractionBaseColor(type)
-      series.push({
-        name: type,
-        data: data,
-        color: baseColor,
-        lineWidth: 3,
-        marker: {
-          radius: 5,
-          lineWidth: 2,
-          lineColor: '#ffffff'
-        },
-        point: {
-          events: {
-            mouseOver: function() {
-              lastHoveredSeriesName = this.series.name
-            }
+    const paddedData = hasTrendData
+      ? trendData.concat(Array(Math.max(0, frameCount - trendData.length)).fill(0))
+      : Array(frameCount).fill(null)
+
+    return {
+      name: type.label,
+      data: paddedData,
+      color: hasNonZero ? getInteractionBaseColor(type.label) : '#c7c7cc',
+      lineWidth: hasNonZero ? 3 : 2,
+      dashStyle: hasNonZero ? 'Solid' : 'ShortDot',
+      marker: {
+        radius: hasNonZero ? 5 : 3,
+        lineWidth: hasNonZero ? 2 : 1,
+        lineColor: hasNonZero ? '#ffffff' : '#dcdce0'
+      },
+      enableMouseTracking: hasNonZero,
+      point: {
+        events: {
+          mouseOver: function() {
+            lastHoveredSeriesName = this.series.name
           }
         }
-      })
+      }
     }
-  }
+  })
+
+  return series.sort((a, b) => {
+    const aActive = a.data.some(value => value && value > 0)
+    const bActive = b.data.some(value => value && value > 0)
+    if (aActive === bActive) return 0
+    return aActive ? -1 : 1
+  })
+}
+
+const updateChart = () => {
+  if (!chartContainer.value) return
+
+  const trendValues = Object.values(dataStore.trends || {})
+  const maxTrendLength = trendValues.reduce((max, series) => {
+    if (Array.isArray(series)) {
+      return Math.max(max, series.length)
+    }
+    return max
+  }, 0)
+  const frameCount = Math.max(dataStore.totalFrames || 0, maxTrendLength)
+  if (frameCount === 0) return
+
+  const categories = Array.from({ length: frameCount }, (_, i) => `Frame ${i + 1}`)
+  const series = buildSeries(frameCount)
 
   if (chart) {
     chart.destroy()
@@ -177,7 +205,8 @@ onMounted(() => {
 watch([
   () => dataStore.currentChartType,
   () => dataStore.trends,
-  () => dataStore.useLogScale
+  () => dataStore.useLogScale,
+  () => dataStore.totalFrames
 ], () => {
   if (dataStore.currentChartType === 'line') {
     updateChart()
