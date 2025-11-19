@@ -8,6 +8,20 @@ import os
 
 bp = Blueprint('data', __name__)
 
+
+def _normalize_interaction_type(type_label):
+    """Map equivalent interaction labels to a single canonical value."""
+    if not type_label:
+        return None
+    clean_label = type_label.strip()
+    lower_label = clean_label.lower()
+
+    # Normalize H-bond variants such as "H-bond*" to "H-bond"
+    if 'h-bond' in lower_label:
+        return 'H-bond'
+
+    return clean_label
+
 @bp.route('/systems/<system_id>/interactions', methods=['GET'])
 def get_interactions(system_id):
     """
@@ -69,13 +83,16 @@ def get_interactions(system_id):
                     interaction_map[key]['frames'].append(frame_num)
                     if row.get('Type of Interactions'):
                         # Handle multiple types separated by semicolon
-                        types = [t.strip() for t in row['Type of Interactions'].split(';') if t.strip()]
-                        for t in types:
-                            interaction_map[key]['types'].add(t)
+                        raw_types = [t.strip() for t in row['Type of Interactions'].split(';') if t.strip()]
+                        for raw_type in raw_types:
+                            normalized_type = _normalize_interaction_type(raw_type)
+                            if not normalized_type:
+                                continue
+                            interaction_map[key]['types'].add(normalized_type)
                             # Track which frames this type appears in
-                            if t not in interaction_map[key]['typeFrames']:
-                                interaction_map[key]['typeFrames'][t] = []
-                            interaction_map[key]['typeFrames'][t].append(frame_num)
+                            if normalized_type not in interaction_map[key]['typeFrames']:
+                                interaction_map[key]['typeFrames'][normalized_type] = []
+                            interaction_map[key]['typeFrames'][normalized_type].append(frame_num)
         
         # Convert to array with consistency scores
         interactions = []

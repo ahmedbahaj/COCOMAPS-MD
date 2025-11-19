@@ -1,5 +1,8 @@
 <template>
-  <div ref="chartContainer"></div>
+  <div class="chart-wrapper">
+    <div ref="chartContainer" class="chart-surface"></div>
+    <InteractionLegend title="Interaction Color Legend" />
+  </div>
 </template>
 
 <script setup>
@@ -8,6 +11,7 @@ import Highcharts from 'highcharts'
 import DependencyWheelModule from 'highcharts/modules/dependency-wheel'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionColor } from '../../utils/chartHelpers'
+import InteractionLegend from '../InteractionLegend.vue'
 
 DependencyWheelModule(Highcharts)
 
@@ -189,7 +193,11 @@ watch([
 </script>
 
 <style scoped>
-div {
+.chart-wrapper {
+  width: 100%;
+}
+
+.chart-surface {
   width: 100%;
   height: 100%;
 }

@@ -1,17 +1,24 @@
 <template>
   <div class="chart-selector">
-    <button
-      v-for="chart in charts"
-      :key="chart.id"
-      :class="['chart-btn', { active: dataStore.currentChartType === chart.id }]"
-      @click="selectChart(chart.id)"
+    <div
+      v-for="(row, rowIndex) in chartRows"
+      :key="`chart-row-${rowIndex}`"
+      class="chart-row"
     >
-      {{ chart.label }}
-    </button>
+      <button
+        v-for="chart in row"
+        :key="chart.id"
+        :class="['chart-btn', { active: dataStore.currentChartType === chart.id }]"
+        @click="selectChart(chart.id)"
+      >
+        {{ chart.label }}
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useDataStore } from '../stores/dataStore'
 
 const dataStore = useDataStore()
@@ -26,6 +33,14 @@ const charts = [
   { id: 'similarity', label: 'Similarity Matrix' }
 ]
 
+const chartRows = computed(() => {
+  const rows = []
+  for (let i = 0; i < charts.length; i += 5) {
+    rows.push(charts.slice(i, i + 5))
+  }
+  return rows
+})
+
 const selectChart = (chartId) => {
   dataStore.setChartType(chartId)
 }
@@ -34,23 +49,32 @@ const selectChart = (chartId) => {
 <style scoped>
 .chart-selector {
   display: flex;
-  gap: 12px;
-  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
   margin-bottom: 32px;
 }
 
+.chart-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
 .chart-btn {
+  flex: 0 0 180px;
+  max-width: 180px;
   background: #f5f5f7;
   color: #1d1d1f;
   border: 2px solid transparent;
   border-radius: 980px;
-  padding: 12px 32px;
+  padding: 12px 24px;
   font-size: 17px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
   letter-spacing: -0.022em;
+  text-align: center;
 }
 
 .chart-btn:hover {
@@ -65,6 +89,18 @@ const selectChart = (chartId) => {
 
 .chart-btn.active:hover {
   background: #000000;
+}
+
+@media (max-width: 768px) {
+  .chart-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chart-btn {
+    flex: 1;
+    max-width: none;
+  }
 }
 </style>
 

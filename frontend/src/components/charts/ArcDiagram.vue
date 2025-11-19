@@ -1,5 +1,8 @@
 <template>
-  <div ref="chartContainer"></div>
+  <div class="chart-wrapper">
+    <div ref="chartContainer" class="chart-surface"></div>
+    <InteractionLegend title="Interaction Color Legend" />
+  </div>
 </template>
 
 <script setup>
@@ -9,6 +12,7 @@ import ArcDiagramModule from 'highcharts/modules/arc-diagram'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionColor } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
+import InteractionLegend from '../InteractionLegend.vue'
 
 ArcDiagramModule(Highcharts)
 
@@ -35,12 +39,28 @@ const updateChart = () => {
   const nodes = new Set()
   const links = []
 
+  const getDominantType = (typesArray = [], typePersistence = {}, fallback = 0) => {
+    if (!typesArray.length) return null
+    let dominant = typesArray[0]
+    let dominantValue = typePersistence[dominant] ?? fallback
+    typesArray.forEach(type => {
+      const value = typePersistence[type] ?? fallback
+      if (value > dominantValue) {
+        dominant = type
+        dominantValue = value
+      }
+    })
+    return dominant
+  }
+
   filteredData.forEach(interaction => {
     nodes.add(interaction.id1)
     nodes.add(interaction.id2)
 
     // Ensure frames is an array - check both frames and fallback to empty array
     const frames = Array.isArray(interaction.frames) ? interaction.frames : []
+
+    const dominantType = getDominantType(interaction.typesArray, interaction.typePersistence || {}, interaction.consistency)
 
     links.push({
       from: interaction.id1,
@@ -50,7 +70,8 @@ const updateChart = () => {
       types: interaction.typesArray.join('; '),
       typesArray: interaction.typesArray,
       typePersistence: interaction.typePersistence || {},
-      frames: frames
+      frames: frames,
+      dominantType
     })
   })
 
@@ -137,12 +158,13 @@ const updateChart = () => {
         from: link.from,
         to: link.to,
         weight: link.weight,
-        color: getInteractionColor(link.types, link.consistency),
+        color: getInteractionColor(link.dominantType || link.types, link.consistency),
         consistency: link.consistency,
         types: link.types,
         typesArray: link.typesArray,
         typePersistence: link.typePersistence,
-        frames: link.frames
+        frames: link.frames,
+        dominantType: link.dominantType
       })),
       linkOpacity: 0.75,
       offset: '100%',
@@ -161,6 +183,10 @@ const updateChart = () => {
           const persistencePercent = Math.round(this.point.consistency * 100)
           const typesList = this.point.typesArray || []
           const typePersistence = this.point.typePersistence || {}
+          const dominantType = this.point.dominantType || typesList[0] || null
+          const sortedTypes = dominantType
+            ? [dominantType, ...typesList.filter(type => type !== dominantType)]
+            : typesList
           // Get frames - check both point.frames and ensure it's an array
           const frames = Array.isArray(this.point.frames) ? this.point.frames : (this.point.frames ? [this.point.frames] : [])
           const totalFrames = dataStore.totalFrames
@@ -183,7 +209,7 @@ const updateChart = () => {
           const frameLineStyle = `width: ${frameLineWidth}px; height: ${frameLineHeight}px; background: linear-gradient(to right, ${gradientStops.join(', ')}); border-radius: 2px;`
           
           // Use per-type persistence if available, otherwise fall back to overall consistency
-          const typesHtml = typesList.map(type => {
+          const typesHtml = sortedTypes.map(type => {
             const typePersist = typePersistence[type] !== undefined 
               ? typePersistence[type] 
               : this.point.consistency
@@ -241,7 +267,11 @@ watch([
 </script>
 
 <style scoped>
-div {
+.chart-wrapper {
+  width: 100%;
+}
+
+.chart-surface {
   width: 100%;
   height: 100%;
 }
