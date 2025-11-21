@@ -15,15 +15,27 @@ let chart = null
 let lastHoveredSeriesName = null
 
 const buildSeries = (frameCount) => {
+  const useLogScale = dataStore.useLogScale
+  
   const series = INTERACTION_TYPES.map((type) => {
     const trendKey = type.trendLabel || type.label
     const trendData = dataStore.trends?.[trendKey]
     const hasTrendData = Array.isArray(trendData) && trendData.length > 0
     const hasNonZero = hasTrendData ? trendData.some(value => value > 0) : false
 
-    const paddedData = hasTrendData
-      ? trendData.concat(Array(Math.max(0, frameCount - trendData.length)).fill(0))
-      : Array(frameCount).fill(null)
+    // Build padded data - use null for missing/zero values when using log scale
+    let paddedData
+    if (hasTrendData) {
+      const padding = Array(Math.max(0, frameCount - trendData.length)).fill(useLogScale ? null : 0)
+      paddedData = trendData.concat(padding)
+      
+      // For log scale, convert zeros to null to avoid log(0) issues
+      if (useLogScale) {
+        paddedData = paddedData.map(value => value === 0 || value === null ? null : value)
+      }
+    } else {
+      paddedData = Array(frameCount).fill(null)
+    }
 
     return {
       name: type.label,
@@ -134,7 +146,9 @@ const updateChart = () => {
           color: '#1d1d1f'
         }
       },
-      min: dataStore.useLogScale ? 0.1 : 0
+      min: dataStore.useLogScale ? 0.1 : 0,
+      // Ensure proper handling of small values in log scale
+      allowDecimals: true
     },
     legend: {
       align: 'right',
