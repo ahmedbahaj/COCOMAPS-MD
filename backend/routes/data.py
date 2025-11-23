@@ -468,3 +468,262 @@ def __extract_first_number(value_str):
     number_match = re.search(r'([0-9]+(?:\.[0-9]+)?)', value_str)
     return number_match.group(1) if number_match else None
 
+def _get_interaction_csv_filename(interaction_type):
+    """Map interaction type to CSV filename (matches actual CSV file naming)"""
+    mapping = {
+        'H-bond': 'H-bond',
+        'H-bonds': 'H-bond',
+        'Salt-bridge': 'Salt_bridge',
+        'Salt-bridges': 'Salt_bridge',
+        'π-π interactions': 'pi-pi',
+        'pi-pi': 'pi-pi',
+        'Cation-π interactions': 'Cation_pi',
+        'Cation-π': 'Cation_pi',
+        'Anion-π interactions': 'Anion_pi',
+        'Anion-π': 'Anion_pi',
+        'CH-O/N bonds': 'C-H_ON',
+        'CH-O/N': 'C-H_ON',
+        'CH-π interactions': 'C-H_pi',
+        'CH-π': 'C-H_pi',
+        'Halogen bonds': 'Halogen_bond',
+        'Halogen bond': 'Halogen_bond',
+        'Apolar vdW contacts': 'Apolar_vdw',
+        'Apolar vdW': 'Apolar_vdw',
+        'Polar vdW contacts': 'Polar_vdw',
+        'Polar vdW': 'Polar_vdw',
+        'Proximal contacts': 'Proximal',
+        'Proximal contact': 'Proximal',
+        'Clashes': 'Clash',
+        'Clash': 'Clash',
+        'Metal-mediated contacts': 'Metal_Mediated',
+        'Metal mediated': 'Metal_Mediated',
+        'O/N/SH-π interactions': 'N-S-O-H_pi',
+        'lp-π interactions': 'Lone_pair_pi',
+        'Lone pair-π': 'Lone_pair_pi',
+        'Water mediated': 'Water_Mediated',
+        'Water-mediated contacts': 'Water_Mediated',
+        'S-S bond': 'SS_bond',
+        'S / S-S bond': 'SS_bond',
+        'Amino-π interactions': 'Amino_pi',
+        'Polar-π (Amino-π)': 'Amino_pi'
+    }
+    return mapping.get(interaction_type, None)
+
+@bp.route('/systems/<system_id>/atom-pairs', methods=['GET'])
+def get_atom_pairs(system_id):
+    """
+    Get atom pair data for a specific residue pair across all frames
+    Query params: resName1, resNum1, chain1, resName2, resNum2, chain2
+    """
+    from flask import request
+    
+    try:
+        # Get query parameters
+        res_name1 = request.args.get('resName1')
+        res_num1 = request.args.get('resNum1')
+        chain1 = request.args.get('chain1')
+        res_name2 = request.args.get('resName2')
+        res_num2 = request.args.get('resNum2')
+        chain2 = request.args.get('chain2')
+        
+        if not all([res_name1, res_num1, chain1, res_name2, res_num2, chain2]):
+            return jsonify({'error': 'Missing required parameters: resName1, resNum1, chain1, resName2, resNum2, chain2'}), 400
+        
+        data_folder = current_app.config['DATA_FOLDER']
+        system_path = Path(data_folder) / system_id
+        
+        if not system_path.exists():
+            return jsonify({'error': 'System not found'}), 404
+        
+        # Find all frame folders
+        frame_folders = sorted(
+            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
+            key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else f.name
+        )
+        
+        if not frame_folders:
+            return jsonify({'error': 'No frames found for this system'}), 404
+        
+        total_frames = len(frame_folders)
+        
+        # First, get interaction types from final_file.csv to know which CSV files to check
+        interaction_types = set()
+        for frame_folder in frame_folders:
+            csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_final_file.csv"
+            if csv_file.exists():
+                with open(csv_file, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        if (row.get('Res. Name 1') == res_name1 and 
+                            row.get('Res. Number 1') == res_num1 and
+                            row.get('Chain 1') == chain1 and
+                            row.get('Res. Name 2') == res_name2 and
+                            row.get('Res. Number 2') == res_num2 and
+                            row.get('Chain 2') == chain2):
+                            if row.get('Type of Interactions'):
+                                raw_types = [t.strip() for t in row['Type of Interactions'].split(';') if t.strip()]
+                                for raw_type in raw_types:
+                                    normalized = _normalize_interaction_type(raw_type)
+                                    if normalized:
+                                        interaction_types.add(normalized)
+        
+        # Collect atom pair data from all relevant CSV files
+        atom_pairs_by_frame = {}  # frame_num -> list of atom pair entries
+        atom_pair_stats = {}  # atom_pair_key -> {frames: [], distances: [], count: 0, interactionType: ''}
+        
+        for frame_folder in frame_folders:
+            frame_num = int(frame_folder.name.split('_')[1])
+            atom_pairs_by_frame[frame_num] = []
+            
+            # Check each interaction type CSV file
+            for interaction_type in interaction_types:
+                csv_filename = _get_interaction_csv_filename(interaction_type)
+                if not csv_filename:
+                    continue
+                
+                csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_{csv_filename}.csv"
+                if not csv_file.exists():
+                    continue
+                
+                # Parse CSV
+                with open(csv_file, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        # Check if this row matches our residue pair
+                        if (row.get('Res. Name 1') == res_name1 and 
+                            row.get('Res. Number 1') == res_num1 and
+                            row.get('Chain 1') == chain1 and
+                            row.get('Res. Name 2') == res_name2 and
+                            row.get('Res. Number 2') == res_num2 and
+                            row.get('Chain 2') == chain2):
+                            
+                            atom1 = row.get('Atom 1', '').strip()
+                            atom2 = row.get('Atom 2', '').strip()
+                            
+                            if atom1 and atom2:
+                                atom_pair_key = f"{atom1}-{atom2}"
+                                
+                                # Get distance
+                                distance_str = row.get('Distance (Å)', '').strip()
+                                distance = None
+                                if distance_str:
+                                    # Remove asterisks and extract number
+                                    distance_str = distance_str.replace('*', '').strip()
+                                    try:
+                                        distance = float(distance_str)
+                                    except ValueError:
+                                        pass
+                                
+                                # Get additional data (angle, etc.)
+                                angle = None
+                                if 'DHA Angle' in row:
+                                    try:
+                                        angle = float(row['DHA Angle'].strip())
+                                    except (ValueError, AttributeError):
+                                        pass
+                                
+                                atom_pair_entry = {
+                                    'atom1': atom1,
+                                    'atom2': atom2,
+                                    'atomPair': atom_pair_key,
+                                    'interactionType': interaction_type,
+                                    'distance': distance,
+                                    'angle': angle,
+                                    'frame': frame_num
+                                }
+                                
+                                atom_pairs_by_frame[frame_num].append(atom_pair_entry)
+                                
+                                # Update stats
+                                if atom_pair_key not in atom_pair_stats:
+                                    atom_pair_stats[atom_pair_key] = {
+                                        'atom1': atom1,
+                                        'atom2': atom2,
+                                        'atomPair': atom_pair_key,
+                                        'frames': [],
+                                        'distances': [],
+                                        'angles': [],
+                                        'count': 0,
+                                        'interactionTypes': set()
+                                    }
+                                
+                                atom_pair_stats[atom_pair_key]['frames'].append(frame_num)
+                                atom_pair_stats[atom_pair_key]['interactionTypes'].add(interaction_type)
+                                atom_pair_stats[atom_pair_key]['count'] += 1
+                                if distance is not None:
+                                    atom_pair_stats[atom_pair_key]['distances'].append(distance)
+                                if angle is not None:
+                                    atom_pair_stats[atom_pair_key]['angles'].append(angle)
+        
+        # Calculate transitions between atom pairs
+        transitions = []
+        sorted_frames = sorted(atom_pairs_by_frame.keys())
+        
+        for i in range(len(sorted_frames) - 1):
+            frame1 = sorted_frames[i]
+            frame2 = sorted_frames[i + 1]
+            
+            pairs1 = set([entry['atomPair'] for entry in atom_pairs_by_frame[frame1]])
+            pairs2 = set([entry['atomPair'] for entry in atom_pairs_by_frame[frame2]])
+            
+            # Find transitions (pairs that exist in frame1 and change in frame2)
+            for pair1 in pairs1:
+                if pair1 not in pairs2:
+                    # This pair disappeared, find what replaced it
+                    for pair2 in pairs2:
+                        transitions.append({
+                            'from': pair1,
+                            'to': pair2,
+                            'fromFrame': frame1,
+                            'toFrame': frame2,
+                            'type': 'transition'
+                        })
+        
+        # Convert stats to list format
+        atom_pair_list = []
+        for key, stats in atom_pair_stats.items():
+            frames_set = sorted(list(set(stats['frames'])))
+            atom_pair_list.append({
+                'atom1': stats['atom1'],
+                'atom2': stats['atom2'],
+                'atomPair': stats['atomPair'],
+                'frames': frames_set,
+                'frameCount': len(frames_set),
+                'consistency': len(frames_set) / total_frames if total_frames > 0 else 0,
+                'count': stats['count'],
+                'interactionTypes': list(stats['interactionTypes']),
+                'avgDistance': sum(stats['distances']) / len(stats['distances']) if stats['distances'] else None,
+                'minDistance': min(stats['distances']) if stats['distances'] else None,
+                'maxDistance': max(stats['distances']) if stats['distances'] else None,
+                'avgAngle': sum(stats['angles']) / len(stats['angles']) if stats['angles'] else None
+            })
+        
+        # Sort by consistency (most persistent first)
+        atom_pair_list.sort(key=lambda x: x['consistency'], reverse=True)
+        
+        # Get most common atom pair
+        most_common = atom_pair_list[0] if atom_pair_list else None
+        
+        return jsonify({
+            'residuePair': {
+                'resName1': res_name1,
+                'resNum1': int(res_num1),
+                'chain1': chain1,
+                'resName2': res_name2,
+                'resNum2': int(res_num2),
+                'chain2': chain2,
+                'id1': f"{chain1}-{res_name1}{res_num1}",
+                'id2': f"{chain2}-{res_name2}{res_num2}"
+            },
+            'totalFrames': total_frames,
+            'atomPairs': atom_pair_list,
+            'atomPairsByFrame': {str(k): v for k, v in atom_pairs_by_frame.items()},
+            'transitions': transitions,
+            'mostCommonAtomPair': most_common,
+            'interactionTypes': list(interaction_types)
+        })
+    
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+

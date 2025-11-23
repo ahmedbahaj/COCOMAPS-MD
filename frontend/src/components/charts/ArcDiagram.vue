@@ -2,6 +2,11 @@
   <div class="chart-wrapper">
     <div ref="chartContainer" class="chart-surface"></div>
     <InteractionLegend title="Interaction Color Legend" />
+    <AtomPairExplorer 
+      :visible="showAtomExplorer" 
+      :residue-pair="selectedResiduePair"
+      @close="closeAtomExplorer"
+    />
   </div>
 </template>
 
@@ -13,8 +18,17 @@ import { useDataStore } from '../../stores/dataStore'
 import { getInteractionColor } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
 import InteractionLegend from '../InteractionLegend.vue'
+import AtomPairExplorer from '../AtomPairExplorer.vue'
 
 ArcDiagramModule(Highcharts)
+
+const showAtomExplorer = ref(false)
+const selectedResiduePair = ref(null)
+
+const closeAtomExplorer = () => {
+  showAtomExplorer.value = false
+  selectedResiduePair.value = null
+}
 
 const dataStore = useDataStore()
 const chartContainer = ref(null)
@@ -166,6 +180,17 @@ const updateChart = () => {
         frames: link.frames,
         dominantType: link.dominantType
       })),
+      point: {
+        events: {
+          click: function() {
+            selectedResiduePair.value = {
+              id1: this.from,
+              id2: this.to
+            }
+            showAtomExplorer.value = true
+          }
+        }
+      },
       linkOpacity: 0.75,
       offset: '100%',
       dataLabels: {
@@ -239,6 +264,11 @@ const updateChart = () => {
                 <div style="color: #1d1d1f; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Interaction Types:</div>
                 <div style="color: #6e6e73; font-size: 12px;">
                   ${typesHtml}
+                </div>
+              </div>
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e8ed;">
+                <div style="color: #3B6EF5; font-size: 11px; font-weight: 500;">
+                  💡 Click to view atom pair details
                 </div>
               </div>
             </div>
