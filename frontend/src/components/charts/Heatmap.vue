@@ -147,6 +147,7 @@ const updateChart = () => {
     colorAxis: {
       min: 0,
       max: 1,
+      reversed: false,
       stops: [
         [0, '#f5f5f7'],
         [0.3, '#90CAF9'],
