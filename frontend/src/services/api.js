@@ -69,6 +69,11 @@ export default {
     return response.data
   },
 
+  async getInteractionDistances(systemId) {
+    const response = await api.get(`/systems/${systemId}/interaction-distances`)
+    return response.data
+  },
+
   // Upload
   async uploadFile(file, onProgress) {
     const formData = new FormData()

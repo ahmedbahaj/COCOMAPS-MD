@@ -28,6 +28,7 @@ import FilteredHeatmap from './charts/FilteredHeatmap.vue'
 import AreaChart from './charts/AreaChart.vue'
 import LineChart from './charts/LineChart.vue'
 import SimilarityMatrix from './charts/SimilarityMatrix.vue'
+import TimePairMatrix from './charts/TimePairMatrix.vue'
 
 const dataStore = useDataStore()
 
@@ -56,7 +57,8 @@ const chartComponents = {
   filteredHeatmap: FilteredHeatmap,
   area: AreaChart,
   line: LineChart,
-  similarity: SimilarityMatrix
+  similarity: SimilarityMatrix,
+  timePairMatrix: TimePairMatrix
 }
 
 const currentChartComponent = computed(() => {

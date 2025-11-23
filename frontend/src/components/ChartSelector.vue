@@ -30,7 +30,8 @@ const charts = [
   { id: 'filteredHeatmap', label: 'Filtered Heatmap' },
   { id: 'area', label: 'Area Chart' },
   { id: 'line', label: 'Interaction Trends' },
-  { id: 'similarity', label: 'Similarity Matrix' }
+  { id: 'similarity', label: 'Similarity Matrix' },
+  { id: 'timePairMatrix', label: 'Time-Pair Matrix' }
 ]
 
 const chartRows = computed(() => {

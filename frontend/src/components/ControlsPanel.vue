@@ -114,7 +114,7 @@ import { INTERACTION_TYPES } from '../utils/constants'
 const dataStore = useDataStore()
 
 const showSlider = computed(() => {
-  return ['arc', 'chord', 'filteredHeatmap'].includes(dataStore.currentChartType)
+  return ['arc', 'chord', 'filteredHeatmap', 'timePairMatrix'].includes(dataStore.currentChartType)
 })
 
 const showLogScale = computed(() => {

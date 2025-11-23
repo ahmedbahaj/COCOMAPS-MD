@@ -10,16 +10,55 @@ bp = Blueprint('data', __name__)
 
 
 def _normalize_interaction_type(type_label):
-    """Map equivalent interaction labels to a single canonical value."""
+    """Map equivalent interaction labels to a single canonical value.
+    Handles both singular and plural forms as they appear in final_file.csv
+    """
     if not type_label:
         return None
     clean_label = type_label.strip()
     lower_label = clean_label.lower()
 
-    # Normalize H-bond variants such as "H-bond*" to "H-bond"
-    if 'h-bond' in lower_label:
+    # Normalize all interaction type variants to canonical names
+    # Based on COCOMAPS2 output file naming conventions
+    # Note: final_file.csv uses singular forms, but we normalize to plural for consistency
+    
+    if 'h-bond' in lower_label or 'hydrogen bond' in lower_label:
         return 'H-bond'
-
+    elif 'salt-bridge' in lower_label or 'salt bridge' in lower_label:
+        return 'Salt-bridge'
+    elif 'π-π' in clean_label or 'pi-pi' in lower_label or 'pi pi' in lower_label:
+        return 'π-π interactions'
+    elif 'cation-π' in lower_label or 'cation-pi' in lower_label or 'cation_pi' in lower_label:
+        return 'Cation-π interactions'
+    elif 'anion-π' in lower_label or 'anion-pi' in lower_label or 'anion_pi' in lower_label:
+        return 'Anion-π interactions'
+    elif 'ch-o/n' in lower_label or 'c-h_on' in lower_label or 'c-h on' in lower_label or 'ch-on' in lower_label:
+        return 'CH-O/N bonds'
+    elif 'ch-π' in lower_label or 'ch-pi' in lower_label or 'c-h_pi' in lower_label or 'ch-π interaction' in lower_label:
+        return 'CH-π interactions'
+    elif 'halogen' in lower_label:
+        return 'Halogen bonds'
+    elif 'apolar vdw' in lower_label or 'apolar_vdw' in lower_label:
+        return 'Apolar vdW contacts'
+    elif 'polar vdw' in lower_label or 'polar_vdw' in lower_label:
+        return 'Polar vdW contacts'
+    elif 'proximal' in lower_label:
+        return 'Proximal contacts'
+    elif 'clash' in lower_label:
+        return 'Clashes'
+    elif 'metal mediated' in lower_label or 'metal_mediated' in lower_label or 'metal-mediated' in lower_label:
+        return 'Metal-mediated contacts'
+    elif 'n-s-o-h' in lower_label or 'n-s-o-h_pi' in lower_label or 'o/n/sh' in lower_label or 'ons-oh-pi' in lower_label:
+        return 'O/N/SH-π interactions'
+    elif 'lone pair' in lower_label or 'lone_pair' in lower_label or 'lp-π' in lower_label or 'lp-pi' in lower_label:
+        return 'lp-π interactions'
+    elif 'water mediated' in lower_label or 'water_mediated' in lower_label or 'water-mediated' in lower_label:
+        return 'Water-mediated contacts'
+    elif 's-s bond' in lower_label or 'ss bond' in lower_label or 'ss_bond' in lower_label or 's-s' in lower_label:
+        return 'S-S bond'
+    elif 'amino-pi' in lower_label or 'amino_pi' in lower_label or 'polar-π' in lower_label or 'polar-pi' in lower_label:
+        return 'Amino-π interactions'
+    
     return clean_label
 
 @bp.route('/systems/<system_id>/interactions', methods=['GET'])
@@ -109,6 +148,12 @@ def get_interactions(system_id):
                 else:
                     typePersistence[interaction_type] = 0.0
             
+            # Convert typeFrames to a format the frontend can use
+            typeFramesMap = {}
+            for interaction_type in typesArray:
+                if interaction_type in entry['typeFrames']:
+                    typeFramesMap[interaction_type] = sorted(list(set(entry['typeFrames'][interaction_type])))
+            
             interactions.append({
                 'resName1': entry['resName1'],
                 'resNum1': entry['resNum1'],
@@ -122,7 +167,8 @@ def get_interactions(system_id):
                 'id2': f"{entry['chain2']}-{entry['resName2']}{entry['resNum2']}",
                 'typesArray': typesArray,
                 'typePersistence': typePersistence,
-                'frames': sorted(list(frame_set))  # Sorted list of frame numbers where interaction occurs
+                'frames': sorted(list(frame_set)),  # Sorted list of frame numbers where interaction occurs
+                'typeFrames': typeFramesMap  # Frames per interaction type
             })
         
         # Sort by consistency
@@ -721,6 +767,132 @@ def get_atom_pairs(system_id):
             'transitions': transitions,
             'mostCommonAtomPair': most_common,
             'interactionTypes': list(interaction_types)
+        })
+    
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+@bp.route('/systems/<system_id>/interaction-distances', methods=['GET'])
+def get_interaction_distances(system_id):
+    """
+    Get distance data for all interactions across all frames
+    Returns a map: {pair_key: {frame: {type: distance}}}
+    """
+    try:
+        data_folder = current_app.config['DATA_FOLDER']
+        system_path = Path(data_folder) / system_id
+        
+        if not system_path.exists():
+            return jsonify({'error': 'System not found'}), 404
+        
+        # Find all frame folders
+        frame_folders = sorted(
+            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
+            key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else f.name
+        )
+        
+        if not frame_folders:
+            return jsonify({'error': 'No frames found for this system'}), 404
+        
+        # Structure: {pair_key: {frame: {type: [distances]}}}
+        distance_map = {}
+        
+        # Get all possible interaction type CSV filenames
+        all_interaction_types = [
+            'H-bond', 'Salt_bridge', 'pi-pi', 'Cation_pi', 'Anion_pi',
+            'C-H_ON', 'C-H_pi', 'Halogen_bond', 'Apolar_vdw', 'Polar_vdw',
+            'Proximal', 'Clash', 'Metal_Mediated', 'N-S-O-H_pi', 'Lone_pair_pi',
+            'Water_Mediated', 'SS_bond', 'Amino_pi'
+        ]
+        
+        # Map CSV filename back to normalized type name
+        csv_to_type_map = {
+            'H-bond': 'H-bond',
+            'Salt_bridge': 'Salt-bridge',
+            'pi-pi': 'π-π interactions',
+            'Cation_pi': 'Cation-π interactions',
+            'Anion_pi': 'Anion-π interactions',
+            'C-H_ON': 'CH-O/N bonds',
+            'C-H_pi': 'CH-π interactions',
+            'Halogen_bond': 'Halogen bonds',
+            'Apolar_vdw': 'Apolar vdW contacts',
+            'Polar_vdw': 'Polar vdW contacts',
+            'Proximal': 'Proximal contacts',
+            'Clash': 'Clashes',
+            'Metal_Mediated': 'Metal-mediated contacts',
+            'N-S-O-H_pi': 'O/N/SH-π interactions',
+            'Lone_pair_pi': 'lp-π interactions',
+            'Water_Mediated': 'Water-mediated contacts',
+            'SS_bond': 'S-S bond',
+            'Amino_pi': 'Amino-π interactions'
+        }
+        
+        # Scan all interaction type CSV files directly (more reliable than using final_file.csv)
+        for frame_folder in frame_folders:
+            frame_num = int(frame_folder.name.split('_')[1])
+            
+            for csv_filename in all_interaction_types:
+                type_csv = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_{csv_filename}.csv"
+                
+                if not type_csv.exists():
+                    continue
+                
+                normalized_type = csv_to_type_map.get(csv_filename)
+                if not normalized_type:
+                    continue
+                
+                # Parse the type-specific CSV to get distances
+                try:
+                    with open(type_csv, 'r', encoding='utf-8') as tf:
+                        type_reader = csv.DictReader(tf)
+                        for type_row in type_reader:
+                            # Check if required fields exist
+                            if not all(key in type_row for key in ['Res. Name 1', 'Res. Number 1', 'Chain 1', 
+                                                                  'Res. Name 2', 'Res. Number 2', 'Chain 2']):
+                                continue
+                            
+                            # Check if distance column exists
+                            if 'Distance (Å)' not in type_row:
+                                continue
+                            
+                            pair_key = f"{type_row['Chain 1']}-{type_row['Res. Name 1']}{type_row['Res. Number 1']}_{type_row['Chain 2']}-{type_row['Res. Name 2']}{type_row['Res. Number 2']}"
+                            
+                            # Get distance
+                            distance_str = type_row.get('Distance (Å)', '').strip()
+                            if distance_str:
+                                # Remove asterisks and extract number
+                                distance_str = distance_str.replace('*', '').strip()
+                                try:
+                                    distance = float(distance_str)
+                                    
+                                    if pair_key not in distance_map:
+                                        distance_map[pair_key] = {}
+                                    if frame_num not in distance_map[pair_key]:
+                                        distance_map[pair_key][frame_num] = {}
+                                    if normalized_type not in distance_map[pair_key][frame_num]:
+                                        distance_map[pair_key][frame_num][normalized_type] = []
+                                    
+                                    distance_map[pair_key][frame_num][normalized_type].append(distance)
+                                except ValueError:
+                                    pass
+                except Exception as e:
+                    # Skip files that can't be read
+                    continue
+        
+        # Convert to simpler structure: use minimum distance if multiple (closest interaction)
+        simplified_map = {}
+        for pair_key, frames in distance_map.items():
+            simplified_map[pair_key] = {}
+            for frame_num, types in frames.items():
+                simplified_map[pair_key][frame_num] = {}
+                for interaction_type, distances in types.items():
+                    # Use the minimum distance (closest interaction) if multiple atom pairs exist
+                    simplified_map[pair_key][frame_num][interaction_type] = min(distances) if distances else None
+        
+        return jsonify({
+            'system': system_id,
+            'distances': simplified_map
         })
     
     except Exception as e:
