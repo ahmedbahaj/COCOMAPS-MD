@@ -47,7 +47,14 @@ export const useDataStore = defineStore('data', {
 
     filteredInteractions: (state) => {
       return state.interactions.filter(d => {
-        if (d.consistency < state.currentThreshold) return false
+        // Use >= for "at least" comparison (greater than or equal to)
+        // Compare at percentage level to avoid floating point precision issues
+        // Convert to integers for exact comparison
+        const thresholdPercent = Math.round(state.currentThreshold * 100)
+        const consistencyPercent = Math.round(d.consistency * 100)
+        // Only include if consistency is >= threshold (greater than or equal to)
+        // This ensures interactions with exactly x% conservation show when threshold is x%
+        if (consistencyPercent < thresholdPercent) return false
         if (state.selectedInteractionTypes.size === 0) return false
         
         // Check if any interaction types match

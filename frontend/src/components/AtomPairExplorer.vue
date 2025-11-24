@@ -193,7 +193,17 @@ const atomPairThresholdPercent = computed(() => {
 
 const filteredAtomPairs = computed(() => {
   if (!data.value || !data.value.atomPairs) return []
-  return data.value.atomPairs.filter(pair => pair.consistency >= atomPairThreshold.value)
+  // Use >= for "at least" comparison (greater than or equal to)
+  // Compare at percentage level to avoid floating point precision issues
+  // Convert threshold to percentage (0-100) and round to integer
+  const thresholdPercent = Math.round(atomPairThreshold.value * 100)
+  return data.value.atomPairs.filter(pair => {
+    // Convert consistency to percentage (0-100) and round to integer
+    const consistencyPercent = Math.round(pair.consistency * 100)
+    // Return true if consistency is >= threshold (greater than or equal to)
+    // Use explicit >= comparison to ensure exact matches are included
+    return consistencyPercent >= thresholdPercent
+  })
 })
 
 const filteredAtomPairsByFrame = computed(() => {
