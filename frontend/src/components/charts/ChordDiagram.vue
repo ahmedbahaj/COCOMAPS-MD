@@ -237,7 +237,7 @@ const updateChart = () => {
           
           const frameLineStyle = `width: ${frameLineWidth}px; height: ${frameLineHeight}px; background: linear-gradient(to right, ${gradientStops.join(', ')}); border-radius: 2px;`
           
-          // Use per-type persistence if available, otherwise fall back to overall consistency
+          // Use per-type persistence if available, otherwise fall back to overall conservation
           const typesHtml = sortedTypes.map(type => {
             const typePersist = typePersistence[type] !== undefined 
               ? typePersistence[type] 
@@ -255,7 +255,7 @@ const updateChart = () => {
                 ${this.point.from} ↔ ${this.point.to}
               </div>
               <div style="margin-bottom: 4px;">
-                <span style="color: #1d1d1f; font-weight: 600;">Overall Consistency: ${persistencePercent}%</span>
+                <span style="color: #1d1d1f; font-weight: 600;">Overall Conservation: ${persistencePercent}%</span>
               </div>
               <div style="margin-bottom: 4px;">
                 <span style="color: #6e6e73;">Frames: ${this.point.weight} / ${totalFrames}</span>

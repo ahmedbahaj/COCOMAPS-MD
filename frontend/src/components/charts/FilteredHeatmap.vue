@@ -93,7 +93,7 @@ const updateChart = () => {
       }
     },
     subtitle: {
-      text: `Chain A (X-axis) ↔ Chain B (Y-axis) | Threshold: ${Math.round(dataStore.currentThreshold * 100)}% | Color intensity = Consistency`,
+      text: `Chain A (X-axis) ↔ Chain B (Y-axis) | Threshold: ${Math.round(dataStore.currentThreshold * 100)}% | Color intensity = Conservation`,
       style: {
         fontSize: '17px',
         color: '#6e6e73'
@@ -170,7 +170,7 @@ const updateChart = () => {
       symbolWidth: 20,
       reversed: false,
       title: {
-        text: 'Consistency',
+        text: 'Conservation',
         style: {
           fontSize: '14px',
           fontWeight: '600',
@@ -179,7 +179,7 @@ const updateChart = () => {
       }
     },
     series: [{
-      name: 'Interaction Consistency',
+      name: 'Interaction Conservation',
       data: heatmapData,
       turboThreshold: 10000
     }],
@@ -194,7 +194,7 @@ const updateChart = () => {
         const typesList = this.point.typesArray || []
         const typePersistence = this.point.typePersistence || {}
         
-        // Use per-type persistence if available, otherwise fall back to overall consistency
+        // Use per-type persistence if available, otherwise fall back to overall conservation
         const typesHtml = typesList.map(type => {
           const typePersist = typePersistence[type] !== undefined 
             ? typePersistence[type] 
@@ -212,7 +212,7 @@ const updateChart = () => {
               ${this.point.name}
             </div>
             <div style="margin-bottom: 4px;">
-              <span style="color: #1d1d1f; font-weight: 600;">Overall Consistency: ${persistencePercent}%</span>
+              <span style="color: #1d1d1f; font-weight: 600;">Overall Conservation: ${persistencePercent}%</span>
             </div>
             <div style="margin-bottom: 4px;">
               <span style="color: #6e6e73;">Frames: ${this.point.frameCount} / ${dataStore.totalFrames}</span>

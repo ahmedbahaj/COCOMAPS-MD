@@ -1,11 +1,11 @@
 <template>
   <div class="controls-panel">
-    <!-- Consistency Threshold Slider -->
+    <!-- Conservation Threshold Slider -->
     <div
       v-if="showSlider"
       class="control-group slider-container-wrapper"
     >
-      <label for="consistencySlider">Consistency Threshold</label>
+      <label for="consistencySlider">Conservation Threshold</label>
       <div class="slider-container">
         <input
           type="range"
@@ -95,7 +95,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-value">{{ avgConsistency }}</div>
-          <div class="stat-label">Avg Consistency</div>
+          <div class="stat-label">Avg Conservation</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">{{ dataStore.totalFrames }}</div>

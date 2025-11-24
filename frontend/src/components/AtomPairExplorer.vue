@@ -26,9 +26,9 @@
           </p>
         </div>
 
-        <!-- Atom Pair Consistency Threshold Slider -->
+        <!-- Atom Pair Conservation Threshold Slider -->
         <div class="control-group slider-container-wrapper">
-          <label for="atomPairConsistencySlider">Atom Pair Consistency Threshold</label>
+          <label for="atomPairConsistencySlider">Atom Pair Conservation Threshold</label>
           <div class="slider-container">
             <input
               type="range"
@@ -56,7 +56,7 @@
             >
               <span class="atom-pair-label">{{ pair.atomPair }}</span>
               <span class="consistency-badge">
-                {{ Math.round(pair.consistency * 100) }}% consistency
+                {{ Math.round(pair.consistency * 100) }}% conservation
               </span>
               <span class="frame-count">{{ pair.frameCount }} frames</span>
             </div>
@@ -124,7 +124,7 @@
                 <tr>
                   <th>Atom Pair</th>
                   <th>Frames</th>
-                  <th>Consistency</th>
+                  <th>Conservation</th>
                   <th>Avg Distance (Å)</th>
                   <th>Interaction Types</th>
                 </tr>
@@ -393,7 +393,7 @@ const updateFrequencyChart = () => {
       formatter: function() {
         return `<b>${this.point.name}</b><br/>` +
                `Frames: ${this.point.y} / ${totalFrames.value}<br/>` +
-               `Consistency: ${(this.point.consistency * 100).toFixed(1)}%`
+               `Conservation: ${(this.point.consistency * 100).toFixed(1)}%`
       }
     },
     series: [{

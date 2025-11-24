@@ -126,7 +126,7 @@ const updateChart = () => {
       symbol: 'circle'
     },
     tooltip: {
-      pointFormat: '<b>{point.custom.pair}</b><br/>Frame: {point.custom.frame}<br/>Type: {point.custom.type}<br/>Consistency: {point.custom.consistency:.0%}'
+      pointFormat: '<b>{point.custom.pair}</b><br/>Frame: {point.custom.frame}<br/>Type: {point.custom.type}<br/>Conservation: {point.custom.consistency:.0%}'
     }
   }))
 

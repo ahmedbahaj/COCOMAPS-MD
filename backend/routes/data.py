@@ -65,7 +65,7 @@ def _normalize_interaction_type(type_label):
 def get_interactions(system_id):
     """
     Get all interaction data for a system across all frames
-    Returns aggregated interaction data with consistency scores
+    Returns aggregated interaction data with conservation scores
     """
     try:
         data_folder = current_app.config['DATA_FOLDER']
@@ -133,7 +133,7 @@ def get_interactions(system_id):
                                 interaction_map[key]['typeFrames'][normalized_type] = []
                             interaction_map[key]['typeFrames'][normalized_type].append(frame_num)
         
-        # Convert to array with consistency scores
+        # Convert to array with conservation scores
         interactions = []
         for key, entry in interaction_map.items():
             frame_set = set(entry['frames'])
@@ -171,7 +171,7 @@ def get_interactions(system_id):
                 'typeFrames': typeFramesMap  # Frames per interaction type
             })
         
-        # Sort by consistency
+        # Sort by conservation
         interactions.sort(key=lambda x: x['consistency'], reverse=True)
         
         return jsonify({
@@ -744,7 +744,7 @@ def get_atom_pairs(system_id):
                 'avgAngle': sum(stats['angles']) / len(stats['angles']) if stats['angles'] else None
             })
         
-        # Sort by consistency (most persistent first)
+        # Sort by conservation (most persistent first)
         atom_pair_list.sort(key=lambda x: x['consistency'], reverse=True)
         
         # Get all most common atom pairs (those with the highest consistency)
