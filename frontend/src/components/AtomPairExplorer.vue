@@ -45,15 +45,21 @@
           </p>
         </div>
 
-        <!-- Most Common Atom Pair -->
-        <div v-if="data.mostCommonAtomPair" class="most-common">
-          <h4>Most Common Atom Pair</h4>
-          <div class="atom-pair-card">
-            <span class="atom-pair-label">{{ data.mostCommonAtomPair.atomPair }}</span>
-            <span class="consistency-badge">
-              {{ Math.round(data.mostCommonAtomPair.consistency * 100) }}% consistency
-            </span>
-            <span class="frame-count">{{ data.mostCommonAtomPair.frameCount }} frames</span>
+        <!-- Most Common Atom Pairs -->
+        <div v-if="data.mostCommonAtomPairs && data.mostCommonAtomPairs.length > 0" class="most-common">
+          <h4>{{ data.mostCommonAtomPairs.length === 1 ? 'Most Common Atom Pair' : 'Most Common Atom Pairs' }}</h4>
+          <div class="atom-pairs-list">
+            <div 
+              v-for="(pair, idx) in data.mostCommonAtomPairs" 
+              :key="idx"
+              class="atom-pair-card"
+            >
+              <span class="atom-pair-label">{{ pair.atomPair }}</span>
+              <span class="consistency-badge">
+                {{ Math.round(pair.consistency * 100) }}% consistency
+              </span>
+              <span class="frame-count">{{ pair.frameCount }} frames</span>
+            </div>
           </div>
         </div>
 
@@ -562,10 +568,20 @@ watch(filteredAtomPairs, () => {
   letter-spacing: 0.5px;
 }
 
+.atom-pairs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .atom-pair-card {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e8e8ed;
 }
 
 .atom-pair-label {

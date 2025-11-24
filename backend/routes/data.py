@@ -747,8 +747,12 @@ def get_atom_pairs(system_id):
         # Sort by consistency (most persistent first)
         atom_pair_list.sort(key=lambda x: x['consistency'], reverse=True)
         
-        # Get most common atom pair
-        most_common = atom_pair_list[0] if atom_pair_list else None
+        # Get all most common atom pairs (those with the highest consistency)
+        most_common = []
+        if atom_pair_list:
+            max_consistency = atom_pair_list[0]['consistency']
+            # Get all atom pairs that share the maximum consistency
+            most_common = [pair for pair in atom_pair_list if pair['consistency'] == max_consistency]
         
         return jsonify({
             'residuePair': {
@@ -765,7 +769,7 @@ def get_atom_pairs(system_id):
             'atomPairs': atom_pair_list,
             'atomPairsByFrame': {str(k): v for k, v in atom_pairs_by_frame.items()},
             'transitions': transitions,
-            'mostCommonAtomPair': most_common,
+            'mostCommonAtomPairs': most_common,  # Changed to plural - now returns a list
             'interactionTypes': list(interaction_types)
         })
     
