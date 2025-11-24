@@ -1,5 +1,16 @@
 <template>
-  <div ref="chartContainer"></div>
+  <div>
+    <div class="chart-toolbar">
+      <div class="toggle-group">
+        <span>Show Residue Labels</span>
+        <label class="switch">
+          <input type="checkbox" v-model="showFullLabels">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+    <div ref="chartContainer"></div>
+  </div>
 </template>
 
 <script setup>
@@ -15,6 +26,7 @@ HeatmapModule(Highcharts)
 const dataStore = useDataStore()
 const chartContainer = ref(null)
 let chart = null
+const showFullLabels = ref(true) // Default to showing full labels
 
 const updateChart = () => {
   if (!chartContainer.value) return
@@ -45,9 +57,13 @@ const updateChart = () => {
     return numA - numB
   })
 
-  // Extract only the numeric part for labels (e.g., "A-45" -> "45")
-  const chainACategories = chainAArray.map(id => id.match(/\d+/)?.[0] || id)
-  const chainBCategories = chainBArray.map(id => id.match(/\d+/)?.[0] || id)
+  // Use full residue labels or just numbers based on toggle
+  const chainACategories = showFullLabels.value 
+    ? chainAArray 
+    : chainAArray.map(id => id.match(/\d+/)?.[0] || id)
+  const chainBCategories = showFullLabels.value 
+    ? chainBArray 
+    : chainBArray.map(id => id.match(/\d+/)?.[0] || id)
 
   if (filteredData.length === 0) {
     if (chart) {
@@ -240,7 +256,8 @@ onMounted(() => {
 watch([
   () => dataStore.currentChartType,
   () => dataStore.interactions.length,
-  () => dataStore.selectedInteractionTypes.size
+  () => dataStore.selectedInteractionTypes.size,
+  () => showFullLabels.value
 ], () => {
   if (dataStore.currentChartType === 'heatmap') {
     updateChart()
@@ -252,6 +269,72 @@ watch([
 div {
   width: 100%;
   height: 100%;
+}
+
+.chart-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding: 4px 0;
+  gap: 12px;
+}
+
+.toggle-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 200px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d2d2d7;
+  transition: .2s;
+  border-radius: 22px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+input:checked + .slider {
+  background-color: #3B6EF5;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
 }
 </style>
 
