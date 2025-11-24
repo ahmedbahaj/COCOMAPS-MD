@@ -26,6 +26,25 @@
           </p>
         </div>
 
+        <!-- Atom Pair Consistency Threshold Slider -->
+        <div class="control-group slider-container-wrapper">
+          <label for="atomPairConsistencySlider">Atom Pair Consistency Threshold</label>
+          <div class="slider-container">
+            <input
+              type="range"
+              id="atomPairConsistencySlider"
+              min="0"
+              max="1"
+              step="0.01"
+              v-model="atomPairThreshold"
+            />
+            <span class="slider-value">{{ atomPairThresholdPercent }}%</span>
+          </div>
+          <p class="slider-description">
+            Show atom pairs present in at least {{ atomPairThresholdPercent }}% of frames
+          </p>
+        </div>
+
         <!-- Most Common Atom Pair -->
         <div v-if="data.mostCommonAtomPair" class="most-common">
           <h4>Most Common Atom Pair</h4>
@@ -72,11 +91,11 @@
         </div>
 
         <!-- Atom Pair Transitions -->
-        <div v-if="transitions.length > 0" class="section">
+        <div v-if="filteredTransitions.length > 0" class="section">
           <h4>Atom Pair Transitions</h4>
           <div class="transitions-list">
             <div 
-              v-for="(transition, idx) in transitions" 
+              v-for="(transition, idx) in filteredTransitions" 
               :key="idx"
               class="transition-item"
             >
@@ -105,7 +124,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="pair in data.atomPairs" :key="pair.atomPair">
+                <tr v-for="pair in filteredAtomPairs" :key="pair.atomPair">
                   <td><strong>{{ pair.atomPair }}</strong></td>
                   <td>{{ pair.frameCount }} / {{ totalFrames }}</td>
                   <td>{{ Math.round(pair.consistency * 100) }}%</td>
@@ -130,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import Highcharts from 'highcharts'
 import api from '../services/api'
 import { useDataStore } from '../stores/dataStore'
@@ -158,6 +177,48 @@ let chartInstance = null
 const totalFrames = ref(0)
 const transitions = ref([])
 
+// Atom pair consistency threshold (local to this component)
+const atomPairThreshold = ref(0) // Default: show all atom pairs
+
+// Computed properties for filtered data
+const atomPairThresholdPercent = computed(() => {
+  return Math.round(atomPairThreshold.value * 100)
+})
+
+const filteredAtomPairs = computed(() => {
+  if (!data.value || !data.value.atomPairs) return []
+  return data.value.atomPairs.filter(pair => pair.consistency >= atomPairThreshold.value)
+})
+
+const filteredAtomPairsByFrame = computed(() => {
+  if (!data.value || !data.value.atomPairsByFrame) return {}
+  
+  // Get set of filtered atom pair keys
+  const filteredKeys = new Set(filteredAtomPairs.value.map(pair => pair.atomPair))
+  
+  // Filter atomPairsByFrame to only include filtered atom pairs
+  const filtered = {}
+  for (const [frame, pairs] of Object.entries(data.value.atomPairsByFrame)) {
+    const filteredPairs = pairs.filter(entry => filteredKeys.has(entry.atomPair))
+    if (filteredPairs.length > 0) {
+      filtered[frame] = filteredPairs
+    }
+  }
+  return filtered
+})
+
+const filteredTransitions = computed(() => {
+  if (!transitions.value || transitions.value.length === 0) return []
+  
+  // Get set of filtered atom pair keys
+  const filteredKeys = new Set(filteredAtomPairs.value.map(pair => pair.atomPair))
+  
+  // Only include transitions where both from and to are in filtered pairs
+  return transitions.value.filter(transition => 
+    filteredKeys.has(transition.from) && filteredKeys.has(transition.to)
+  )
+})
+
 // Color palette for atom pairs
 const atomPairColors = {}
 let colorIndex = 0
@@ -179,14 +240,12 @@ const close = () => {
 }
 
 const hasInteractionInFrame = (frame) => {
-  if (!data.value || !data.value.atomPairsByFrame) return false
-  const frameData = data.value.atomPairsByFrame[frame.toString()]
+  const frameData = filteredAtomPairsByFrame.value[frame.toString()]
   return frameData && frameData.length > 0
 }
 
 const getAtomPairsForFrame = (frame) => {
-  if (!data.value || !data.value.atomPairsByFrame) return []
-  const frameData = data.value.atomPairsByFrame[frame.toString()]
+  const frameData = filteredAtomPairsByFrame.value[frame.toString()]
   return frameData || []
 }
 
@@ -258,7 +317,8 @@ const updateFrequencyChart = () => {
     chartInstance.destroy()
   }
 
-  const chartData = data.value.atomPairs.map(pair => ({
+  // Use filtered atom pairs
+  const chartData = filteredAtomPairs.value.map(pair => ({
     name: pair.atomPair,
     y: pair.frameCount,
     consistency: pair.consistency,
@@ -348,6 +408,24 @@ watch(() => props.residuePair, () => {
     loadAtomPairData()
   }
 })
+
+// Watch threshold changes to update chart
+watch(atomPairThreshold, () => {
+  if (data.value) {
+    nextTick(() => {
+      updateFrequencyChart()
+    })
+  }
+})
+
+// Watch filtered atom pairs to update chart when data changes
+watch(filteredAtomPairs, () => {
+  if (data.value) {
+    nextTick(() => {
+      updateFrequencyChart()
+    })
+  }
+}, { deep: true })
 </script>
 
 <style scoped>
@@ -650,6 +728,72 @@ td {
   border-radius: 6px;
   font-size: 11px;
   margin-right: 4px;
+}
+
+.control-group {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f5f5f7;
+  border-radius: 12px;
+}
+
+.control-group label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 12px;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: #d2d2d7;
+  outline: none;
+  flex: 1;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1d1d1f;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: #000000;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  transform: scale(1.05);
+}
+
+.slider-value {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  min-width: 80px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.slider-description {
+  font-size: 14px;
+  color: #6e6e73;
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 </style>
 
