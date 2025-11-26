@@ -1,0 +1,5 @@
+,Res. Name 1,Res. Number 1,Chain 1,Res. Name 2,Res. Number 2,Chain 2,Atom 1,Atom 2,Distance (Å),Atom 1 org name,Atom 2 org name,Type of Interactions
+1709,ARG,220,A,PRO,202,B,CZ,O,3.05,A,B,
+2691,ARG,225,A,ARG,219,B,NH1,O,3.05,A,B,
+3291,TYR,236,A,HIS,229,B,OH,NE2,3.07,A,B,
+3300,TYR,236,A,SER,232,B,OH,CB,3.14,A,B,

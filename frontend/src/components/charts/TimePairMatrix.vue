@@ -61,11 +61,25 @@ const updateChart = () => {
   // Prepare data: group by interaction type for each pair-frame combination
   const seriesMap = new Map() // type -> data points
 
+  // Helper function to generate deterministic jitter based on pair and type
+  const getDeterministicJitter = (pairKey, type, typeIndex) => {
+    // Create a hash from pair key and type for consistent jitter
+    let hash = 0
+    const str = `${pairKey}_${type}_${typeIndex}`
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    // Normalize to -0.2 to 0.2 range for jitter
+    return ((hash % 41) / 100) - 0.2
+  }
+
   sortedPairs.forEach((pairData, pairIndex) => {
     pairData.interactions.forEach(interaction => {
       // Use typeFrames - only show interactions in frames where they actually occur
-      // CRITICAL: We MUST use typeFrames, not the overall frames array
       const typeFrames = interaction.typeFrames || {}
+      const typePersistence = interaction.typePersistence || {}
       
       // For each interaction type, only show it in frames where it actually occurs
       interaction.typesArray.forEach((type, typeIndex) => {
@@ -73,37 +87,46 @@ const updateChart = () => {
           seriesMap.set(type, [])
         }
         
-        // Get frames where this specific type occurs
-        // ONLY use typeFrames - if it doesn't exist or is empty, skip this type
-        if (!typeFrames[type] || !Array.isArray(typeFrames[type]) || typeFrames[type].length === 0) {
-          return // Skip this type if we don't have frame data for it
+        // Check if THIS SPECIFIC TYPE has 100% persistence (not the overall interaction)
+        const typePersist = typePersistence[type] || 0
+        let framesForType = []
+        
+        if (typePersist >= 0.9999) {
+          // This type appears in 100% of frames - show pin in ALL frames
+          framesForType = Array.from({ length: totalFrames }, (_, i) => i + 1)
+        } else {
+          // Get frames where this specific type actually occurs
+          if (!typeFrames[type] || !Array.isArray(typeFrames[type]) || typeFrames[type].length === 0) {
+            return // Skip this type if we don't have frame data for it
+          }
+          framesForType = typeFrames[type]
         }
         
-        const framesForType = typeFrames[type]
+        // Generate deterministic jitter for this pair-type combination
+        const pairKey = `${interaction.id1}_${interaction.id2}`
+        const jitter = getDeterministicJitter(pairKey, type, typeIndex)
         
-        // Only create data points for frames where this specific type actually exists
+        // Create data points for frames (all frames if 100%, otherwise only where type exists)
         framesForType.forEach(frameNum => {
-          // Add slight jitter to prevent overlapping dots of same type
-          const jitter = (Math.random() - 0.5) * 0.25
-          
           // Get distance for this pair-frame-type combination
-          const pairKey = `${interaction.id1}_${interaction.id2}`
           const distances = distanceData.value?.distances?.[pairKey]
           const distance = distances?.[frameNum]?.[type] || null
           
           seriesMap.get(type).push({
-            x: frameNum - 1, // Convert to 0-based index
-            y: pairIndex + jitter, // Add jitter for visibility
+            x: frameNum - 1, // Convert to 0-based index for x-axis
+            y: pairIndex + jitter, // Add deterministic jitter for visibility
             frame: frameNum,
             pair: pairData.pair,
             type: type,
             consistency: interaction.consistency,
+            typePersistence: typePersist,
             distance: distance,
             custom: {
               pair: pairData.pair,
               frame: frameNum,
               type: type,
               consistency: interaction.consistency,
+              typePersistence: typePersist,
               typesArray: interaction.typesArray,
               distance: distance
             }
@@ -248,8 +271,8 @@ const updateChart = () => {
           }
         },
         jitter: {
-          x: 0.2,
-          y: 0.2
+          x: 0,  // Disable x-axis jitter - we want exact frame positions
+          y: 0   // Disable y-axis jitter - we handle it deterministically
         }
       }
     },
