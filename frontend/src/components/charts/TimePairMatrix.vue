@@ -96,6 +96,7 @@ const updateChart = () => {
           framesForType = Array.from({ length: totalFrames }, (_, i) => i + 1)
         } else {
           // Get frames where this specific type actually occurs
+          // ONLY use typeFrames - if it doesn't exist or is empty, skip this type
           if (!typeFrames[type] || !Array.isArray(typeFrames[type]) || typeFrames[type].length === 0) {
             return // Skip this type if we don't have frame data for it
           }
@@ -108,13 +109,33 @@ const updateChart = () => {
         
         // Create data points for frames (all frames if 100%, otherwise only where type exists)
         framesForType.forEach(frameNum => {
+          // Validate frame number is within range
+          if (frameNum < 1 || frameNum > totalFrames) {
+            console.warn(`Frame ${frameNum} out of range (1-${totalFrames}) for pair ${pairData.pair}`)
+            return
+          }
+          
           // Get distance for this pair-frame-type combination
           const distances = distanceData.value?.distances?.[pairKey]
           const distance = distances?.[frameNum]?.[type] || null
           
+          // Calculate y position with jitter
+          // For first row (pairIndex = 0), ensure jitter doesn't push it too far negative
+          // For last row, ensure jitter doesn't push it too far positive
+          let yPosition = pairIndex + jitter
+          if (pairIndex === 0) {
+            // First row: allow slight negative jitter but keep it visible
+            // Clamp to range [-0.1, 0.2] to allow jitter while staying visible
+            yPosition = Math.max(-0.1, Math.min(0.2, yPosition))
+          } else if (pairIndex === sortedPairs.length - 1) {
+            // Last row: ensure y position doesn't exceed the last row center
+            const lastRowCenter = sortedPairs.length - 1
+            yPosition = Math.min(lastRowCenter + 0.1, Math.max(lastRowCenter - 0.2, yPosition))
+          }
+          
           seriesMap.get(type).push({
             x: frameNum - 1, // Convert to 0-based index for x-axis
-            y: pairIndex + jitter, // Add deterministic jitter for visibility
+            y: yPosition, // Add deterministic jitter for visibility, clamped to valid range
             frame: frameNum,
             pair: pairData.pair,
             type: type,
@@ -220,19 +241,38 @@ const updateChart = () => {
       max: sortedPairs.length - 0.5,
       tickPositions: Array.from({ length: sortedPairs.length }, (_, i) => i),
       labels: {
+        align: 'right', // Align labels to the right (towards the chart)
+        x: -5, // Small offset from the axis line
+        useHTML: true, // Enable HTML for better vertical centering control
         style: {
           fontSize: '11px',
           fontWeight: '500',
-          color: '#1d1d1f'
+          color: '#1d1d1f',
+          textAlign: 'right' // Right-align text within the label
         },
         formatter: function() {
-          const index = Math.round(this.value)
-          return pairLabels[index] || ''
+          // Clamp index to valid range to handle edge cases
+          // Ensure first row (index 0) is always handled correctly
+          const rawIndex = Math.round(this.value)
+          const index = Math.max(0, Math.min(sortedPairs.length - 1, rawIndex))
+          const label = pairLabels[index]
+          // Debug: log if first row label is missing
+          if (index === 0 && !label) {
+            console.warn('First row label is missing. Total pairs:', sortedPairs.length, 'Labels:', pairLabels.length)
+          }
+          // Wrap label in a div with vertical centering using flexbox
+          return label ? `<div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; line-height: 1;">${label}</div>` : ''
         }
       },
       gridLineWidth: 1,
       gridLineColor: '#e8e8ed',
-      reversed: false
+      reversed: false,
+      // Ensure points near edges are not clipped
+      softMin: -0.5,
+      softMax: sortedPairs.length - 0.5,
+      // Ensure first and last rows are fully visible
+      startOnTick: false,
+      endOnTick: false
     },
     legend: {
       enabled: true,
