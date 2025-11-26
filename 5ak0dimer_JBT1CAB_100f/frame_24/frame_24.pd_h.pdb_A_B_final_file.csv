@@ -1,0 +1,124 @@
+,Res. Name 1,Res. Number 1,Chain 1,Res. Name 2,Res. Number 2,Chain 2,Type of Interactions
+4,LEU,4,A,LYS,301,B,Proximal contact
+55,LEU,4,A,GLN,305,B,Proximal contact
+130,LEU,4,A,ILE,304,B,; Apolar vdW contact
+210,TRP,13,A,LEU,300,B,Proximal contact
+393,TRP,13,A,LYS,301,B,; CH-π interaction; CH-π interaction; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact
+475,TRP,13,A,ILE,304,B,Proximal contact
+509,VAL,14,A,ILE,304,B,Proximal contact
+530,PRO,15,A,ILE,304,B,Proximal contact
+593,ASP,155,A,ARG,207,B,Proximal contact
+655,PRO,202,A,ARG,220,B,; CH-O/N bond
+749,ASP,203,A,ILE,215,B,Proximal contact
+757,ASP,203,A,ARG,220,B,; Salt-bridge
+851,ASP,216,A,ARG,207,B,; Salt-bridge
+855,ASP,216,A,PRO,202,B,Proximal contact
+1025,ARG,219,A,ASP,208,B,; Salt-bridge
+1074,ARG,219,A,ARG,207,B,; H-bond*
+1159,ARG,219,A,VAL,223,B,Proximal contact
+1166,ARG,219,A,ASN,224,B,Proximal contact
+1168,ARG,219,A,ARG,225,B,; H-bond
+1174,ARG,219,A,VAL,226,B,Proximal contact
+1206,ARG,220,A,VAL,223,B,; CH-O/N bond; CH-O/N bond
+1235,ARG,220,A,ASN,224,B,; CH-O/N bond
+1432,ARG,220,A,PRO,202,B,Proximal contact
+1460,ARG,220,A,ASP,203,B,; Salt-bridge
+1523,ARG,220,A,ARG,207,B,Proximal contact
+1651,PHE,221,A,VAL,223,B,; H-bond*; H-bond*
+1733,PHE,221,A,VAL,226,B,Proximal contact
+1759,PHE,221,A,PHE,221,B,Proximal contact
+1767,PHE,221,A,LEU,222,B,Proximal contact
+1788,LEU,222,A,PHE,221,B,; CH-O/N bond; CH-O/N bond
+1845,LEU,222,A,ARG,220,B,; Apolar vdW contact
+1905,LEU,222,A,ILE,215,B,Proximal contact
+1927,LEU,222,A,LEU,222,B,; Apolar vdW contact
+2099,VAL,223,A,MET,239,B,Proximal contact
+2204,VAL,223,A,ARG,219,B,Proximal contact
+2206,VAL,223,A,ARG,220,B,; CH-O/N bond
+2216,VAL,223,A,PHE,221,B,; H-bond; H-bond*; Apolar vdW contact
+2304,ASN,224,A,ARG,219,B,Proximal contact
+2309,ASN,224,A,ARG,220,B,; CH-O/N bond
+2344,ARG,225,A,ARG,219,B,; H-bond*; CH-O/N bond
+2346,ARG,225,A,ARG,220,B,Proximal contact
+2560,VAL,226,A,ARG,378,B,; H-bond*
+2617,GLN,227,A,GLN,379,B,Proximal contact
+2675,GLN,227,A,ARG,378,B,; CH-O/N bond
+2725,GLN,227,A,GLU,375,B,Proximal contact
+2779,ASP,228,A,ARG,378,B,Proximal contact
+2806,HIS,229,A,GLU,375,B,Proximal contact
+2827,HIS,229,A,PRO,371,B,; CH-O/N bond
+2855,HIS,229,A,TRP,317,B,Proximal contact
+2928,SER,232,A,GLU,375,B,Proximal contact
+2934,SER,232,A,ARG,378,B,; H-bond*; H-bond*
+2952,SER,232,A,TYR,236,B,Proximal contact
+2972,ARG,233,A,TYR,236,B,Proximal contact
+2989,VAL,235,A,TYR,236,B,Proximal contact
+2992,VAL,235,A,MET,239,B,Proximal contact
+3039,TYR,236,A,TYR,236,B,; π-π interaction; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact; Apolar vdW contact
+3190,TYR,236,A,HIS,229,B,; CH-O/N bond; π-π interaction
+3202,TYR,236,A,SER,232,B,Clash
+3209,TYR,236,A,ARG,233,B,Clash
+3350,MET,239,A,VAL,223,B,Proximal contact
+3371,MET,239,A,SER,232,B,Proximal contact
+3373,MET,239,A,VAL,235,B,Proximal contact
+3381,MET,239,A,TYR,236,B,Proximal contact
+3387,MET,239,A,MET,239,B,Proximal contact
+3476,MET,239,A,VAL,226,B,Proximal contact
+3509,ASN,240,A,HIS,229,B,; CH-O/N bond
+3512,ASN,240,A,SER,232,B,Proximal contact
+3566,ASP,267,A,TRP,13,B,; CH-O/N bond
+3580,LEU,270,A,LEU,2,B,Proximal contact
+3609,GLY,274,A,LEU,2,B,Proximal contact
+3618,LYS,275,A,LEU,2,B,Proximal contact
+3642,LYS,275,A,PRO,1,B,; Apolar vdW contact
+3741,ALA,278,A,LEU,2,B,Proximal contact
+3896,GLN,299,A,LYS,11,B,Proximal contact
+3902,GLN,299,A,ILE,12,B,Proximal contact
+3903,GLN,299,A,TRP,13,B,; H-bond; CH-O/N bond
+4001,LEU,300,A,TRP,13,B,Proximal contact
+4177,LYS,301,A,TRP,13,B,; CH-π interaction
+4245,LYS,301,A,LEU,4,B,; CH-O/N bond
+4348,ILE,304,A,LEU,4,B,; Apolar vdW contact
+4357,ILE,304,A,VAL,14,B,Proximal contact
+4361,ILE,304,A,PRO,15,B,Proximal contact
+4442,ILE,304,A,TRP,13,B,Proximal contact
+4575,GLN,305,A,LEU,4,B,; Apolar vdW contact
+4641,GLN,305,A,LEU,2,B,Proximal contact
+4761,GLU,308,A,LEU,2,B,; Apolar vdW contact
+4805,GLU,308,A,LEU,4,B,Proximal contact
+4880,GLU,308,A,PRO,15,B,Proximal contact
+4907,GLU,308,A,ARG,24,B,; Salt-bridge
+4971,ALA,309,A,LEU,2,B,Proximal contact
+5047,LEU,312,A,PRO,28,B,Proximal contact
+5052,LEU,312,A,ARG,24,B,Proximal contact
+5064,PRO,313,A,PRO,28,B,; Apolar vdW contact; Apolar vdW contact
+5156,PRO,313,A,LYS,29,B,; CH-O/N bond
+5161,PRO,313,A,LEU,30,B,Proximal contact
+5342,TYR,314,A,ARG,24,B,Proximal contact
+5373,TYR,314,A,VAL,14,B,Proximal contact
+5377,TYR,314,A,PRO,15,B,Clash
+5429,TYR,314,A,LEU,30,B,Proximal contact
+5475,GLU,315,A,LEU,30,B,; Apolar vdW contact
+5534,GLN,316,A,TRP,13,B,Proximal contact
+5535,GLN,316,A,VAL,14,B,Proximal contact
+5624,LYS,318,A,ARG,355,B,Proximal contact
+5629,LYS,318,A,GLN,363,B,; H-bond*
+5643,LYS,318,A,ASP,364,B,; Salt-bridge
+5648,LYS,318,A,GLN,367,B,; H-bond*; CH-O/N bond
+5806,ASP,324,A,THR,358,B,Proximal contact
+5840,GLU,329,A,THR,358,B,; H-bond*; CH-O/N bond
+5843,GLU,329,A,PRO,357,B,Proximal contact
+5856,ARG,355,A,LYS,318,B,Proximal contact
+5914,ASP,364,A,LYS,318,B,; Salt-bridge
+5936,GLN,367,A,LYS,318,B,Proximal contact
+5956,PRO,371,A,GLU,370,B,Proximal contact
+5968,PRO,371,A,ARG,233,B,Proximal contact
+6004,PRO,371,A,HIS,229,B,Proximal contact
+6043,MET,374,A,ARG,233,B,Proximal contact
+6086,MET,374,A,HIS,229,B,Proximal contact
+6207,GLU,375,A,HIS,229,B,; CH-π interaction; Apolar vdW contact
+6332,ARG,378,A,SER,232,B,; H-bond*
+6395,ARG,378,A,VAL,226,B,; H-bond*
+6397,ARG,378,A,GLN,227,B,Proximal contact
+6403,ARG,378,A,ASP,228,B,Proximal contact
+6405,ARG,378,A,HIS,229,B,Proximal contact

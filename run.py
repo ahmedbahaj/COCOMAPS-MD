@@ -3,7 +3,7 @@ import os
 import re
 from pathlib import Path
 
-HOST_ROOT_DIR = "C:/Users/Ahmed/Desktop/PDB-examples/md_mohit_system"
+HOST_ROOT_DIR = "C:/Users/Ahmed/Desktop/PDB-examples/5ak0dimer_JBT1CAB_100f"
 DOCKER_IMAGE = "andrpet/cocomaps-backend:0.0.19"
 CONTAINER_EXECUTION = "python /app/coco2/begin.py"
 INPUT_FILE_NAME = "example_input.json"

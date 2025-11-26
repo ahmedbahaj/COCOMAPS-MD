@@ -1,0 +1,4 @@
+,Res. Name 1,Res. Number 1,Chain 1,Res. Name 2,Res. Number 2,Chain 2,Distance (Å),Cation Atom,Cation From,Ring From
+0,TRP,13,A,LYS,301,B,3.45,CE,LYS-301,TRP-13
+18,TYR,236,A,ARG,233,B,2.89,NH2,ARG-233,TYR-236
+26,TYR,236,A,ARG,233,B,4.97,NH1,ARG-233,TYR-236

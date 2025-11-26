@@ -1,0 +1,8 @@
+,Res. Name 1,Res. Number 1,Chain 1,Res. Name 2,Res. Number 2,Chain 2,Atom 1,Atom 2,Distance (Å),Atom 1 org name,Atom 2 org name,Type of Interactions
+825,TRP,13,A,ILE,304,B,O,CD,3.19,A,B,
+1344,ARG,207,A,ARG,219,B,NH2,NH2,3.06,A,B,
+1924,ARG,220,A,PRO,202,B,CD,O,3.12,A,B,
+2822,ASN,224,A,ARG,219,B,OD1,O,3.02,A,B,
+3304,GLN,227,A,ARG,378,B,O,NH2,2.9,A,B,
+3910,TYR,236,A,ARG,233,B,CZ,NH1,3.13,A,B,
+6098,LYS,318,A,GLU,360,B,CE,CG,3.37,A,B,

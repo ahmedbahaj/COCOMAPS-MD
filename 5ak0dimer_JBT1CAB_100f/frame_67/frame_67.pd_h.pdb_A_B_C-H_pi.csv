@@ -1,0 +1,5 @@
+,Res. Name 1,Res. Number 1,Chain 1,Res. Name 2,Res. Number 2,Chain 2,Distance (Å),C Atom,H Atom,C Atom From,Ring From,Alpha °,BETA °
+0,TYR,236,A,TYR,236,B,3.8,CB,HB2,TYR,TYR-236,143.84,26.14
+1,LYS,301,A,TRP,13,B,3.83,CG,HG3,LYS,TRP-13,128.28,19.13
+2,TRP,13,A,LYS,301,B,3.6,CD,HD2,LYS,TRP-13,127.46,19.01
+3,TRP,13,A,LYS,301,B,3.6,CE,HE3,LYS,TRP-13,130.28,6.81
