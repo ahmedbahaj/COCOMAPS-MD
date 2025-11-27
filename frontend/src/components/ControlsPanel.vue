@@ -7,15 +7,26 @@
     >
       <label for="consistencySlider">Conservation Threshold</label>
       <div class="slider-container">
-        <input
-          type="range"
-          id="consistencySlider"
-          min="0.5"
-          max="1"
-          step="0.01"
-          :value="dataStore.currentThreshold"
-          @input="updateThreshold"
-        />
+        <div class="slider-control">
+          <input
+            type="range"
+            id="consistencySlider"
+            :min="SLIDER_MIN"
+            :max="SLIDER_MAX"
+            :step="SLIDER_STEP"
+            :value="dataStore.currentThreshold"
+            @input="updateThreshold"
+          />
+          <div class="slider-ticks">
+            <span
+              v-for="tick in thresholdTicks"
+              :key="tick.value"
+              class="slider-tick"
+            >
+              <span class="slider-tick-label">{{ tick.label }}</span>
+            </span>
+          </div>
+        </div>
         <span class="slider-value">{{ thresholdPercent }}%</span>
       </div>
       <p class="slider-description">
@@ -113,8 +124,12 @@ import { INTERACTION_TYPES } from '../utils/constants'
 
 const dataStore = useDataStore()
 
+const SLIDER_MIN = 0.5
+const SLIDER_MAX = 1
+const SLIDER_STEP = 0.1
+
 const showSlider = computed(() => {
-  return ['arc', 'chord', 'filteredHeatmap', 'timePairMatrix'].includes(dataStore.currentChartType)
+  return ['arc', 'chord', 'filteredHeatmap', 'timePairMatrix', 'interactionTimeline'].includes(dataStore.currentChartType)
 })
 
 const showLogScale = computed(() => {
@@ -127,6 +142,17 @@ const showInteractionFilter = computed(() => {
 
 const thresholdPercent = computed(() => {
   return Math.round(dataStore.currentThreshold * 100)
+})
+
+const thresholdTicks = computed(() => {
+  const ticks = []
+  for (let value = SLIDER_MIN; value <= SLIDER_MAX + 0.0001; value += SLIDER_STEP) {
+    ticks.push({
+      value: parseFloat(value.toFixed(2)),
+      label: Math.round(value * 100)
+    })
+  }
+  return ticks
 })
 
 const totalInteractions = computed(() => {
@@ -193,12 +219,49 @@ label {
 .slider-container {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
 }
+
+.slider-control {
+  position: relative;
+  flex: 1;
+}
+
+.slider-ticks {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.slider-tick {
+  position: relative;
+  width: 2px;
+  height: 16px;
+  background: #b4b4bb;
+  opacity: 0.7;
+}
+
+.slider-tick-label {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #6e6e73;
+}
+/* Ensure labels don't shift left/right per tick */
 
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
+  position: relative;
+  z-index: 2; /* Slider thumb above tick marks */
   width: 100%;
   height: 4px;
   border-radius: 2px;

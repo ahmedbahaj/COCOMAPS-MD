@@ -30,14 +30,25 @@
         <div class="control-group slider-container-wrapper">
           <label for="atomPairConsistencySlider">Atom Pair Conservation Threshold</label>
           <div class="slider-container">
-            <input
-              type="range"
-              id="atomPairConsistencySlider"
-              min="0"
-              max="1"
-              step="0.01"
-              v-model="atomPairThreshold"
-            />
+            <div class="slider-control">
+              <input
+                type="range"
+                id="atomPairConsistencySlider"
+                :min="ATOM_SLIDER_MIN"
+                :max="ATOM_SLIDER_MAX"
+                :step="ATOM_SLIDER_STEP"
+                v-model="atomPairThreshold"
+              />
+              <div class="slider-ticks">
+                <span
+                  v-for="tick in atomPairTicks"
+                  :key="tick.value"
+                  class="slider-tick"
+                >
+                  <span class="slider-tick-label">{{ tick.label }}</span>
+                </span>
+              </div>
+            </div>
             <span class="slider-value">{{ atomPairThresholdPercent }}%</span>
           </div>
           <p class="slider-description">
@@ -183,12 +194,27 @@ let chartInstance = null
 const totalFrames = ref(0)
 const transitions = ref([])
 
+const ATOM_SLIDER_MIN = 0
+const ATOM_SLIDER_MAX = 1
+const ATOM_SLIDER_STEP = 0.1
+
 // Atom pair consistency threshold (local to this component)
 const atomPairThreshold = ref(0) // Default: show all atom pairs
 
 // Computed properties for filtered data
 const atomPairThresholdPercent = computed(() => {
   return Math.round(atomPairThreshold.value * 100)
+})
+
+const atomPairTicks = computed(() => {
+  const ticks = []
+  for (let value = ATOM_SLIDER_MIN; value <= ATOM_SLIDER_MAX + 0.0001; value += ATOM_SLIDER_STEP) {
+    ticks.push({
+      value: parseFloat(value.toFixed(2)),
+      label: Math.round(value * 100)
+    })
+  }
+  return ticks
 })
 
 const filteredAtomPairs = computed(() => {
@@ -774,12 +800,49 @@ td {
 .slider-container {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
 }
+
+.slider-control {
+  position: relative;
+  flex: 1;
+}
+
+.slider-ticks {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.slider-tick {
+  position: relative;
+  width: 2px;
+  height: 16px;
+  background: #b4b4bb;
+  opacity: 0.7;
+}
+
+.slider-tick-label {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #6e6e73;
+}
+/* Ensure labels don't shift left/right per tick */
 
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
+  position: relative;
+  z-index: 2; /* Slider thumb above tick marks */
   width: 100%;
   height: 4px;
   border-radius: 2px;
