@@ -29,6 +29,7 @@ import AreaChart from './charts/AreaChart.vue'
 import LineChart from './charts/LineChart.vue'
 import SimilarityMatrix from './charts/SimilarityMatrix.vue'
 import TimePairMatrix from './charts/TimePairMatrix.vue'
+import InteractionTimeline from './charts/InteractionTimeline.vue'
 
 const dataStore = useDataStore()
 
@@ -58,7 +59,8 @@ const chartComponents = {
   area: AreaChart,
   line: LineChart,
   similarity: SimilarityMatrix,
-  timePairMatrix: TimePairMatrix
+  timePairMatrix: TimePairMatrix,
+  interactionTimeline: InteractionTimeline
 }
 
 const currentChartComponent = computed(() => {
