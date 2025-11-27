@@ -122,20 +122,6 @@ const updateChart = () => {
   // Prepare data: only for the selected interaction type
   const dataPoints = []
 
-  // Helper function to generate deterministic jitter based on pair
-  const getDeterministicJitter = (pairKey) => {
-    // Create a hash from pair key for consistent jitter
-    let hash = 0
-    const str = `${pairKey}_${selectedInteractionType.value}`
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
-      hash = hash & hash // Convert to 32-bit integer
-    }
-    // Normalize to -0.2 to 0.2 range for jitter
-    return ((hash % 41) / 100) - 0.2
-  }
-
   sortedPairs.forEach((pairData, pairIndex) => {
     pairData.interactions.forEach(interaction => {
       // Use typeFrames - only show interactions in frames where they actually occur
@@ -162,10 +148,6 @@ const updateChart = () => {
         framesForType = typeFrames[selectedInteractionType.value]
       }
       
-      // Generate deterministic jitter for this pair
-      const pairKey = `${interaction.id1}_${interaction.id2}`
-      const jitter = getDeterministicJitter(pairKey)
-      
       // Create data points for frames (all frames if 100%, otherwise only where type exists)
       framesForType.forEach(frameNum => {
         // Validate frame number is within range
@@ -175,26 +157,16 @@ const updateChart = () => {
         }
         
         // Get distance for this pair-frame-type combination
+        const pairKey = `${interaction.id1}_${interaction.id2}`
         const distances = distanceData.value?.distances?.[pairKey]
         const distance = distances?.[frameNum]?.[selectedInteractionType.value] || null
         
-        // Calculate y position with jitter
-        // For first row (pairIndex = 0), ensure jitter doesn't push it too far negative
-        // For last row, ensure jitter doesn't push it too far positive
-        let yPosition = pairIndex + jitter
-        if (pairIndex === 0) {
-          // First row: allow slight negative jitter but keep it visible
-          // Clamp to range [-0.1, 0.2] to allow jitter while staying visible
-          yPosition = Math.max(-0.1, Math.min(0.2, yPosition))
-        } else if (pairIndex === sortedPairs.length - 1) {
-          // Last row: ensure y position doesn't exceed the last row center
-          const lastRowCenter = sortedPairs.length - 1
-          yPosition = Math.min(lastRowCenter + 0.1, Math.max(lastRowCenter - 0.2, yPosition))
-        }
+        // Center dots in their rectangle (no jitter for single type)
+        const yPosition = pairIndex
         
         dataPoints.push({
           x: frameNum - 1, // Convert to 0-based index for x-axis
-          y: yPosition, // Add deterministic jitter for visibility, clamped to valid range
+          y: yPosition,
           frame: frameNum,
           pair: pairData.pair,
           type: selectedInteractionType.value,
@@ -299,38 +271,35 @@ const updateChart = () => {
       max: sortedPairs.length - 0.5,
       tickPositions: Array.from({ length: sortedPairs.length }, (_, i) => i),
       labels: {
-        align: 'right', // Align labels to the right (towards the chart)
-        x: -5, // Small offset from the axis line
-        useHTML: true, // Enable HTML for better vertical centering control
+        align: 'right',
+        x: -5,
+        useHTML: true,
         style: {
           fontSize: '11px',
           fontWeight: '500',
           color: '#1d1d1f',
-          textAlign: 'right' // Right-align text within the label
+          textAlign: 'right'
         },
         formatter: function() {
-          // Clamp index to valid range to handle edge cases
-          // Ensure first row (index 0) is always handled correctly
           const rawIndex = Math.round(this.value)
           const index = Math.max(0, Math.min(sortedPairs.length - 1, rawIndex))
           const label = pairLabels[index]
-          // Debug: log if first row label is missing
-          if (index === 0 && !label) {
-            console.warn('First row label is missing. Total pairs:', sortedPairs.length, 'Labels:', pairLabels.length)
-          }
-          // Wrap label in a div with vertical centering using flexbox
           return label ? `<div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; line-height: 1;">${label}</div>` : ''
         }
       },
-      gridLineWidth: 1,
-      gridLineColor: '#e8e8ed',
+      gridLineWidth: 0,
+      tickWidth: 0,
       reversed: false,
-      // Ensure points near edges are not clipped
       softMin: -0.5,
       softMax: sortedPairs.length - 0.5,
-      // Ensure first and last rows are fully visible
       startOnTick: false,
-      endOnTick: false
+      endOnTick: false,
+      plotLines: Array.from({ length: sortedPairs.length + 1 }, (_, i) => ({
+        value: i - 0.5,
+        color: '#e8e8ed',
+        width: 1,
+        zIndex: 1
+      }))
     },
     legend: {
       enabled: false // Only one type, so no need for legend

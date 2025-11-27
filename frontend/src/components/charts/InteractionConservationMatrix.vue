@@ -125,20 +125,39 @@ const updateChart = () => {
   // LEVEL 2: Only show interaction types with conservation ≥ threshold
   const seriesMap = new Map() // type -> data points
 
-  // Helper function to generate deterministic jitter based on pair and type
-  const getDeterministicJitter = (pairKey, type, typeIndex) => {
-    let hash = 0
-    const str = `${pairKey}_${type}_${typeIndex}`
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
-      hash = hash & hash
-    }
-    return ((hash % 41) / 100) - 0.2
-  }
-
   // Track which pairs have at least one type meeting threshold
   const visiblePairIndices = new Set()
+  
+  // First pass: collect all types per pair to determine vertical stacking
+  const pairTypeCount = new Map() // pairIndex -> Set of types
+  
+  sortedPairs.forEach((pairData, pairIndex) => {
+    pairData.interactions.forEach(interaction => {
+      const typePersistence = interaction.typePersistence || {}
+      
+      interaction.typesArray.forEach((type) => {
+        const typeConservation = typePersistence[type] || 0
+        
+        if (typeConservation >= conservationThreshold.value) {
+          if (!pairTypeCount.has(pairIndex)) {
+            pairTypeCount.set(pairIndex, new Set())
+          }
+          pairTypeCount.get(pairIndex).add(type)
+        }
+      })
+    })
+  })
+  
+  // Create type index map for each pair
+  const pairTypeIndexMap = new Map() // pairIndex -> Map(type -> index)
+  pairTypeCount.forEach((types, pairIndex) => {
+    const typeArray = Array.from(types).sort()
+    const indexMap = new Map()
+    typeArray.forEach((type, idx) => {
+      indexMap.set(type, idx)
+    })
+    pairTypeIndexMap.set(pairIndex, { count: typeArray.length, indexMap })
+  })
 
   sortedPairs.forEach((pairData, pairIndex) => {
     pairData.interactions.forEach(interaction => {
@@ -146,7 +165,7 @@ const updateChart = () => {
       const typePersistence = interaction.typePersistence || {}
       
       // For each interaction type, check if its conservation meets threshold
-      interaction.typesArray.forEach((type, typeIndex) => {
+      interaction.typesArray.forEach((type) => {
         const typeConservation = typePersistence[type] || 0
         
         // LEVEL 2 FILTER: Only show if type conservation ≥ threshold
@@ -175,9 +194,19 @@ const updateChart = () => {
           framesForType = typeFrames[type]
         }
         
-        // Generate deterministic jitter for this pair-type combination
+        // Calculate y position with smart vertical distribution
         const pairKey = `${interaction.id1}_${interaction.id2}`
-        const jitter = getDeterministicJitter(pairKey, type, typeIndex)
+        const typeInfo = pairTypeIndexMap.get(pairIndex)
+        let yOffset = 0
+        
+        if (typeInfo && typeInfo.count > 1) {
+          // Multiple types in this pair: distribute evenly within safe zone
+          const typeIndex = typeInfo.indexMap.get(type)
+          const maxOffset = 0.3 // Stay within ±0.3 of center (well within ±0.5 boundaries)
+          const step = (2 * maxOffset) / Math.max(1, typeInfo.count - 1)
+          yOffset = -maxOffset + (typeIndex * step)
+        }
+        // If only one type, yOffset stays at 0 (centered)
         
         // Create data points for frames
         framesForType.forEach(frameNum => {
@@ -189,14 +218,9 @@ const updateChart = () => {
           const distances = distanceData.value?.distances?.[pairKey]
           const distance = distances?.[frameNum]?.[type] || null
           
-          // Calculate y position with jitter
-          let yPosition = pairIndex + jitter
-          if (pairIndex === 0) {
-            yPosition = Math.max(-0.1, Math.min(0.2, yPosition))
-          } else if (pairIndex === sortedPairs.length - 1) {
-            const lastRowCenter = sortedPairs.length - 1
-            yPosition = Math.min(lastRowCenter + 0.1, Math.max(lastRowCenter - 0.2, yPosition))
-          }
+          // Calculate final y position: center of row + vertical offset
+          // Clamp to safe zone to ensure dots stay well within their rectangle
+          const yPosition = Math.max(pairIndex - 0.35, Math.min(pairIndex + 0.35, pairIndex + yOffset))
           
           seriesMap.get(type).push({
             x: frameNum - 1,
@@ -351,13 +375,19 @@ const updateChart = () => {
           return label ? `<div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; line-height: 1;">${label}</div>` : ''
         }
       },
-      gridLineWidth: 1,
-      gridLineColor: '#e8e8ed',
+      gridLineWidth: 0,
+      tickWidth: 0,
       reversed: false,
       softMin: -0.5,
       softMax: visiblePairs.length - 0.5,
       startOnTick: false,
-      endOnTick: false
+      endOnTick: false,
+      plotLines: Array.from({ length: visiblePairs.length + 1 }, (_, i) => ({
+        value: i - 0.5,
+        color: '#e8e8ed',
+        width: 1,
+        zIndex: 1
+      }))
     },
     legend: {
       enabled: true,
