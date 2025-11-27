@@ -1,4 +1,4 @@
-<template>
+t<template>
   <div class="chart-selector">
     <div
       v-for="(row, rowIndex) in chartRows"

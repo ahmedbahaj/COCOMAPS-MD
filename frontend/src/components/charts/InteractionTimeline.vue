@@ -62,14 +62,15 @@ const updateChart = () => {
     return
   }
 
-  const filteredData = dataStore.filteredInteractions
+  // Use all interactions regardless of global conservation threshold
+  const filteredData = dataStore.interactions
 
   if (filteredData.length === 0) {
     if (chart) {
       chart.destroy()
       chart = null
     }
-    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interactions found. Try adjusting the threshold or interaction type filters.</div>'
+    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interactions found. Try selecting a different interaction type.</div>'
     return
   }
 
@@ -251,7 +252,7 @@ const updateChart = () => {
       }
     },
     subtitle: {
-      text: `Frames (X-axis) × Residue Pairs (Y-axis) | Threshold: ${Math.round(dataStore.currentThreshold * 100)}%`,
+      text: 'Frames (X-axis) × Residue Pairs (Y-axis)',
       style: {
         fontSize: '17px',
         color: '#6e6e73'
@@ -422,9 +423,7 @@ onMounted(async () => {
 
 watch([
   () => dataStore.currentChartType,
-  () => dataStore.currentThreshold,
-  () => dataStore.filteredInteractions.length,
-  () => dataStore.selectedInteractionTypes.size,
+  () => dataStore.interactions.length,
   () => dataStore.totalFrames,
   () => dataStore.currentSystem?.id,
   () => availableInteractionTypes.value
