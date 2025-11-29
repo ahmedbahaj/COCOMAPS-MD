@@ -30,7 +30,6 @@ import LineChart from './charts/LineChart.vue'
 import SimilarityMatrix from './charts/SimilarityMatrix.vue'
 import TimePairMatrix from './charts/TimePairMatrix.vue'
 import InteractionTimeline from './charts/InteractionTimeline.vue'
-import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
 
 const dataStore = useDataStore()
 
@@ -61,8 +60,7 @@ const chartComponents = {
   line: LineChart,
   similarity: SimilarityMatrix,
   timePairMatrix: TimePairMatrix,
-  interactionTimeline: InteractionTimeline,
-  interactionConservationMatrix: InteractionConservationMatrix
+  interactionTimeline: InteractionTimeline
 }
 
 const currentChartComponent = computed(() => {
