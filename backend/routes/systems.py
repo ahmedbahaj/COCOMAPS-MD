@@ -12,9 +12,15 @@ def list_systems():
     """List all available systems"""
     try:
         data_folder = current_app.config['DATA_FOLDER']
+        systems_folder = Path(data_folder) / 'systems'
+        
+        # Check if systems folder exists
+        if not systems_folder.exists():
+            return jsonify([])
+        
         systems = []
         
-        for item in Path(data_folder).iterdir():
+        for item in systems_folder.iterdir():
             if item.is_dir() and not item.name.startswith('.') and not item.name.startswith('__'):
                 # Check if it has frame folders
                 frame_folders = [f for f in item.iterdir() if f.is_dir() and f.name.startswith('frame_')]
@@ -42,7 +48,8 @@ def get_system(system_id):
     """Get details for a specific system"""
     try:
         data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / system_id
+        systems_folder = Path(data_folder) / 'systems'
+        system_path = systems_folder / system_id
         
         if not system_path.exists() or not system_path.is_dir():
             return jsonify({'error': 'System not found'}), 404

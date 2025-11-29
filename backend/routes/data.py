@@ -69,7 +69,7 @@ def get_interactions(system_id):
     """
     try:
         data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / system_id
+        system_path = Path(data_folder) / 'systems' / system_id
         
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -191,7 +191,7 @@ def get_area_data(system_id):
     """
     try:
         data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / system_id
+        system_path = Path(data_folder) / 'systems' / system_id
         
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -298,7 +298,7 @@ def get_interaction_trends(system_id):
     """
     try:
         data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / system_id
+        system_path = Path(data_folder) / 'systems' / system_id
         
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -384,7 +384,7 @@ def get_similarity_matrix(system_id):
     """
     try:
         data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / system_id
+        system_path = Path(data_folder) / 'systems' / system_id
         
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -576,7 +576,7 @@ def get_atom_pairs(system_id):
             return jsonify({'error': 'Missing required parameters: resName1, resNum1, chain1, resName2, resNum2, chain2'}), 400
         
         data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / system_id
+        system_path = Path(data_folder) / 'systems' / system_id
         
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -785,7 +785,7 @@ def get_interaction_distances(system_id):
     """
     try:
         data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / system_id
+        system_path = Path(data_folder) / 'systems' / system_id
         
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404

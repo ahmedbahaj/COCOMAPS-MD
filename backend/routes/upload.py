@@ -35,9 +35,11 @@ def split_pdb(pdb_file, pdb_name):
     try:
         u = mda.Universe(pdb_file)
         upload_folder = current_app.config['UPLOAD_FOLDER']
-        main_folder = os.path.join(upload_folder, pdb_name)
+        systems_folder = os.path.join(upload_folder, 'systems')
+        main_folder = os.path.join(systems_folder, pdb_name)
         
-        # Create main folder
+        # Create systems and main folder
+        os.makedirs(systems_folder, exist_ok=True)
         os.makedirs(main_folder, exist_ok=True)
         
         # Iterate through frames
@@ -104,7 +106,7 @@ def run_cocomaps_analysis(pdb_name, frame_count):
     """Run CoCoMaps analysis on all frames"""
     try:
         upload_folder = current_app.config['UPLOAD_FOLDER']
-        host_root_dir = os.path.abspath(os.path.join(upload_folder, pdb_name))
+        host_root_dir = os.path.abspath(os.path.join(upload_folder, 'systems', pdb_name))
         docker_image = "andrpet/cocomaps-backend:0.0.19"
         container_execution = "python /app/coco2/begin.py"
         input_file_name = "example_input.json"
