@@ -49,7 +49,19 @@
                 </span>
               </div>
             </div>
-            <span class="slider-value">{{ atomPairThresholdPercent }}%</span>
+            <div class="slider-value-input">
+              <input
+                type="number"
+                :value="atomPairThresholdPercent"
+                @input="updateAtomPairThresholdFromInput"
+                @blur="validateAtomPairThresholdInput"
+                min="0"
+                max="100"
+                step="1"
+                class="value-input"
+              />
+              <span class="percent-symbol">%</span>
+            </div>
           </div>
           <p class="slider-description">
             Show atom pairs present in at least {{ atomPairThresholdPercent }}% of frames
@@ -260,6 +272,26 @@ const filteredTransitions = computed(() => {
     filteredKeys.has(transition.from) && filteredKeys.has(transition.to)
   )
 })
+
+// Functions to update threshold from input
+const updateAtomPairThresholdFromInput = (event) => {
+  const value = parseFloat(event.target.value)
+  if (!isNaN(value) && value >= 0 && value <= 100) {
+    atomPairThreshold.value = value / 100
+  }
+}
+
+const validateAtomPairThresholdInput = (event) => {
+  let value = parseFloat(event.target.value)
+  if (isNaN(value)) {
+    event.target.value = atomPairThresholdPercent.value
+    return
+  }
+  // Clamp value between 0 and 100
+  value = Math.max(0, Math.min(100, value))
+  event.target.value = value
+  atomPairThreshold.value = value / 100
+}
 
 // Color palette for atom pairs
 const atomPairColors = {}
@@ -869,13 +901,44 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.05);
 }
 
-.slider-value {
+.slider-value-input {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+}
+
+.value-input {
+  width: 60px;
   font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
-  min-width: 80px;
   text-align: right;
+  border: 2px solid #d2d2d7;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #ffffff;
   font-variant-numeric: tabular-nums;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.value-input:focus {
+  outline: none;
+  border-color: #1d1d1f;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.1);
+}
+
+.value-input::-webkit-inner-spin-button,
+.value-input::-webkit-outer-spin-button {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.percent-symbol {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
 }
 
 .slider-description {

@@ -27,7 +27,19 @@
             </span>
           </div>
         </div>
-        <span class="slider-value">{{ thresholdPercent }}%</span>
+        <div class="slider-value-input">
+          <input
+            type="number"
+            :value="thresholdPercent"
+            @input="updateThresholdFromInput"
+            @blur="validateThresholdInput"
+            min="50"
+            max="100"
+            step="1"
+            class="value-input"
+          />
+          <span class="percent-symbol">%</span>
+        </div>
       </div>
       <p class="slider-description">
         Show interactions present in at least {{ thresholdPercent }}% of frames
@@ -175,6 +187,25 @@ const updateThreshold = (event) => {
   dataStore.setThreshold(parseFloat(event.target.value))
 }
 
+const updateThresholdFromInput = (event) => {
+  const value = parseFloat(event.target.value)
+  if (!isNaN(value) && value >= 50 && value <= 100) {
+    dataStore.setThreshold(value / 100)
+  }
+}
+
+const validateThresholdInput = (event) => {
+  let value = parseFloat(event.target.value)
+  if (isNaN(value)) {
+    event.target.value = thresholdPercent.value
+    return
+  }
+  // Clamp value between 50 and 100
+  value = Math.max(50, Math.min(100, value))
+  event.target.value = value
+  dataStore.setThreshold(value / 100)
+}
+
 const toggleLogScale = (event) => {
   dataStore.setLogScale(event.target.checked)
 }
@@ -290,13 +321,44 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.05);
 }
 
-.slider-value {
+.slider-value-input {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+}
+
+.value-input {
+  width: 60px;
   font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
-  min-width: 80px;
   text-align: right;
+  border: 2px solid #d2d2d7;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #ffffff;
   font-variant-numeric: tabular-nums;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.value-input:focus {
+  outline: none;
+  border-color: #1d1d1f;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.1);
+}
+
+.value-input::-webkit-inner-spin-button,
+.value-input::-webkit-outer-spin-button {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.percent-symbol {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
 }
 
 .slider-description {
