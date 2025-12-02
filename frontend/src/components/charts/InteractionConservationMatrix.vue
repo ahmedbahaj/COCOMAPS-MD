@@ -42,10 +42,18 @@
         </div>
       </div>
       <div class="info-notice">
-        <strong>Note:</strong> Only showing stable pairs (≥50% overall conservation)
+        <strong>Note:</strong> Only showing stable pairs (≥50% overall conservation). Click any dot for trajectory analysis!
       </div>
     </div>
     <div ref="chartContainer" class="chart-container"></div>
+    
+    <!-- Interaction Trajectory Modal -->
+    <InteractionTrajectoryModal
+      :visible="showTrajectoryModal"
+      :interactionData="selectedInteraction"
+      @close="showTrajectoryModal = false"
+      @openAtomPairExplorer="handleOpenAtomPairExplorer"
+    />
   </div>
 </template>
 
@@ -55,12 +63,15 @@ import Highcharts from 'highcharts'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionBaseColor } from '../../utils/chartHelpers'
 import api from '../../services/api'
+import InteractionTrajectoryModal from '../InteractionTrajectoryModal.vue'
 
 const dataStore = useDataStore()
 const chartContainer = ref(null)
 let chart = null
 const distanceData = ref(null)
 const conservationThreshold = ref(0.5) // Default 50%
+const showTrajectoryModal = ref(false)
+const selectedInteraction = ref(null)
 
 const conservationTicks = computed(() => {
   const ticks = []
@@ -97,6 +108,11 @@ const validateThresholdInput = (event) => {
   event.target.value = value
   conservationThreshold.value = value / 100
   updateChart()
+}
+
+const handleOpenAtomPairExplorer = (data) => {
+  showTrajectoryModal.value = false
+  console.log('Open atom pair explorer for:', data)
 }
 
 const updateChart = () => {
@@ -271,7 +287,8 @@ const updateChart = () => {
               pairConsistency: interaction.consistency,
               typeConservation: typeConservation,
               typesArray: interaction.typesArray,
-              distance: distance
+              distance: distance,
+              frames: framesForType
             }
           })
         })
@@ -440,6 +457,24 @@ const updateChart = () => {
     },
     plotOptions: {
       scatter: {
+        cursor: 'pointer',
+        point: {
+          events: {
+            click: function() {
+              const point = this
+              selectedInteraction.value = {
+                pair: point.custom?.pair || point.pair,
+                type: point.custom?.type || point.type,
+                frame: point.custom?.frame || point.frame,
+                pairConsistency: point.custom?.pairConsistency || point.pairConsistency,
+                typeConservation: point.custom?.typeConservation || point.typeConservation,
+                distance: point.custom?.distance || point.distance,
+                frames: point.custom?.frames || []
+              }
+              showTrajectoryModal.value = true
+            }
+          }
+        },
         marker: {
           radius: 4,
           states: {
