@@ -61,19 +61,30 @@ const updateChart = () => {
   // Prepare data: group by interaction type for each pair-frame combination
   const seriesMap = new Map() // type -> data points
 
-  // Helper function to generate deterministic jitter based on pair and type
-  const getDeterministicJitter = (pairKey, type, typeIndex) => {
-    // Create a hash from pair key and type for consistent jitter
-    let hash = 0
-    const str = `${pairKey}_${type}_${typeIndex}`
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
-      hash = hash & hash // Convert to 32-bit integer
-    }
-    // Normalize to -0.2 to 0.2 range for jitter
-    return ((hash % 41) / 100) - 0.2
-  }
+  // First pass: collect all types per pair to determine vertical stacking
+  const pairTypeCount = new Map() // pairIndex -> Set of types
+  
+  sortedPairs.forEach((pairData, pairIndex) => {
+    pairData.interactions.forEach(interaction => {
+      interaction.typesArray.forEach((type) => {
+        if (!pairTypeCount.has(pairIndex)) {
+          pairTypeCount.set(pairIndex, new Set())
+        }
+        pairTypeCount.get(pairIndex).add(type)
+      })
+    })
+  })
+  
+  // Create type index map for each pair
+  const pairTypeIndexMap = new Map() // pairIndex -> Map(type -> index)
+  pairTypeCount.forEach((types, pairIndex) => {
+    const typeArray = Array.from(types).sort()
+    const indexMap = new Map()
+    typeArray.forEach((type, idx) => {
+      indexMap.set(type, idx)
+    })
+    pairTypeIndexMap.set(pairIndex, { count: typeArray.length, indexMap })
+  })
 
   sortedPairs.forEach((pairData, pairIndex) => {
     pairData.interactions.forEach(interaction => {
@@ -100,42 +111,42 @@ const updateChart = () => {
           if (!typeFrames[type] || !Array.isArray(typeFrames[type]) || typeFrames[type].length === 0) {
             return // Skip this type if we don't have frame data for it
           }
-          framesForType = typeFrames[type]
+        framesForType = typeFrames[type]
+      }
+      
+      // Calculate y position with smart vertical distribution
+      const pairKey = `${interaction.id1}_${interaction.id2}`
+      const typeInfo = pairTypeIndexMap.get(pairIndex)
+      let yOffset = 0
+      
+      if (typeInfo && typeInfo.count > 1) {
+        // Multiple types in this pair: distribute evenly within safe zone
+        const typeIndex = typeInfo.indexMap.get(type)
+        const maxOffset = 0.3 // Stay within ±0.3 of center (well within ±0.5 boundaries)
+        const step = (2 * maxOffset) / Math.max(1, typeInfo.count - 1)
+        yOffset = -maxOffset + (typeIndex * step)
+      }
+      // If only one type, yOffset stays at 0 (centered)
+      
+      // Create data points for frames (all frames if 100%, otherwise only where type exists)
+      framesForType.forEach(frameNum => {
+        // Validate frame number is within range
+        if (frameNum < 1 || frameNum > totalFrames) {
+          console.warn(`Frame ${frameNum} out of range (1-${totalFrames}) for pair ${pairData.pair}`)
+          return
         }
         
-        // Generate deterministic jitter for this pair-type combination
-        const pairKey = `${interaction.id1}_${interaction.id2}`
-        const jitter = getDeterministicJitter(pairKey, type, typeIndex)
+        // Get distance for this pair-frame-type combination
+        const distances = distanceData.value?.distances?.[pairKey]
+        const distance = distances?.[frameNum]?.[type] || null
         
-        // Create data points for frames (all frames if 100%, otherwise only where type exists)
-        framesForType.forEach(frameNum => {
-          // Validate frame number is within range
-          if (frameNum < 1 || frameNum > totalFrames) {
-            console.warn(`Frame ${frameNum} out of range (1-${totalFrames}) for pair ${pairData.pair}`)
-            return
-          }
-          
-          // Get distance for this pair-frame-type combination
-          const distances = distanceData.value?.distances?.[pairKey]
-          const distance = distances?.[frameNum]?.[type] || null
-          
-          // Calculate y position with jitter
-          // For first row (pairIndex = 0), ensure jitter doesn't push it too far negative
-          // For last row, ensure jitter doesn't push it too far positive
-          let yPosition = pairIndex + jitter
-          if (pairIndex === 0) {
-            // First row: allow slight negative jitter but keep it visible
-            // Clamp to range [-0.1, 0.2] to allow jitter while staying visible
-            yPosition = Math.max(-0.1, Math.min(0.2, yPosition))
-          } else if (pairIndex === sortedPairs.length - 1) {
-            // Last row: ensure y position doesn't exceed the last row center
-            const lastRowCenter = sortedPairs.length - 1
-            yPosition = Math.min(lastRowCenter + 0.1, Math.max(lastRowCenter - 0.2, yPosition))
-          }
-          
-          seriesMap.get(type).push({
-            x: frameNum - 1, // Convert to 0-based index for x-axis
-            y: yPosition, // Add deterministic jitter for visibility, clamped to valid range
+        // Calculate final y position: center of row + vertical offset
+        // Clamp to safe zone to ensure dots stay well within their rectangle
+        const yPosition = Math.max(pairIndex - 0.35, Math.min(pairIndex + 0.35, pairIndex + yOffset))
+        
+        seriesMap.get(type).push({
+          x: frameNum - 1, // Convert to 0-based index for x-axis
+          y: yPosition, // Smart vertical distribution based on interaction types
             frame: frameNum,
             pair: pairData.pair,
             type: type,
@@ -264,15 +275,21 @@ const updateChart = () => {
           return label ? `<div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; line-height: 1;">${label}</div>` : ''
         }
       },
-      gridLineWidth: 1,
-      gridLineColor: '#e8e8ed',
+      gridLineWidth: 0,
+      tickWidth: 0,
       reversed: false,
       // Ensure points near edges are not clipped
       softMin: -0.5,
       softMax: sortedPairs.length - 0.5,
       // Ensure first and last rows are fully visible
       startOnTick: false,
-      endOnTick: false
+      endOnTick: false,
+      plotLines: Array.from({ length: sortedPairs.length + 1 }, (_, i) => ({
+        value: i - 0.5,
+        color: '#e8e8ed',
+        width: 1,
+        zIndex: 1
+      }))
     },
     legend: {
       enabled: true,
