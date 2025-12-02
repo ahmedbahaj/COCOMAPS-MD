@@ -41,11 +41,11 @@ const buildSeries = (frameCount) => {
       name: type.label,
       data: paddedData,
       color: hasNonZero ? getInteractionBaseColor(type.label) : '#c7c7cc',
-      lineWidth: hasNonZero ? 3 : 2,
+      lineWidth: hasNonZero ? 2 : 1.5,
       dashStyle: hasNonZero ? 'Solid' : 'ShortDot',
       marker: {
-        radius: hasNonZero ? 5 : 3,
-        lineWidth: hasNonZero ? 2 : 1,
+        radius: hasNonZero ? 2.5 : 2,
+        lineWidth: hasNonZero ? 1 : 0.5,
         lineColor: hasNonZero ? '#ffffff' : '#dcdce0'
       },
       enableMouseTracking: hasNonZero,
@@ -162,14 +162,15 @@ const updateChart = () => {
     },
     plotOptions: {
       line: {
-        lineWidth: 3,
+        lineWidth: 2,
         states: {
           hover: {
-            lineWidth: 4
+            lineWidth: 3
           }
         },
         marker: {
-          enabled: true
+          enabled: true,
+          radius: 2.5
         }
       }
     },

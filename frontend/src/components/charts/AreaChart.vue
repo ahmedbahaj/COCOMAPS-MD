@@ -95,7 +95,10 @@ const updateChart = () => {
       lineWidth: 0,
       enableMouseTracking: false,
       showInLegend: false,
-      zIndex: 0
+      zIndex: 0,
+      marker: {
+        enabled: false
+      }
     }
   }
 
@@ -171,16 +174,16 @@ const updateChart = () => {
     plotOptions: {
       line: {
         animation: hasAnimated ? false : { duration: 800 },
-        lineWidth: 3,
+        lineWidth: 2,
         marker: {
           enabled: true,
-          radius: 5,
-          lineWidth: 2,
+          radius: 3,
+          lineWidth: 1,
           lineColor: '#ffffff'
         },
         states: {
           hover: {
-            lineWidth: 4
+            lineWidth: 3
           }
         }
       }
