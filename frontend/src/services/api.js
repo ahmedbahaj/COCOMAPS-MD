@@ -74,6 +74,14 @@ export default {
     return response.data
   },
 
+  async getDistanceDistributions(systemId, interactionTypes = []) {
+    const params = interactionTypes.length > 0 
+      ? { interaction_types: interactionTypes.join(',') }
+      : {}
+    const response = await api.get(`/systems/${systemId}/distance-distributions`, { params })
+    return response.data
+  },
+
   // Upload
   async uploadFile(file, onProgress) {
     const formData = new FormData()
