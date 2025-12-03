@@ -903,3 +903,169 @@ def get_interaction_distances(system_id):
         import traceback
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
+@bp.route('/systems/<system_id>/distance-distributions', methods=['GET'])
+def get_distance_distributions(system_id):
+    """
+    Get distance distributions for residue pairs filtered by interaction types
+    Query params: interaction_types (comma-separated list)
+    Returns: {pairs: [{id, chain1, res1, chain2, res2, interaction_type, distances: []}]}
+    """
+    from flask import request
+    
+    try:
+        # Get query parameters
+        interaction_types_param = request.args.get('interaction_types', '')
+        selected_types = [t.strip() for t in interaction_types_param.split(',') if t.strip()]
+        
+        data_folder = current_app.config['DATA_FOLDER']
+        system_path = Path(data_folder) / 'systems' / system_id
+        
+        if not system_path.exists():
+            return jsonify({'error': 'System not found'}), 404
+        
+        # Find all frame folders
+        frame_folders = sorted(
+            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
+            key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else f.name
+        )
+        
+        if not frame_folders:
+            return jsonify({'error': 'No frames found for this system'}), 404
+        
+        total_frames = len(frame_folders)
+        
+        # Structure: {(pair_key, interaction_type): {'distances': [], 'frames': set()}}
+        pair_type_distances = {}
+        pair_info = {}  # Store residue info for each pair
+        
+        # CSV filename mapping
+        csv_to_type_map = {
+            'H-bond': 'H-bond',
+            'Salt_bridge': 'Salt-bridge',
+            'pi-pi': 'π-π interactions',
+            'Cation_pi': 'Cation-π interactions',
+            'Anion_pi': 'Anion-π interactions',
+            'C-H_ON': 'CH-O/N bonds',
+            'C-H_pi': 'CH-π interactions',
+            'Halogen_bond': 'Halogen bonds',
+            'Apolar_vdw': 'Apolar vdW contacts',
+            'Polar_vdw': 'Polar vdW contacts',
+            'Proximal': 'Proximal contacts',
+            'Clash': 'Clashes',
+            'Metal_Mediated': 'Metal-mediated contacts',
+            'N-S-O-H_pi': 'O/N/SH-π interactions',
+            'Lone_pair_pi': 'lp-π interactions',
+            'Water_Mediated': 'Water-mediated contacts',
+            'SS_bond': 'S-S bond',
+            'Amino_pi': 'Amino-π interactions'
+        }
+        
+        # Filter CSV files to scan based on selected types
+        csv_files_to_scan = []
+        if selected_types:
+            # Map selected types back to CSV filenames
+            for csv_name, normalized_type in csv_to_type_map.items():
+                if normalized_type in selected_types:
+                    csv_files_to_scan.append((csv_name, normalized_type))
+        else:
+            # If no filter, scan all
+            csv_files_to_scan = list(csv_to_type_map.items())
+        
+        # Scan all frames and collect distances
+        for frame_folder in frame_folders:
+            frame_num = int(frame_folder.name.split('_')[1])
+            
+            for csv_filename, normalized_type in csv_files_to_scan:
+                type_csv = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_{csv_filename}.csv"
+                
+                if not type_csv.exists():
+                    continue
+                
+                # Parse the CSV file
+                try:
+                    with open(type_csv, 'r', encoding='utf-8') as tf:
+                        type_reader = csv.DictReader(tf)
+                        for row in type_reader:
+                            # Check required fields
+                            if not all(key in row for key in ['Res. Name 1', 'Res. Number 1', 'Chain 1', 
+                                                              'Res. Name 2', 'Res. Number 2', 'Chain 2', 'Distance (Å)']):
+                                continue
+                            
+                            # Extract distance
+                            distance_str = row.get('Distance (Å)', '').strip()
+                            if not distance_str:
+                                continue
+                            
+                            # Remove asterisks and parse
+                            distance_str = distance_str.replace('*', '').strip()
+                            try:
+                                distance = float(distance_str)
+                            except ValueError:
+                                continue
+                            
+                            # Create pair key
+                            pair_key = f"{row['Chain 1']}:{row['Res. Name 1']}:{row['Res. Number 1']}-{row['Chain 2']}:{row['Res. Name 2']}:{row['Res. Number 2']}"
+                            compound_key = (pair_key, normalized_type)
+                            
+                            # Store pair info
+                            if pair_key not in pair_info:
+                                pair_info[pair_key] = {
+                                    'chain1': row['Chain 1'],
+                                    'resName1': row['Res. Name 1'],
+                                    'resNum1': int(row['Res. Number 1']),
+                                    'chain2': row['Chain 2'],
+                                    'resName2': row['Res. Name 2'],
+                                    'resNum2': int(row['Res. Number 2'])
+                                }
+                            
+                            # Store distance and track frame
+                            if compound_key not in pair_type_distances:
+                                pair_type_distances[compound_key] = {
+                                    'distances': [],
+                                    'frames': set()
+                                }
+                            pair_type_distances[compound_key]['distances'].append(distance)
+                            pair_type_distances[compound_key]['frames'].add(frame_num)
+                
+                except Exception as e:
+                    continue
+        
+        # Format results
+        pairs = []
+        for (pair_key, interaction_type), data in pair_type_distances.items():
+            if pair_key in pair_info:
+                info = pair_info[pair_key]
+                distances = data['distances']
+                unique_frames = data['frames']
+                
+                pairs.append({
+                    'id': pair_key,
+                    'chain1': info['chain1'],
+                    'resName1': info['resName1'],
+                    'resNum1': info['resNum1'],
+                    'chain2': info['chain2'],
+                    'resName2': info['resName2'],
+                    'resNum2': info['resNum2'],
+                    'interactionType': interaction_type,
+                    'distances': distances,
+                    'frameCount': len(unique_frames),  # Count unique frames, not total measurements
+                    'consistency': len(unique_frames) / total_frames if total_frames > 0 else 0,  # Fixed: unique frames
+                    'totalMeasurements': len(distances),  # Total distance measurements (can be > frames)
+                    'avgDistance': sum(distances) / len(distances) if distances else 0,
+                    'minDistance': min(distances) if distances else 0,
+                    'maxDistance': max(distances) if distances else 0
+                })
+        
+        # Sort by consistency (most persistent first)
+        pairs.sort(key=lambda x: x['consistency'], reverse=True)
+        
+        return jsonify({
+            'system': system_id,
+            'totalFrames': total_frames,
+            'pairs': pairs
+        })
+    
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+

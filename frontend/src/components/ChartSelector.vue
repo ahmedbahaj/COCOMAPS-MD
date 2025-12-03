@@ -33,7 +33,8 @@ const charts = [
   { id: 'similarity', label: 'Similarity Matrix' },
   { id: 'timePairMatrix', label: 'Time-Pair Matrix' },
   { id: 'interactionTimeline', label: 'Interaction Time-line' },
-  { id: 'interactionConservationMatrix', label: 'Interaction Conservation Matrix' }
+  { id: 'interactionConservationMatrix', label: 'Interaction Conservation Matrix' },
+  { id: 'violinPlot', label: 'Distance Distribution' }
 ]
 
 const chartRows = computed(() => {
