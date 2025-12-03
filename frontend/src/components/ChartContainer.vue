@@ -31,6 +31,7 @@ import SimilarityMatrix from './charts/SimilarityMatrix.vue'
 import TimePairMatrix from './charts/TimePairMatrix.vue'
 import InteractionTimeline from './charts/InteractionTimeline.vue'
 import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
+import ViolinChart from './charts/ViolinChart.vue'
 
 const dataStore = useDataStore()
 
@@ -62,7 +63,8 @@ const chartComponents = {
   similarity: SimilarityMatrix,
   timePairMatrix: TimePairMatrix,
   interactionTimeline: InteractionTimeline,
-  interactionConservationMatrix: InteractionConservationMatrix
+  interactionConservationMatrix: InteractionConservationMatrix,
+  violinPlot: ViolinChart
 }
 
 const currentChartComponent = computed(() => {
