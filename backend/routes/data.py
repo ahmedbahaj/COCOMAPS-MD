@@ -934,7 +934,7 @@ def get_distance_distributions(system_id):
         
         total_frames = len(frame_folders)
         
-        # Structure: {(pair_key, interaction_type): [distances]}
+        # Structure: {(pair_key, interaction_type): {'distances': [], 'frames': set()}}
         pair_type_distances = {}
         pair_info = {}  # Store residue info for each pair
         
@@ -1018,19 +1018,26 @@ def get_distance_distributions(system_id):
                                     'resNum2': int(row['Res. Number 2'])
                                 }
                             
-                            # Store distance
+                            # Store distance and track frame
                             if compound_key not in pair_type_distances:
-                                pair_type_distances[compound_key] = []
-                            pair_type_distances[compound_key].append(distance)
+                                pair_type_distances[compound_key] = {
+                                    'distances': [],
+                                    'frames': set()
+                                }
+                            pair_type_distances[compound_key]['distances'].append(distance)
+                            pair_type_distances[compound_key]['frames'].add(frame_num)
                 
                 except Exception as e:
                     continue
         
         # Format results
         pairs = []
-        for (pair_key, interaction_type), distances in pair_type_distances.items():
+        for (pair_key, interaction_type), data in pair_type_distances.items():
             if pair_key in pair_info:
                 info = pair_info[pair_key]
+                distances = data['distances']
+                unique_frames = data['frames']
+                
                 pairs.append({
                     'id': pair_key,
                     'chain1': info['chain1'],
@@ -1041,8 +1048,9 @@ def get_distance_distributions(system_id):
                     'resNum2': info['resNum2'],
                     'interactionType': interaction_type,
                     'distances': distances,
-                    'frameCount': len(distances),
-                    'consistency': len(distances) / total_frames if total_frames > 0 else 0,
+                    'frameCount': len(unique_frames),  # Count unique frames, not total measurements
+                    'consistency': len(unique_frames) / total_frames if total_frames > 0 else 0,  # Fixed: unique frames
+                    'totalMeasurements': len(distances),  # Total distance measurements (can be > frames)
                     'avgDistance': sum(distances) / len(distances) if distances else 0,
                     'minDistance': min(distances) if distances else 0,
                     'maxDistance': max(distances) if distances else 0

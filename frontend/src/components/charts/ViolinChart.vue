@@ -122,6 +122,13 @@ const updateChart = () => {
   // Limit to top 50 pairs for performance
   const topPairs = filteredPairs.slice(0, 50)
   
+  // Calculate global mean across all pairs
+  const allDistances = topPairs.flatMap(pair => pair.distances)
+  const globalMean = allDistances.reduce((a, b) => a + b, 0) / allDistances.length
+  
+  // Get interaction color
+  const interactionColor = getInteractionBaseColor(selectedInteractionType.value)
+  
   // Prepare data for Plotly violin plot
   const traces = topPairs.map((pair, index) => {
     const pairLabel = `${pair.chain1}:${pair.resName1}${pair.resNum1}-${pair.chain2}:${pair.resName2}${pair.resNum2}`
@@ -134,8 +141,7 @@ const updateChart = () => {
     const max = sorted[sorted.length - 1]
     const range = (max - min).toFixed(2)
     
-    // Fix conservation - cap at 100% (backend may return >100% due to multiple atom pairs per frame)
-    const conservationPercent = Math.min(100, pair.consistency * 100).toFixed(1)
+    const conservationPercent = (pair.consistency * 100).toFixed(1)
     
     // Calculate frequency (count) at each distance point for hover
     const distanceCounts = {}
@@ -144,32 +150,33 @@ const updateChart = () => {
       distanceCounts[rounded] = (distanceCounts[rounded] || 0) + 1
     })
     
+    // Total measurements (may be more than frames if multiple atom pairs)
+    const totalMeasurements = pair.totalMeasurements || pair.distances.length
+    const uniqueFrames = pair.frameCount
+    
     return {
       type: 'violin',
       y: pair.distances,
-      x: Array(pair.distances.length).fill(pairLabel),
+      x: Array(pair.distances.length).fill(index),
       name: pairLabel,
       box: {
         visible: false
       },
       meanline: {
-        visible: true,
-        line: {
-          color: '#1d1d1f',
-          width: 2
-        }
+        visible: false  // We'll add custom short dashes instead
       },
-      fillcolor: getInteractionBaseColor(selectedInteractionType.value),
-      opacity: 0.6,
+      fillcolor: interactionColor,
+      opacity: 0.45,  // Balanced opacity - visible but points still stand out
       points: 'all',
       pointpos: 0,
-      jitter: 0.3,
+      jitter: 0.3,  // Fixed jitter value
       marker: {
-        size: 5,
-        color: '#1d1d1f',
-        opacity: 0.6,
+        size: 6,  // Slightly larger
+        color: interactionColor,  // Match interaction type color
+        opacity: 1.0,  // Fully opaque for prominence
         line: {
-          width: 0
+          width: 0.5,
+          color: '#ffffff'
         }
       },
       bandwidth: null, // Auto bandwidth
@@ -180,20 +187,47 @@ const updateChart = () => {
       text: pair.distances.map((d, i) => {
         const rounded = d.toFixed(1)
         const countAtDistance = distanceCounts[rounded]
-        const frequencyPercent = ((countAtDistance / pair.distances.length) * 100).toFixed(1)
+        const frequencyPercent = ((countAtDistance / totalMeasurements) * 100).toFixed(1)
         
-        return `${pairLabel}<br>` +
-          `<b>Distance: ${d.toFixed(2)} Å</b><br>` +
-          `Frequency at ~${rounded} Å: ${countAtDistance} measurements (${frequencyPercent}%)<br>` +
+        return `<b>${pairLabel}</b><br>` +
+          `Distance: ${d.toFixed(2)} Å<br>` +
+          `<b>Frequency at ~${rounded} Å: ${countAtDistance} (${frequencyPercent}%)</b><br>` +
           `<br>Statistics:<br>` +
-          `Total measurements: ${pair.distances.length}<br>` +
+          `Total measurements: ${totalMeasurements}<br>` +
+          `Frames with interaction: ${uniqueFrames}/${dataStore.totalFrames}<br>` +
           `Mean: ${mean.toFixed(2)} Å<br>` +
           `Median: ${median.toFixed(2)} Å<br>` +
-          `Range: ${min.toFixed(2)} - ${max.toFixed(2)} Å (${range} Å)<br>` +
+          `Range: ${min.toFixed(2)} - ${max.toFixed(2)} Å<br>` +
           `Conservation: ${conservationPercent}%`
       }),
       hoveron: 'points+kde'
     }
+  })
+  
+  // Collect mean positions for annotations
+  const meanAnnotations = topPairs.map((pair, index) => {
+    const mean = pair.distances.reduce((a, b) => a + b, 0) / pair.distances.length
+    return {
+      mean,
+      x: index,
+      pairLabel: `${pair.chain1}:${pair.resName1}${pair.resNum1}-${pair.chain2}:${pair.resName2}${pair.resNum2}`
+    }
+  })
+  
+  // Add invisible trace for legend entry (global mean)
+  traces.push({
+    type: 'scatter',
+    mode: 'lines',
+    x: [null],  // Invisible trace, just for legend
+    y: [null],
+    line: {
+      color: '#1d1d1f',  // Black for global mean
+      width: 2.5,
+      dash: 'dash'
+    },
+    name: `Global Mean: ${globalMean.toFixed(2)} Å`,
+    showlegend: true,
+    hoverinfo: 'skip'
   })
 
   const layout = {
@@ -219,6 +253,39 @@ const updateChart = () => {
         color: '#6e6e73'
       }
     }],
+    shapes: [
+      // Global mean line - rendered on top of all violins
+      {
+        type: 'line',
+        x0: -0.5,
+        x1: topPairs.length - 0.5,
+        y0: globalMean,
+        y1: globalMean,
+        line: {
+          color: '#1d1d1f',  // Black for global mean
+          width: 2.5,
+          dash: 'dash'
+        },
+        layer: 'above',
+        xref: 'x',
+        yref: 'y'
+      },
+      // Local mean dashes for each violin
+      ...meanAnnotations.map((item, index) => ({
+        type: 'line',
+        x0: index - 0.15,  // Short dash: 0.3 width centered on violin
+        x1: index + 0.15,
+        y0: item.mean,
+        y1: item.mean,
+        line: {
+          color: interactionColor,  // Match interaction type color
+          width: 2.5
+        },
+        layer: 'above',  // Render on top of violin fill
+        xref: 'x',
+        yref: 'y'
+      }))
+    ],
     xaxis: {
       title: {
         text: 'Residue Pairs',
@@ -262,6 +329,20 @@ const updateChart = () => {
     height: Math.max(600, topPairs.length * 50),
     hovermode: 'closest',
     violinmode: 'group',
+    legend: {
+      x: 1.02,
+      y: 1,
+      xanchor: 'left',
+      yanchor: 'top',
+      bgcolor: 'rgba(255, 255, 255, 0.9)',
+      bordercolor: '#d2d2d7',
+      borderwidth: 1,
+      font: {
+        size: 13,
+        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        color: '#1d1d1f'
+      }
+    },
     font: {
       family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
     }
@@ -281,6 +362,8 @@ const updateChart = () => {
     }
   }
 
+  // Clear any previous content before rendering
+  chartContainer.value.innerHTML = ''
   Plotly.newPlot(chartContainer.value, traces, layout, config)
 }
 
