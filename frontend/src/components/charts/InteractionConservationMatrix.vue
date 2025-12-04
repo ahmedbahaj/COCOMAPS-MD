@@ -42,10 +42,145 @@
         </div>
       </div>
       <div class="info-notice">
-        <strong>Interaction Timeline View:</strong> Each row shows one residue pair + interaction type. Colored segments indicate frames where the interaction is present. Gaps show breaks in continuity. Hover for details, click for full analysis.
+        <strong>Interaction Timeline View:</strong> Click on a segment for trajectory analysis.
       </div>
     </div>
+    
     <div ref="chartContainer" class="chart-container"></div>
+    
+    <!-- Statistics Table -->
+    <div v-if="statistics" class="statistics-section">
+      <h3 class="statistics-title">Conservation Statistics</h3>
+      <p class="statistics-description">
+        Statistics based on current filters: ≥50% pair conservation, ≥{{ Math.round(conservationThreshold * 100) }}% type conservation{{ dataStore.selectedInteractionTypes.size > 0 ? ', filtered interaction types' : '' }}
+      </p>
+      <div class="statistics-tables">
+        <div class="statistics-table-wrapper">
+          <h4 class="table-subtitle">Residue Level (Pair Conservation)</h4>
+          <table class="statistics-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-row">
+                <td>CR50</td>
+                <td>{{ statistics.residue.cr50 }} pairs</td>
+              </tr>
+              <tr>
+                <td>Count</td>
+                <td>{{ statistics.residue.count }}</td>
+              </tr>
+              <tr>
+                <td>Mean</td>
+                <td>{{ formatPercent(statistics.residue.mean) }}</td>
+              </tr>
+              <tr>
+                <td>Median (Q2)</td>
+                <td>{{ formatPercent(statistics.residue.median) }}</td>
+              </tr>
+              <tr>
+                <td>Q1 (25th percentile)</td>
+                <td>{{ formatPercent(statistics.residue.q1) }}</td>
+              </tr>
+              <tr>
+                <td>Q3 (75th percentile)</td>
+                <td>{{ formatPercent(statistics.residue.q3) }}</td>
+              </tr>
+              <tr>
+                <td>Min</td>
+                <td>{{ formatPercent(statistics.residue.min) }}</td>
+              </tr>
+              <tr>
+                <td>Max</td>
+                <td>{{ formatPercent(statistics.residue.max) }}</td>
+              </tr>
+              <tr>
+                <td>Std Dev</td>
+                <td>{{ formatPercent(statistics.residue.stdDev) }}</td>
+              </tr>
+              <tr class="info-row">
+                <td>Most Conserved Pair(s)</td>
+                <td>{{ statistics.residue.mostConserved }} ({{ formatPercent(statistics.residue.mostConservedValue) }})</td>
+              </tr>
+              <tr class="info-row">
+                <td>Least Conserved Pair(s)</td>
+                <td>{{ statistics.residue.leastConserved }} ({{ formatPercent(statistics.residue.leastConservedValue) }})</td>
+              </tr>
+              <tr class="info-row">
+                <td>Longest Conserved Stretch</td>
+                <td>{{ statistics.residue.longestStretchPair }}: {{ statistics.residue.longestStretchInfo }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="statistics-table-wrapper">
+          <h4 class="table-subtitle">Atomic Level (Type Conservation)</h4>
+          <table class="statistics-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight-row">
+                <td>CA{{ Math.round(conservationThreshold * 100) }}</td>
+                <td>{{ statistics.atomic.ca }} pair-type combinations</td>
+              </tr>
+              <tr>
+                <td>Count</td>
+                <td>{{ statistics.atomic.count }}</td>
+              </tr>
+              <tr>
+                <td>Mean</td>
+                <td>{{ formatPercent(statistics.atomic.mean) }}</td>
+              </tr>
+              <tr>
+                <td>Median (Q2)</td>
+                <td>{{ formatPercent(statistics.atomic.median) }}</td>
+              </tr>
+              <tr>
+                <td>Q1 (25th percentile)</td>
+                <td>{{ formatPercent(statistics.atomic.q1) }}</td>
+              </tr>
+              <tr>
+                <td>Q3 (75th percentile)</td>
+                <td>{{ formatPercent(statistics.atomic.q3) }}</td>
+              </tr>
+              <tr>
+                <td>Min</td>
+                <td>{{ formatPercent(statistics.atomic.min) }}</td>
+              </tr>
+              <tr>
+                <td>Max</td>
+                <td>{{ formatPercent(statistics.atomic.max) }}</td>
+              </tr>
+              <tr>
+                <td>Std Dev</td>
+                <td>{{ formatPercent(statistics.atomic.stdDev) }}</td>
+              </tr>
+              <tr class="info-row">
+                <td>Most Conserved Type(s)</td>
+                <td>{{ statistics.atomic.mostConserved }} ({{ formatPercent(statistics.atomic.mostConservedValue) }})</td>
+              </tr>
+              <tr class="info-row">
+                <td>Least Conserved Type(s)</td>
+                <td>{{ statistics.atomic.leastConserved }} ({{ formatPercent(statistics.atomic.leastConservedValue) }})</td>
+              </tr>
+              <tr class="info-row">
+                <td>Longest Conserved Stretch</td>
+                <td>{{ statistics.atomic.longestStretchType }}: {{ statistics.atomic.longestStretchInfo }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+      </div>
+    </div>
     
     <!-- Interaction Trajectory Modal -->
     <InteractionTrajectoryModal
@@ -79,6 +214,7 @@ const distanceData = ref(null)
 const conservationThreshold = ref(0.5) // Default 50%
 const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
+const statistics = ref(null)
 
 const conservationTicks = computed(() => {
   const ticks = []
@@ -122,6 +258,59 @@ const handleOpenAtomPairExplorer = (data) => {
   console.log('Open atom pair explorer for:', data)
 }
 
+// Helper function to calculate quartiles
+const calculateQuartile = (sortedArray, q) => {
+  if (sortedArray.length === 0) return 0
+  const pos = (sortedArray.length - 1) * q
+  const base = Math.floor(pos)
+  const rest = pos - base
+  if (sortedArray[base + 1] !== undefined) {
+    return sortedArray[base] + rest * (sortedArray[base + 1] - sortedArray[base])
+  } else {
+    return sortedArray[base]
+  }
+}
+
+// Helper function to calculate statistics
+const calculateStatistics = (values) => {
+  if (values.length === 0) {
+    return {
+      count: 0,
+      mean: 0,
+      median: 0,
+      q1: 0,
+      q3: 0,
+      min: 0,
+      max: 0,
+      stdDev: 0
+    }
+  }
+
+  const sorted = [...values].sort((a, b) => a - b)
+  const count = sorted.length
+  const sum = sorted.reduce((acc, val) => acc + val, 0)
+  const mean = sum / count
+  
+  const variance = sorted.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / count
+  const stdDev = Math.sqrt(variance)
+  
+  return {
+    count,
+    mean,
+    median: calculateQuartile(sorted, 0.5),
+    q1: calculateQuartile(sorted, 0.25),
+    q3: calculateQuartile(sorted, 0.75),
+    min: sorted[0],
+    max: sorted[sorted.length - 1],
+    stdDev
+  }
+}
+
+// Format percentage value
+const formatPercent = (value) => {
+  return `${(value * 100).toFixed(2)}%`
+}
+
 const updateChart = () => {
   if (!chartContainer.value) return
 
@@ -133,6 +322,7 @@ const updateChart = () => {
       chart.destroy()
       chart = null
     }
+    statistics.value = null
     chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interactions found. Try adjusting the threshold or interaction type filters.</div>'
     return
   }
@@ -145,6 +335,7 @@ const updateChart = () => {
       chart.destroy()
       chart = null
     }
+    statistics.value = null
     chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No stable pairs found (≥50% conservation).</div>'
     return
   }
@@ -232,6 +423,7 @@ const updateChart = () => {
       chart.destroy()
       chart = null
     }
+    statistics.value = null
     chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interaction types meet the ${Math.round(conservationThreshold.value * 100)}% conservation threshold in stable pairs.</div>`
     return
   }
@@ -323,6 +515,238 @@ const updateChart = () => {
 
   // Create labels for Y-axis: "Pair (Type)"
   const pairTypeLabels = pairTypeCombinations.map(pt => `${pt.pair} (${pt.type})`)
+  
+  // Calculate statistics for residue level (pair conservation) and atomic level (type conservation)
+  // Only include data that meets the current threshold and filter criteria
+  const residueScores = []
+  const atomicScores = []
+  const uniquePairs = new Set() // Track unique pairs for CR50
+  const typeConservationMap = new Map() // Track conservation scores by type
+  const typeFramesMap = new Map() // Track all frames by type for longest stretch calculation
+  const pairConservationMap = new Map() // Track conservation by pair
+  const pairFramesMap = new Map() // Track frames by pair
+  
+  sortedPairs.forEach((pairData) => {
+    pairData.interactions.forEach(interaction => {
+      // Residue level: pair consistency (only if ≥50%)
+      if (interaction.consistency !== undefined && interaction.consistency !== null && interaction.consistency >= 0.50) {
+        residueScores.push(interaction.consistency)
+        // Track unique pairs for CR50 count
+        const pairKey = `${interaction.id1}_${interaction.id2}`
+        uniquePairs.add(pairKey)
+        
+        // Track conservation by pair
+        const pairLabel = `${interaction.id1} ↔ ${interaction.id2}`
+        if (!pairConservationMap.has(pairLabel)) {
+          pairConservationMap.set(pairLabel, [])
+        }
+        pairConservationMap.get(pairLabel).push(interaction.consistency)
+        
+        // Track frames for this pair (combine all interaction types)
+        if (!pairFramesMap.has(pairLabel)) {
+          pairFramesMap.set(pairLabel, [])
+        }
+        // Collect all frames where ANY interaction type is present
+        const typeFrames = interaction.typeFrames || {}
+        Object.values(typeFrames).forEach(frames => {
+          if (Array.isArray(frames)) {
+            pairFramesMap.get(pairLabel).push(...frames)
+          }
+        })
+      }
+      
+      // Atomic level: type conservation (only if meets threshold and filter)
+      const typePersistence = interaction.typePersistence || {}
+      const typeFrames = interaction.typeFrames || {}
+      
+      interaction.typesArray.forEach((type) => {
+        const typeConservation = typePersistence[type]
+        
+        // Check if type conservation meets threshold
+        if (typeConservation === undefined || typeConservation === null || typeConservation < conservationThreshold.value) {
+          return
+        }
+        
+        // Check if type matches selected interaction types filter
+        if (dataStore.selectedInteractionTypes.size > 0) {
+          if (!matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)) {
+            return // Skip this type if it doesn't match filter
+          }
+        }
+        
+        atomicScores.push(typeConservation)
+        
+        // Track conservation scores by type
+        if (!typeConservationMap.has(type)) {
+          typeConservationMap.set(type, [])
+        }
+        typeConservationMap.get(type).push(typeConservation)
+        
+        // Track frames for this type for longest stretch calculation
+        const framesForType = typeFrames[type] || []
+        if (framesForType.length > 0) {
+          if (!typeFramesMap.has(type)) {
+            typeFramesMap.set(type, [])
+          }
+          typeFramesMap.get(type).push(...framesForType)
+        }
+      })
+    })
+  })
+  
+  // Calculate most and least conserved pairs at residue level
+  let mostConservedPairs = []
+  let leastConservedPairs = []
+  let maxPairConservation = -1
+  let minPairConservation = 2
+  
+  pairConservationMap.forEach((scores, pairLabel) => {
+    const avgConservation = scores.reduce((sum, val) => sum + val, 0) / scores.length
+    
+    if (avgConservation > maxPairConservation) {
+      maxPairConservation = avgConservation
+      mostConservedPairs = [pairLabel]
+    } else if (avgConservation === maxPairConservation) {
+      mostConservedPairs.push(pairLabel)
+    }
+    
+    if (avgConservation < minPairConservation) {
+      minPairConservation = avgConservation
+      leastConservedPairs = [pairLabel]
+    } else if (avgConservation === minPairConservation) {
+      leastConservedPairs.push(pairLabel)
+    }
+  })
+  
+  // Calculate longest conserved pair stretch (without breaking in frames)
+  let longestPairStretch = 0
+  let longestPairStretchLabel = ''
+  let longestPairStretchInfo = ''
+  
+  pairFramesMap.forEach((allFrames, pairLabel) => {
+    // Get unique sorted frames for this pair
+    const uniqueFrames = [...new Set(allFrames)].sort((a, b) => a - b)
+    
+    if (uniqueFrames.length === 0) return
+    
+    // Find longest consecutive stretch
+    let currentStretch = 1
+    let maxStretch = 1
+    let maxStretchStart = uniqueFrames[0]
+    let maxStretchEnd = uniqueFrames[0]
+    let currentStart = uniqueFrames[0]
+    
+    for (let i = 1; i < uniqueFrames.length; i++) {
+      if (uniqueFrames[i] === uniqueFrames[i - 1] + 1) {
+        // Consecutive frame
+        currentStretch++
+        if (currentStretch > maxStretch) {
+          maxStretch = currentStretch
+          maxStretchStart = currentStart
+          maxStretchEnd = uniqueFrames[i]
+        }
+      } else {
+        // Break in continuity
+        currentStretch = 1
+        currentStart = uniqueFrames[i]
+      }
+    }
+    
+    if (maxStretch > longestPairStretch) {
+      longestPairStretch = maxStretch
+      longestPairStretchLabel = pairLabel
+      longestPairStretchInfo = `${maxStretch} frames (${maxStretchStart}-${maxStretchEnd})`
+    }
+  })
+  
+  // Calculate most and least conserved interaction types
+  let mostConservedTypes = []
+  let leastConservedTypes = []
+  let maxConservation = -1
+  let minConservation = 2
+  
+  typeConservationMap.forEach((scores, type) => {
+    const avgConservation = scores.reduce((sum, val) => sum + val, 0) / scores.length
+    
+    if (avgConservation > maxConservation) {
+      maxConservation = avgConservation
+      mostConservedTypes = [type]
+    } else if (avgConservation === maxConservation) {
+      mostConservedTypes.push(type)
+    }
+    
+    if (avgConservation < minConservation) {
+      minConservation = avgConservation
+      leastConservedTypes = [type]
+    } else if (avgConservation === minConservation) {
+      leastConservedTypes.push(type)
+    }
+  })
+  
+  // Calculate longest conserved stretch (without breaking in frames)
+  let longestStretch = 0
+  let longestStretchType = ''
+  let longestStretchInfo = ''
+  
+  typeFramesMap.forEach((allFrames, type) => {
+    // Get unique sorted frames for this type
+    const uniqueFrames = [...new Set(allFrames)].sort((a, b) => a - b)
+    
+    if (uniqueFrames.length === 0) return
+    
+    // Find longest consecutive stretch
+    let currentStretch = 1
+    let maxStretch = 1
+    let maxStretchStart = uniqueFrames[0]
+    let maxStretchEnd = uniqueFrames[0]
+    let currentStart = uniqueFrames[0]
+    
+    for (let i = 1; i < uniqueFrames.length; i++) {
+      if (uniqueFrames[i] === uniqueFrames[i - 1] + 1) {
+        // Consecutive frame
+        currentStretch++
+        if (currentStretch > maxStretch) {
+          maxStretch = currentStretch
+          maxStretchStart = currentStart
+          maxStretchEnd = uniqueFrames[i]
+        }
+      } else {
+        // Break in continuity
+        currentStretch = 1
+        currentStart = uniqueFrames[i]
+      }
+    }
+    
+    if (maxStretch > longestStretch) {
+      longestStretch = maxStretch
+      longestStretchType = type
+      longestStretchInfo = `${maxStretch} frames (${maxStretchStart}-${maxStretchEnd})`
+    }
+  })
+  
+  // Calculate statistics
+  const residueStats = calculateStatistics(residueScores)
+  residueStats.cr50 = uniquePairs.size // CR50: count of unique pairs with ≥50% conservation
+  residueStats.mostConserved = mostConservedPairs.length > 0 ? (mostConservedPairs.length > 2 ? `${mostConservedPairs.slice(0, 2).join(', ')} (+${mostConservedPairs.length - 2} more)` : mostConservedPairs.join(', ')) : 'N/A'
+  residueStats.mostConservedValue = maxPairConservation >= 0 ? maxPairConservation : 0
+  residueStats.leastConserved = leastConservedPairs.length > 0 ? (leastConservedPairs.length > 2 ? `${leastConservedPairs.slice(0, 2).join(', ')} (+${leastConservedPairs.length - 2} more)` : leastConservedPairs.join(', ')) : 'N/A'
+  residueStats.leastConservedValue = minPairConservation < 2 ? minPairConservation : 0
+  residueStats.longestStretchPair = longestPairStretchLabel || 'N/A'
+  residueStats.longestStretchInfo = longestPairStretchInfo || 'N/A'
+  
+  const atomicStats = calculateStatistics(atomicScores)
+  atomicStats.ca = pairTypeCombinations.length // CA: count of pair-type combinations meeting threshold
+  atomicStats.mostConserved = mostConservedTypes.length > 0 ? mostConservedTypes.join(', ') : 'N/A'
+  atomicStats.mostConservedValue = maxConservation >= 0 ? maxConservation : 0
+  atomicStats.leastConserved = leastConservedTypes.length > 0 ? leastConservedTypes.join(', ') : 'N/A'
+  atomicStats.leastConservedValue = minConservation < 2 ? minConservation : 0
+  atomicStats.longestStretchType = longestStretchType || 'N/A'
+  atomicStats.longestStretchInfo = longestStretchInfo || 'N/A'
+  
+  statistics.value = {
+    residue: residueStats,
+    atomic: atomicStats
+  }
 
   // Combine all data into a single heatmap series
   // Each point needs [x, y, value] and color information
@@ -838,5 +1262,134 @@ input[type="range"]::-moz-range-thumb:hover {
 .chart-container {
   width: 100%;
   height: 100%;
+}
+
+.statistics-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e8e8ed;
+}
+
+.statistics-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.022em;
+}
+
+.statistics-description {
+  font-size: 14px;
+  color: #6e6e73;
+  margin: 0 0 20px 0;
+  font-weight: 500;
+}
+
+.statistics-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.statistics-table-wrapper {
+  background: #f5f5f7;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.table-subtitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.022em;
+}
+
+.statistics-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.statistics-table thead {
+  background: #1d1d1f;
+}
+
+.statistics-table thead th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statistics-table tbody tr {
+  border-bottom: 1px solid #e8e8ed;
+  transition: background-color 0.15s ease;
+}
+
+.statistics-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.statistics-table tbody tr:hover {
+  background-color: #f9f9fb;
+}
+
+.statistics-table tbody tr.highlight-row {
+  background-color: #e3f2ff;
+  font-weight: 700;
+}
+
+.statistics-table tbody tr.highlight-row:hover {
+  background-color: #d1e8ff;
+}
+
+.statistics-table tbody tr.highlight-row td {
+  color: #0066cc;
+  font-weight: 700;
+}
+
+.statistics-table tbody tr.info-row {
+  background-color: #f9f9fb;
+  border-top: 2px solid #d2d2d7;
+}
+
+.statistics-table tbody tr.info-row:hover {
+  background-color: #f0f0f5;
+}
+
+.statistics-table tbody tr.info-row td:first-child {
+  font-weight: 600;
+  color: #1d1d1f;
+  font-style: italic;
+}
+
+.statistics-table tbody tr.info-row td:last-child {
+  color: #3B6EF5;
+  font-weight: 500;
+}
+
+.statistics-table tbody td {
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.statistics-table tbody td:first-child {
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.statistics-table tbody td:last-child {
+  color: #6e6e73;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 </style>
