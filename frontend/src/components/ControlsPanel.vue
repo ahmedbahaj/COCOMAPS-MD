@@ -151,7 +151,7 @@ const showLogScale = computed(() => {
 })
 
 const showInteractionFilter = computed(() => {
-  return ['arc', 'chord', 'heatmap', 'filteredHeatmap'].includes(dataStore.currentChartType)
+  return ['arc', 'chord', 'heatmap', 'filteredHeatmap', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
 })
 
 const thresholdPercent = computed(() => {

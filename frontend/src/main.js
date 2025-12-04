@@ -8,6 +8,7 @@ import SankeyModule from 'highcharts/modules/sankey'
 import DependencyWheelModule from 'highcharts/modules/dependency-wheel'
 import ArcDiagramModule from 'highcharts/modules/arc-diagram'
 import HeatmapModule from 'highcharts/modules/heatmap'
+import XRangeModule from 'highcharts/modules/xrange'
 import ExportingModule from 'highcharts/modules/exporting'
 
 // Initialize Highcharts modules
@@ -15,6 +16,7 @@ SankeyModule(Highcharts)
 DependencyWheelModule(Highcharts)
 ArcDiagramModule(Highcharts)
 HeatmapModule(Highcharts)
+XRangeModule(Highcharts)
 ExportingModule(Highcharts)
 
 const app = createApp(App)

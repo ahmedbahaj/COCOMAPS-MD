@@ -42,7 +42,7 @@
         </div>
       </div>
       <div class="info-notice">
-        <strong>Note:</strong> Only showing stable pairs (≥50% overall conservation). Click any dot for trajectory analysis!
+        <strong>Interaction Timeline View:</strong> Each row shows one residue pair + interaction type. Colored segments indicate frames where the interaction is present. Gaps show breaks in continuity. Hover for details, click for full analysis.
       </div>
     </div>
     <div ref="chartContainer" class="chart-container"></div>
@@ -60,10 +60,17 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import Highcharts from 'highcharts'
+import HeatmapModule from 'highcharts/modules/heatmap'
 import { useDataStore } from '../../stores/dataStore'
-import { getInteractionBaseColor } from '../../utils/chartHelpers'
+import { getInteractionBaseColor, matchesSelectedTypes } from '../../utils/chartHelpers'
+import { INTERACTION_TYPES } from '../../utils/constants'
 import api from '../../services/api'
 import InteractionTrajectoryModal from '../InteractionTrajectoryModal.vue'
+
+// Initialize heatmap module
+if (typeof Highcharts === 'object') {
+  HeatmapModule(Highcharts)
+}
 
 const dataStore = useDataStore()
 const chartContainer = ref(null)
@@ -118,14 +125,15 @@ const handleOpenAtomPairExplorer = (data) => {
 const updateChart = () => {
   if (!chartContainer.value) return
 
-  const allInteractions = dataStore.interactions
+  // Use filteredInteractions which already applies the interaction type filter
+  const allInteractions = dataStore.filteredInteractions
 
   if (allInteractions.length === 0) {
     if (chart) {
       chart.destroy()
       chart = null
     }
-    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interactions found.</div>'
+    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interactions found. Try adjusting the threshold or interaction type filters.</div>'
     return
   }
 
@@ -174,41 +182,62 @@ const updateChart = () => {
   // LEVEL 2: Only show interaction types with conservation ≥ threshold
   const seriesMap = new Map() // type -> data points
 
-  // Track which pairs have at least one type meeting threshold
-  const visiblePairIndices = new Set()
+  // Build list of pair-type combinations (each gets its own row)
+  const pairTypeCombinations = []
+  const pairTypeToRowIndex = new Map() // "pairKey_type" -> row index
   
-  // First pass: collect all types per pair to determine vertical stacking
-  const pairTypeCount = new Map() // pairIndex -> Set of types
-  
-  sortedPairs.forEach((pairData, pairIndex) => {
+  // First pass: collect all pair-type combinations that meet threshold
+  sortedPairs.forEach((pairData) => {
+    const typesForThisPair = new Set()
+    
     pairData.interactions.forEach(interaction => {
       const typePersistence = interaction.typePersistence || {}
       
       interaction.typesArray.forEach((type) => {
         const typeConservation = typePersistence[type] || 0
         
-        if (typeConservation >= conservationThreshold.value) {
-          if (!pairTypeCount.has(pairIndex)) {
-            pairTypeCount.set(pairIndex, new Set())
-          }
-          pairTypeCount.get(pairIndex).add(type)
+        // Check if type meets conservation threshold
+        if (typeConservation < conservationThreshold.value) {
+          return
         }
+        
+        // Check if type matches selected interaction types filter
+        if (dataStore.selectedInteractionTypes.size > 0) {
+          if (!matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)) {
+            return // Skip this type if it doesn't match filter
+          }
+        }
+        
+        typesForThisPair.add(type)
       })
+    })
+    
+    // Sort types for consistent ordering
+    const sortedTypes = Array.from(typesForThisPair).sort()
+    
+    // Create a row for each type
+    sortedTypes.forEach(type => {
+      const rowIndex = pairTypeCombinations.length
+      pairTypeCombinations.push({
+        pair: pairData.pair,
+        type: type,
+        pairData: pairData
+      })
+      pairTypeToRowIndex.set(`${pairData.pair}_${type}`, rowIndex)
     })
   })
   
-  // Create type index map for each pair
-  const pairTypeIndexMap = new Map() // pairIndex -> Map(type -> index)
-  pairTypeCount.forEach((types, pairIndex) => {
-    const typeArray = Array.from(types).sort()
-    const indexMap = new Map()
-    typeArray.forEach((type, idx) => {
-      indexMap.set(type, idx)
-    })
-    pairTypeIndexMap.set(pairIndex, { count: typeArray.length, indexMap })
-  })
+  if (pairTypeCombinations.length === 0) {
+    if (chart) {
+      chart.destroy()
+      chart = null
+    }
+    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interaction types meet the ${Math.round(conservationThreshold.value * 100)}% conservation threshold in stable pairs.</div>`
+    return
+  }
 
-  sortedPairs.forEach((pairData, pairIndex) => {
+  // Second pass: create cell data for each pair-type-frame combination
+  sortedPairs.forEach((pairData) => {
     pairData.interactions.forEach(interaction => {
       const typeFrames = interaction.typeFrames || {}
       const typePersistence = interaction.typePersistence || {}
@@ -221,9 +250,13 @@ const updateChart = () => {
         if (typeConservation < conservationThreshold.value) {
           return // Skip this interaction type
         }
-
-        // Mark this pair as visible
-        visiblePairIndices.add(pairIndex)
+        
+        // LEVEL 3 FILTER: Only show if type matches selected interaction types
+        if (dataStore.selectedInteractionTypes.size > 0) {
+          if (!matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)) {
+            return // Skip this type if it doesn't match filter
+          }
+        }
 
         if (!seriesMap.has(type)) {
           seriesMap.set(type, [])
@@ -243,104 +276,109 @@ const updateChart = () => {
           framesForType = typeFrames[type]
         }
         
-        // Calculate y position with smart vertical distribution
-        const pairKey = `${interaction.id1}_${interaction.id2}`
-        const typeInfo = pairTypeIndexMap.get(pairIndex)
-        let yOffset = 0
-        
-        if (typeInfo && typeInfo.count > 1) {
-          // Multiple types in this pair: distribute evenly within safe zone
-          const typeIndex = typeInfo.indexMap.get(type)
-          const maxOffset = 0.3 // Stay within ±0.3 of center (well within ±0.5 boundaries)
-          const step = (2 * maxOffset) / Math.max(1, typeInfo.count - 1)
-          yOffset = -maxOffset + (typeIndex * step)
+        // Get the row index for this pair-type combination
+        const rowIndex = pairTypeToRowIndex.get(`${pairData.pair}_${type}`)
+        if (rowIndex === undefined) {
+          return
         }
-        // If only one type, yOffset stays at 0 (centered)
         
-        // Create data points for frames
-        framesForType.forEach(frameNum => {
-          if (frameNum < 1 || frameNum > totalFrames) {
-            return
-          }
+        const pairKey = `${interaction.id1}_${interaction.id2}`
+        const framesSet = new Set(framesForType)
+        
+        // Create a cell for EACH frame (colored if present, will be filtered by heatmap)
+        for (let frameNum = 1; frameNum <= totalFrames; frameNum++) {
+          const isPresent = framesSet.has(frameNum)
           
-          // Get distance for this pair-frame-type combination
-          const distances = distanceData.value?.distances?.[pairKey]
-          const distance = distances?.[frameNum]?.[type] || null
-          
-          // Calculate final y position: center of row + vertical offset
-          // Clamp to safe zone to ensure dots stay well within their rectangle
-          const yPosition = Math.max(pairIndex - 0.35, Math.min(pairIndex + 0.35, pairIndex + yOffset))
-          
-          seriesMap.get(type).push({
-            x: frameNum - 1,
-            y: yPosition,
-            frame: frameNum,
-            pair: pairData.pair,
-            type: type,
-            pairConsistency: interaction.consistency,
-            typeConservation: typeConservation,
-            distance: distance,
-            custom: {
+          if (isPresent) {
+            // Get distance for this frame
+            const distances = distanceData.value?.distances?.[pairKey]
+            const distance = distances?.[frameNum]?.[type] || null
+            
+            seriesMap.get(type).push({
+              x: frameNum - 1,  // Frame (0-indexed for chart)
+              y: rowIndex,
+              value: 1,  // Present
               pair: pairData.pair,
-              frame: frameNum,
               type: type,
+              frame: frameNum,
               pairConsistency: interaction.consistency,
               typeConservation: typeConservation,
-              typesArray: interaction.typesArray,
               distance: distance,
-              frames: framesForType
-            }
-          })
-        })
+              custom: {
+                pair: pairData.pair,
+                type: type,
+                frame: frameNum,
+                pairConsistency: interaction.consistency,
+                typeConservation: typeConservation,
+                typesArray: interaction.typesArray,
+                distance: distance,
+                allFrames: framesForType
+              }
+            })
+          }
+        }
       })
     })
   })
 
-  // Filter sortedPairs to only include visible ones
-  const visiblePairs = sortedPairs.filter((_, idx) => visiblePairIndices.has(idx))
+  // Create labels for Y-axis: "Pair (Type)"
+  const pairTypeLabels = pairTypeCombinations.map(pt => `${pt.pair} (${pt.type})`)
+
+  // Combine all data into a single heatmap series
+  // Each point needs [x, y, value] and color information
+  const allData = []
+  const interactionTypes = new Set()
   
-  if (visiblePairs.length === 0) {
-    if (chart) {
-      chart.destroy()
-      chart = null
-    }
-    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interaction types meet the ${Math.round(conservationThreshold.value * 100)}% conservation threshold in stable pairs.</div>`
-    return
-  }
-
-  // Remap pair indices for visible pairs only
-  const oldToNewIndexMap = new Map()
-  visiblePairIndices.forEach((oldIdx, newIdx) => {
-    oldToNewIndexMap.set(oldIdx, newIdx)
-  })
-
-  // Update y positions in series data
-  seriesMap.forEach((dataPoints) => {
+  seriesMap.forEach((dataPoints, type) => {
+    interactionTypes.add(type)
     dataPoints.forEach(point => {
-      const oldPairIndex = sortedPairs.findIndex(p => p.pair === point.pair)
-      if (oldToNewIndexMap.has(oldPairIndex)) {
-        const newPairIndex = Array.from(visiblePairIndices).indexOf(oldPairIndex)
-        const jitterOffset = point.y - oldPairIndex
-        point.y = newPairIndex + jitterOffset
-      }
+      allData.push({
+        x: point.x,
+        y: point.y,
+        value: 1,
+        color: getInteractionBaseColor(type),
+        custom: point.custom,
+        pair: point.pair,
+        type: point.type,
+        frame: point.frame,
+        pairConsistency: point.pairConsistency,
+        typeConservation: point.typeConservation,
+        distance: point.distance
+      })
     })
   })
-
-  const pairLabels = visiblePairs.map(p => p.pair)
-
-  // Convert to series array
-  const series = Array.from(seriesMap.entries()).map(([type, data]) => ({
-    name: type,
-    type: 'scatter',
-    data: data,
-    color: getInteractionBaseColor(type),
-    marker: {
-      radius: 4,
-      lineWidth: 1,
-      lineColor: '#ffffff',
-      symbol: 'circle'
-    }
-  }))
+  
+  // Main heatmap series with all data
+  const series = [{
+    type: 'heatmap',
+    name: 'Interactions',
+    data: allData,
+    borderWidth: 1,
+    borderColor: '#e8e8ed',
+    nullColor: 'transparent',
+    colsize: 1,
+    rowsize: 1,
+    dataLabels: {
+      enabled: false
+    },
+    showInLegend: false
+  }]
+  
+  // Add invisible scatter series for legend items (one per interaction type)
+  Array.from(interactionTypes).sort().forEach(type => {
+    series.push({
+      type: 'scatter',
+      name: type,
+      color: getInteractionBaseColor(type),
+      data: [],  // Empty data - just for legend
+      marker: {
+        symbol: 'square',
+        radius: 7
+      },
+      showInLegend: true,
+      enableMouseTracking: false
+    })
+  })
 
   if (chart) {
     chart.destroy()
@@ -348,13 +386,15 @@ const updateChart = () => {
 
   chart = Highcharts.chart(chartContainer.value, {
     chart: {
-      type: 'scatter',
+      type: 'heatmap',
       backgroundColor: 'transparent',
-      height: Math.max(600, visiblePairs.length * 25 + 200),
-      zoomType: 'xy'
+      height: Math.max(600, pairTypeCombinations.length * 25 + 200),
+      zoomType: 'xy',
+      marginLeft: 250,
+      marginRight: 200
     },
     title: {
-      text: `Interaction Conservation Matrix (${visiblePairs.length} stable pairs)`,
+      text: `Interaction Conservation Timeline (${pairTypeCombinations.length} pair-type combinations)`,
       style: {
         fontSize: '24px',
         fontWeight: '600',
@@ -362,15 +402,17 @@ const updateChart = () => {
       }
     },
     subtitle: {
-      text: `Showing stable pairs (≥50% overall) with interaction types ≥${Math.round(conservationThreshold.value * 100)}% conservation`,
+      text: `Stable pairs (≥50%) • Type conservation ≥${Math.round(conservationThreshold.value * 100)}% • Click any segment for detailed analysis`,
       style: {
-        fontSize: '17px',
+        fontSize: '15px',
         color: '#6e6e73'
       }
     },
     credits: {
       enabled: false
     },
+    colors: null,  // Don't use default Highcharts color palette
+    colorAxis: null,  // Disable any color axis
     xAxis: {
       title: {
         text: 'Frame Number',
@@ -380,25 +422,29 @@ const updateChart = () => {
           color: '#1d1d1f'
         }
       },
-      min: 0,
-      max: totalFrames - 1,
+      min: -0.5,
+      max: totalFrames - 0.5,
       tickInterval: Math.max(1, Math.floor(totalFrames / 20)),
       labels: {
         style: {
           fontSize: '12px',
           fontWeight: '500',
-          color: '#1d1d1f'
+          color: '#6e6e73'
         },
         formatter: function() {
-          return this.value + 1
+          return Math.round(this.value) + 1
         }
       },
       gridLineWidth: 1,
-      gridLineColor: '#e8e8ed'
+      gridLineColor: '#e8e8ed',
+      lineWidth: 1,
+      lineColor: '#d2d2d7',
+      tickWidth: 1,
+      tickColor: '#d2d2d7'
     },
     yAxis: {
       title: {
-        text: 'Residue Pairs',
+        text: '',
         style: {
           fontSize: '15px',
           fontWeight: '600',
@@ -406,33 +452,37 @@ const updateChart = () => {
         }
       },
       min: -0.5,
-      max: visiblePairs.length - 0.5,
-      tickPositions: Array.from({ length: visiblePairs.length }, (_, i) => i),
+      max: pairTypeCombinations.length - 0.5,
+      tickPositions: Array.from({ length: pairTypeCombinations.length }, (_, i) => i),
       labels: {
         align: 'right',
-        x: -5,
+        x: -10,
         useHTML: true,
         style: {
-          fontSize: '11px',
-          fontWeight: '500',
+          fontSize: '12px',
+          fontWeight: '600',
           color: '#1d1d1f',
-          textAlign: 'right'
+          textAlign: 'right',
+          width: '220px',
+          whiteSpace: 'nowrap',
+          overflow: 'visible'
         },
         formatter: function() {
           const rawIndex = Math.round(this.value)
-          const index = Math.max(0, Math.min(visiblePairs.length - 1, rawIndex))
-          const label = pairLabels[index]
-          return label ? `<div style="display: flex; align-items: center; justify-content: flex-end; height: 100%; line-height: 1;">${label}</div>` : ''
+          const index = Math.max(0, Math.min(pairTypeCombinations.length - 1, rawIndex))
+          const label = pairTypeLabels[index]
+          return label ? `<div style="padding: 4px 0; width: 220px; text-overflow: ellipsis; overflow: hidden;" title="${label}">${label}</div>` : ''
         }
       },
       gridLineWidth: 0,
-      tickWidth: 0,
+      lineWidth: 1,
+      lineColor: '#d2d2d7',
+      tickWidth: 1,
+      tickColor: '#d2d2d7',
       reversed: false,
-      softMin: -0.5,
-      softMax: visiblePairs.length - 0.5,
       startOnTick: false,
       endOnTick: false,
-      plotLines: Array.from({ length: visiblePairs.length + 1 }, (_, i) => ({
+      plotLines: Array.from({ length: pairTypeCombinations.length + 1 }, (_, i) => ({
         value: i - 0.5,
         color: '#e8e8ed',
         width: 1,
@@ -456,8 +506,10 @@ const updateChart = () => {
       }
     },
     plotOptions: {
-      scatter: {
+      heatmap: {
         cursor: 'pointer',
+        borderWidth: 1,
+        borderColor: '#e8e8ed',
         point: {
           events: {
             click: function() {
@@ -469,34 +521,60 @@ const updateChart = () => {
                 pairConsistency: point.custom?.pairConsistency || point.pairConsistency,
                 typeConservation: point.custom?.typeConservation || point.typeConservation,
                 distance: point.custom?.distance || point.distance,
-                frames: point.custom?.frames || []
+                frames: point.custom?.allFrames || []
               }
               showTrajectoryModal.value = true
-            }
-          }
-        },
-        marker: {
-          radius: 4,
-          states: {
-            hover: {
-              enabled: true,
-              lineColor: '#1d1d1f',
-              lineWidth: 2,
-              radius: 6
+            },
+            mouseOver: function() {
+              const hoveredType = this.type
+              // Dim all cells that are NOT of this type
+              this.series.data.forEach(point => {
+                if (point.type !== hoveredType) {
+                  point.graphic?.attr({ opacity: 0.2 })
+                }
+              })
+            },
+            mouseOut: function() {
+              // Restore all cells to full opacity
+              this.series.data.forEach(point => {
+                point.graphic?.attr({ opacity: 1 })
+              })
             }
           }
         },
         states: {
           hover: {
-            marker: {
-              enabled: true
-            }
+            brightness: -0.1,
+            borderColor: '#1d1d1f',
+            borderWidth: 2
           }
-        },
-        jitter: {
-          x: 0,
-          y: 0
         }
+      }
+    },
+    colorAxis: false,
+    legend: {
+      enabled: true,
+      align: 'right',
+      verticalAlign: 'top',
+      layout: 'vertical',
+      x: -10,
+      y: 80,
+      symbolWidth: 20,
+      symbolHeight: 14,
+      itemStyle: {
+        fontSize: '12px',
+        fontWeight: '500',
+        color: '#1d1d1f'
+      },
+      itemMarginTop: 3,
+      itemMarginBottom: 3,
+      padding: 10,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      borderWidth: 1,
+      borderColor: '#e8e8ed',
+      borderRadius: 8,
+      labelFormatter: function() {
+        return this.name
       }
     },
     series: series,
@@ -509,7 +587,10 @@ const updateChart = () => {
       formatter: function() {
         const point = this.point
         const custom = point.custom || {}
+        
+        const frame = custom.frame || point.frame
         const distance = custom.distance || point.distance
+        
         const distanceHtml = distance !== null && distance !== undefined
           ? `<div style="margin-bottom: 4px;">
               <span style="color: #1d1d1f; font-weight: 600;">Distance: </span>
@@ -524,7 +605,7 @@ const updateChart = () => {
             </div>
             <div style="margin-bottom: 4px;">
               <span style="color: #1d1d1f; font-weight: 600;">Frame: </span>
-              <span style="color: #6e6e73;">${custom.frame || point.frame || 'N/A'}</span>
+              <span style="color: #6e6e73;">${frame}</span>
             </div>
             <div style="margin-bottom: 4px;">
               <span style="color: #1d1d1f; font-weight: 600;">Interaction Type: </span>
@@ -539,6 +620,9 @@ const updateChart = () => {
               <span style="color: #6e6e73;">${Math.round((custom.pairConsistency || point.pairConsistency || 0) * 100)}%</span>
             </div>
             ${distanceHtml}
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e8ed; font-size: 12px; color: #86868b;">
+              Click to view trajectory analysis
+            </div>
           </div>
         `
       }
@@ -567,7 +651,8 @@ watch([
   () => dataStore.currentChartType,
   () => dataStore.interactions.length,
   () => dataStore.totalFrames,
-  () => dataStore.currentSystem?.id
+  () => dataStore.currentSystem?.id,
+  () => dataStore.selectedInteractionTypes.size
 ], async () => {
   if (dataStore.currentChartType === 'interactionConservationMatrix') {
     if (dataStore.currentSystem?.id && !distanceData.value) {

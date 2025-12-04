@@ -3,7 +3,7 @@
  */
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -74,10 +74,14 @@ export default {
     return response.data
   },
 
-  async getDistanceDistributions(systemId, interactionTypes = []) {
-    const params = interactionTypes.length > 0 
-      ? { interaction_types: interactionTypes.join(',') }
-      : {}
+  async getDistanceDistributions(systemId, interactionTypes, minConsistency) {
+    const params = {}
+    if (interactionTypes && interactionTypes.length > 0) {
+      params.interaction_types = interactionTypes.join(',')
+    }
+    if (minConsistency !== undefined && minConsistency !== null) {
+      params.min_consistency = minConsistency
+    }
     const response = await api.get(`/systems/${systemId}/distance-distributions`, { params })
     return response.data
   },
