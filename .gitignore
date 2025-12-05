@@ -1,3 +1,9 @@
 mda/
 theAtomProblem.md
 
+# macOS system files
+.DS_Store
+
+# Large PDB files (use Git LFS if needed)
+*.pdb
+
