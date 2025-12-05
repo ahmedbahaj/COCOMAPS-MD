@@ -142,25 +142,26 @@ def run_cocomaps_analysis(pdb_name, frame_count):
             processing_status[pdb_name]['status'] = 'failed'
             processing_status[pdb_name]['error'] = str(e)
 
-def process_pdb_async(pdb_file, pdb_name):
+def process_pdb_async(app, pdb_file, pdb_name):
     """Process PDB file asynchronously"""
-    try:
-        processing_status[pdb_name]['status'] = 'splitting'
-        processing_status[pdb_name]['progress'] = 0
-        
-        # Split PDB into frames
-        frame_count = split_pdb(pdb_file, pdb_name)
-        
-        processing_status[pdb_name]['status'] = 'analyzing'
-        processing_status[pdb_name]['frames'] = frame_count
-        
-        # Run CoCoMaps analysis
-        run_cocomaps_analysis(pdb_name, frame_count)
-        
-    except Exception as e:
-        if pdb_name in processing_status:
-            processing_status[pdb_name]['status'] = 'failed'
-            processing_status[pdb_name]['error'] = str(e)
+    with app.app_context():
+        try:
+            processing_status[pdb_name]['status'] = 'splitting'
+            processing_status[pdb_name]['progress'] = 0
+            
+            # Split PDB into frames
+            frame_count = split_pdb(pdb_file, pdb_name)
+            
+            processing_status[pdb_name]['status'] = 'analyzing'
+            processing_status[pdb_name]['frames'] = frame_count
+            
+            # Run CoCoMaps analysis
+            run_cocomaps_analysis(pdb_name, frame_count)
+            
+        except Exception as e:
+            if pdb_name in processing_status:
+                processing_status[pdb_name]['status'] = 'failed'
+                processing_status[pdb_name]['error'] = str(e)
 
 @bp.route('/upload', methods=['POST'])
 def upload_file():
@@ -193,7 +194,8 @@ def upload_file():
         }
         
         # Start processing in background thread
-        thread = threading.Thread(target=process_pdb_async, args=(filepath, pdb_name))
+        app_instance = current_app._get_current_object()
+        thread = threading.Thread(target=process_pdb_async, args=(app_instance, filepath, pdb_name))
         thread.daemon = True
         thread.start()
         

@@ -34,6 +34,7 @@ const charts = [
   { id: 'timePairMatrix', label: 'Time-Pair Matrix' },
   { id: 'interactionTimeline', label: 'Interaction Time-line' },
   { id: 'interactionConservationMatrix', label: 'Interaction Conservation Matrix' },
+  { id: 'conservationScatter', label: '2D Conservation Plot' },
   { id: 'violinPlot', label: 'Distance Distribution' }
 ]
 

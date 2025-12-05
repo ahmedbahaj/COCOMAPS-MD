@@ -12,7 +12,7 @@ def create_app():
     
     # Configuration
     app.config['UPLOAD_FOLDER'] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB max
+    app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2 GB max
     app.config['DATA_FOLDER'] = app.config['UPLOAD_FOLDER']  # Root folder containing system folders
     
     # Register blueprints

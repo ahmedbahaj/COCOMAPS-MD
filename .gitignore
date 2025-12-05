@@ -4,6 +4,6 @@ theAtomProblem.md
 # macOS system files
 .DS_Store
 
-# Large PDB files (use Git LFS if needed)
-*.pdb
+# Systems folder contains large PDB files and analysis data
+systems/
 
