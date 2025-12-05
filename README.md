@@ -9,6 +9,21 @@ A modern web application for analyzing protein-protein interactions from PDB fil
 - Node.js 16+
 - npm or yarn
 
+### Download Systems Data
+
+The `systems/` folder contains large PDB analysis data files that are too large to include in the repository. You need to download and extract this data before running the application:
+
+1. **Download systems.zip** from [Google Drive](https://drive.google.com/file/d/1iUyi2du7Fc5A9tcOVZidFzFf9EJpMV11/view?usp=sharing)
+
+2. **Extract the archive** to the repository root:
+   ```bash
+   unzip systems.zip -d .
+   ```
+
+   This will create the `systems/` folder in the root directory with all the analysis data.
+
+> **Note:** The systems folder is excluded from version control via `.gitignore` due to its large size. Make sure to extract it to the repository root directory.
+
 ### Backend Setup
 
 1. **Install Python dependencies:**
