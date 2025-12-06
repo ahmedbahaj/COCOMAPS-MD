@@ -211,6 +211,7 @@ const dataStore = useDataStore()
 const chartContainer = ref(null)
 let chart = null
 const distanceData = ref(null)
+const atomPairDataByPair = ref(new Map()) // Map<pairKey, atomPairData>
 const conservationThreshold = ref(0.5) // Default 50%
 const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
@@ -311,8 +312,11 @@ const formatPercent = (value) => {
   return `${(value * 100).toFixed(2)}%`
 }
 
-const updateChart = () => {
+const updateChart = async () => {
   if (!chartContainer.value) return
+
+  // Load atom pair data for all pairs first (if not already loaded)
+  await loadAtomPairDataForAllPairs()
 
   // Use filteredInteractions which already applies the interaction type filter
   const allInteractions = dataStore.filteredInteractions
@@ -806,6 +810,52 @@ const updateChart = () => {
       enableMouseTracking: false
     })
   })
+  
+  // Collect data points where atoms change
+  const atomChangeData = []
+  allData.forEach(point => {
+    const pairString = point.custom?.pair || point.pair || ''
+    // Convert "A-LYS8 ↔ B-ASP45" to "A-LYS8_B-ASP45" for pairKey (storage format)
+    const pairKey = pairString.includes(' ↔ ') 
+      ? pairString.replace(' ↔ ', '_')
+      : pairString
+    
+    // Skip if frame is 1 (no previous frame to compare)
+    const frame = point.custom?.frame || point.frame
+    if (frame <= 1) return
+    
+    const type = point.custom?.type || point.type
+    
+    if (hasAtomChange(pairKey, frame, type)) {
+      atomChangeData.push({
+        x: point.x,
+        y: point.y,
+        pair: pairString,
+        type: type,
+        frame: frame
+      })
+    }
+  })
+  
+  // Add scatter series for atom change indicators
+  if (atomChangeData.length > 0) {
+    series.push({
+      type: 'scatter',
+      name: 'Atom Changes',
+      color: '#FF9500', // Distinct orange color
+      data: atomChangeData,
+      marker: {
+        symbol: 'circle',
+        radius: 2,
+        fillColor: '#FF9500',
+        lineColor: '#FFFFFF',
+        lineWidth: 0.5
+      },
+      showInLegend: true,
+      enableMouseTracking: true,
+      zIndex: 10 // Above heatmap
+    })
+  }
 
   if (chart) {
     chart.destroy()
@@ -997,6 +1047,31 @@ const updateChart = () => {
       useHTML: true,
       formatter: function() {
         const point = this.point
+        const series = this.series
+        
+        // Handle atom change scatter series
+        if (series.name === 'Atom Changes') {
+          return `
+            <div style="padding: 10px;">
+              <div style="font-size: 15px; color: #1d1d1f; font-weight: 600; margin-bottom: 8px;">
+                ${point.pair || 'Unknown'}
+              </div>
+              <div style="margin-bottom: 4px;">
+                <span style="color: #1d1d1f; font-weight: 600;">Frame: </span>
+                <span style="color: #6e6e73;">${point.frame}</span>
+              </div>
+              <div style="margin-bottom: 4px;">
+                <span style="color: #1d1d1f; font-weight: 600;">Interaction Type: </span>
+                <span style="color: #6e6e73;">${point.type || 'N/A'}</span>
+              </div>
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e8ed; font-size: 12px; color: #FF9500; font-weight: 600;">
+                ⚠️ Atom pairs changed in this frame
+              </div>
+            </div>
+          `
+        }
+        
+        // Handle heatmap series
         const custom = point.custom || {}
         
         const frame = custom.frame || point.frame
@@ -1053,9 +1128,157 @@ const loadDistanceData = async () => {
   }
 }
 
+// Parse residue ID (format: "A-LYS8")
+const parseResidueId = (id) => {
+  const match = id.match(/^([A-Z])-(.+?)(\d+)$/)
+  if (match) {
+    return { chain: match[1], name: match[2], num: match[3] }
+  }
+  return null
+}
+
+// Load atom pair data for a specific residue pair
+const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
+  if (!dataStore.currentSystem) return null
+  
+  // Check if already loaded
+  if (atomPairDataByPair.value.has(pairKey)) {
+    return atomPairDataByPair.value.get(pairKey)
+  }
+  
+  try {
+    const res1 = parseResidueId(id1)
+    const res2 = parseResidueId(id2)
+    
+    if (!res1 || !res2) {
+      return null
+    }
+    
+    const params = {
+      resName1: res1.name,
+      resNum1: res1.num,
+      chain1: res1.chain,
+      resName2: res2.name,
+      resNum2: res2.num,
+      chain2: res2.chain
+    }
+    
+    const response = await api.getAtomPairs(dataStore.currentSystem.id, params)
+    atomPairDataByPair.value.set(pairKey, response)
+    return response
+  } catch (error) {
+    console.error(`Error loading atom pair data for ${pairKey}:`, error)
+    return null
+  }
+}
+
+// Load atom pair data for all unique pairs in the current filtered interactions
+const loadAtomPairDataForAllPairs = async () => {
+  if (!dataStore.currentSystem) return
+  
+  const allInteractions = dataStore.filteredInteractions
+  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= 0.50)
+  
+  if (stablePairs.length === 0) return
+  
+  // Get unique pairs
+  const uniquePairs = new Map()
+  stablePairs.forEach(interaction => {
+    const pairKey = `${interaction.id1}_${interaction.id2}`
+    if (!uniquePairs.has(pairKey)) {
+      uniquePairs.set(pairKey, {
+        pairKey,
+        id1: interaction.id1,
+        id2: interaction.id2
+      })
+    }
+  })
+  
+  // Load atom pair data for all unique pairs in parallel
+  const loadPromises = Array.from(uniquePairs.values()).map(pair => 
+    loadAtomPairDataForPair(pair.pairKey, pair.id1, pair.id2)
+  )
+  
+  await Promise.all(loadPromises)
+}
+
+// Get atom pairs for a specific frame (returns array of atomPair strings)
+const getAtomPairsForFrame = (atomPairData, frame) => {
+  if (!atomPairData || !atomPairData.atomPairsByFrame) return []
+  const frameKey = String(frame)
+  const frameData = atomPairData.atomPairsByFrame[frameKey] || []
+  // Return unique atom pair strings
+  return [...new Set(frameData.map(entry => entry.atomPair))]
+}
+
+// Check if atoms changed between frames
+// Returns true if atom pairs for the given interaction type are different between current and previous frame
+const hasAtomChange = (pairKey, frame, type) => {
+  // pairKey format: "A-LYS8_B-ASP45" (from loadAtomPairDataForPair)
+  const atomPairData = atomPairDataByPair.value.get(pairKey)
+  if (!atomPairData) return false
+  
+  // Can't compare if frame is 1 (no previous frame)
+  if (frame <= 1) return false
+  
+  const currentFrame = frame
+  const previousFrame = frame - 1
+  
+  // Get frame data (keys are strings in the response)
+  const frameKey = String(currentFrame)
+  const prevFrameKey = String(previousFrame)
+  const currentFrameData = atomPairData.atomPairsByFrame[frameKey] || []
+  const prevFrameData = atomPairData.atomPairsByFrame[prevFrameKey] || []
+  
+  // Filter atom pairs by interaction type and get unique sorted sets
+  const currentTypePairs = currentFrameData
+    .filter(entry => entry.interactionType === type)
+    .map(entry => entry.atomPair)
+  const prevTypePairs = prevFrameData
+    .filter(entry => entry.interactionType === type)
+    .map(entry => entry.atomPair)
+  
+  // Remove duplicates and sort for comparison
+  const currentUnique = [...new Set(currentTypePairs)].sort()
+  const prevUnique = [...new Set(prevTypePairs)].sort()
+  
+  // If both frames have no atoms for this type, no change
+  if (currentUnique.length === 0 && prevUnique.length === 0) {
+    return false
+  }
+  
+  // If previous frame had no atoms but current frame has atoms, this is NOT a change
+  // (it's a new interaction appearing, not atoms changing)
+  if (prevUnique.length === 0 && currentUnique.length > 0) {
+    return false
+  }
+  
+  // If current frame has no atoms but previous frame had atoms, this IS a change
+  // (atoms disappeared)
+  if (currentUnique.length === 0 && prevUnique.length > 0) {
+    return true
+  }
+  
+  // Both frames have atoms - compare the sets
+  // If different lengths, definitely changed
+  if (currentUnique.length !== prevUnique.length) {
+    return true
+  }
+  
+  // Same length - check if the sets are identical
+  for (let i = 0; i < currentUnique.length; i++) {
+    if (currentUnique[i] !== prevUnique[i]) {
+      return true // Different atom pairs found
+    }
+  }
+  
+  // Sets are identical - no change
+  return false
+}
+
 onMounted(async () => {
   await loadDistanceData()
-  updateChart()
+  await updateChart()
 })
 
 watch([
@@ -1069,7 +1292,11 @@ watch([
     if (dataStore.currentSystem?.id && !distanceData.value) {
       await loadDistanceData()
     }
-    updateChart()
+    // Clear atom pair cache when system changes
+    if (dataStore.currentSystem?.id) {
+      atomPairDataByPair.value.clear()
+    }
+    await updateChart()
   }
 }, { deep: true })
 </script>
@@ -1151,7 +1378,7 @@ input[type="range"] {
   z-index: 2;
   width: 100%;
   height: 4px;
-  border-radius: 2px;
+  border-radius: 3px;
   background: #d2d2d7;
   outline: none;
   flex: 1;
