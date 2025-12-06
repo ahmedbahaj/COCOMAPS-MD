@@ -516,6 +516,9 @@ const updateChart = () => {
   // Create labels for Y-axis: just the pair
   const pairTypeLabels = pairTypeCombinations.map(pt => pt.pair)
   
+  // Count unique pairs for the chart title
+  const uniquePairCount = new Set(pairTypeCombinations.map(pt => pt.pair)).size
+  
   // Calculate statistics for residue level (pair conservation) and atomic level (type conservation)
   // Only include data that meets the current threshold and filter criteria
   const residueScores = []
@@ -818,7 +821,7 @@ const updateChart = () => {
       marginRight: 200
     },
     title: {
-      text: `Interaction Conservation Timeline (${pairTypeCombinations.length} pair-type combinations)`,
+      text: `Interaction Conservation Timeline (${pairTypeCombinations.length} pair-type combinations, ${uniquePairCount} unique pairs)`,
       style: {
         fontSize: '24px',
         fontWeight: '600',
