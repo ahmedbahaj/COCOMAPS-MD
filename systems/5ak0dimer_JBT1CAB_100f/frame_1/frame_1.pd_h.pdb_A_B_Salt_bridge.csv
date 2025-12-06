@@ -1,7 +1,0 @@
-,Res. Name 1,Res. Number 1,Chain 1,Res. Name 2,Res. Number 2,Chain 2,Atom 1,Atom 2,Distance (Å)
-0,GLU,3,A,LYS,275,B,OE2,NZ,4.43
-1,ASP,203,A,ARG,220,B,OD2,NH2,2.93 *
-2,ARG,220,A,ASP,203,B,NH1,OD1,2.71 *
-3,LYS,318,A,ASP,364,B,NZ,OD1,2.85 *
-4,ASP,364,A,LYS,318,B,OD2,NZ,2.94 *
-5,GLU,375,A,ARG,233,B,OE2,NH2,2.73 *
