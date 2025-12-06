@@ -513,8 +513,8 @@ const updateChart = () => {
     })
   })
 
-  // Create labels for Y-axis: "Pair (Type)"
-  const pairTypeLabels = pairTypeCombinations.map(pt => `${pt.pair} (${pt.type})`)
+  // Create labels for Y-axis: just the pair
+  const pairTypeLabels = pairTypeCombinations.map(pt => pt.pair)
   
   // Calculate statistics for residue level (pair conservation) and atomic level (type conservation)
   // Only include data that meets the current threshold and filter criteria
