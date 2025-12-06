@@ -1,51 +1,5 @@
 <template>
   <div class="chart-wrapper">
-    <div class="chart-toolbar">
-      <div class="slider-group">
-        <label for="conservation-slider" class="slider-label">
-          Minimum Conservation Threshold
-        </label>
-        <div class="slider-container">
-          <div class="slider-control">
-            <input
-              id="conservation-slider"
-              type="range"
-              min="0.5"
-              max="1.0"
-              step="0.05"
-              :value="minConservationThreshold"
-              @input="updateThreshold"
-            />
-            <div class="slider-ticks">
-              <span
-                v-for="tick in conservationTicks"
-                :key="tick.value"
-                class="slider-tick"
-              >
-                <span class="slider-tick-label">{{ tick.label }}</span>
-              </span>
-            </div>
-          </div>
-          <div class="slider-value-input">
-            <input
-              type="number"
-              :value="Math.round(minConservationThreshold * 100)"
-              @input="updateThresholdFromInput"
-              @blur="validateThresholdInput"
-              min="50"
-              max="100"
-              step="1"
-              class="value-input"
-            />
-            <span class="percent-symbol">%</span>
-          </div>
-        </div>
-      </div>
-      <div class="info-notice">
-        <strong>2D Conservation Plot:</strong> Lines show interaction type counts at different CA thresholds. Each line represents a specific CR level. Use the global interaction type filter in the sidebar to filter types.
-      </div>
-    </div>
-    
     <div ref="chartContainer" class="chart-container"></div>
     
     <!-- Statistics Summary -->
@@ -86,39 +40,10 @@ import { INTERACTION_TYPES } from '../../utils/constants'
 const dataStore = useDataStore()
 const chartContainer = ref(null)
 let chart = null
-const minConservationThreshold = ref(0.5) // Default 50%
 const statistics = ref(null)
 
-const conservationTicks = computed(() => {
-  const ticks = []
-  for (let value = 0.5; value <= 1.0 + 0.0001; value += 0.1) {
-    ticks.push({
-      value: parseFloat(value.toFixed(2)),
-      label: Math.round(value * 100)
-    })
-  }
-  return ticks
-})
-
-const updateThreshold = (event) => {
-  minConservationThreshold.value = parseFloat(event.target.value)
-  updateChart()
-}
-
-const updateThresholdFromInput = (event) => {
-  const value = parseInt(event.target.value)
-  if (!isNaN(value)) {
-    minConservationThreshold.value = Math.max(0.5, Math.min(1.0, value / 100))
-    updateChart()
-  }
-}
-
-const validateThresholdInput = (event) => {
-  const value = parseInt(event.target.value)
-  if (isNaN(value) || value < 50 || value > 100) {
-    event.target.value = Math.round(minConservationThreshold.value * 100)
-  }
-}
+// Use global threshold from Controls Panel in sidebar
+const minConservationThreshold = computed(() => dataStore.currentThreshold)
 
 const formatPercent = (value) => {
   if (value === undefined || value === null) return 'N/A'
@@ -444,135 +369,6 @@ watch([
 <style scoped>
 .chart-wrapper {
   width: 100%;
-}
-
-.chart-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 20px;
-  background: #f5f5f7;
-  border-radius: 12px;
-}
-
-.slider-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.slider-label {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-.slider-container {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.slider-control {
-  flex: 1;
-  position: relative;
-}
-
-input[type="range"] {
-  width: 100%;
-  height: 4px;
-  border-radius: 2px;
-  background: #d2d2d7;
-  outline: none;
-  -webkit-appearance: none;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #1d1d1f;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #1d1d1f;
-  cursor: pointer;
-  border: none;
-  transition: transform 0.2s ease;
-}
-
-input[type="range"]::-moz-range-thumb:hover {
-  transform: scale(1.2);
-}
-
-.slider-ticks {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  padding: 0 10px;
-}
-
-.slider-tick {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-
-.slider-tick-label {
-  font-size: 12px;
-  color: #86868b;
-  font-weight: 500;
-}
-
-.slider-value-input {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: white;
-  border: 1px solid #d2d2d7;
-  border-radius: 8px;
-  padding: 4px 12px;
-}
-
-.value-input {
-  width: 50px;
-  border: none;
-  outline: none;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-  text-align: right;
-}
-
-.percent-symbol {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-.info-notice {
-  padding: 12px 16px;
-  background: white;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #6e6e73;
-  border-left: 3px solid #0066cc;
-}
-
-.info-notice strong {
-  color: #1d1d1f;
 }
 
 .chart-container {

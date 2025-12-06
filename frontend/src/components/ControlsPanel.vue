@@ -143,7 +143,7 @@ const SLIDER_STEP = 0.1
 const showSlider = computed(() => {
   // Do NOT show the global conservation slider for interactionTimeline;
   // that chart always shows all interactions.
-  return ['arc', 'chord', 'filteredHeatmap', 'timePairMatrix'].includes(dataStore.currentChartType)
+  return ['arc', 'chord', 'filteredHeatmap', 'timePairMatrix', 'conservationScatter'].includes(dataStore.currentChartType)
 })
 
 const showLogScale = computed(() => {
