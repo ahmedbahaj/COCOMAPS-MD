@@ -916,22 +916,6 @@ const updateChart = () => {
         zIndex: 1
       }))
     },
-    legend: {
-      enabled: true,
-      align: 'right',
-      verticalAlign: 'top',
-      layout: 'vertical',
-      itemStyle: {
-        fontSize: '12px',
-        fontWeight: '500',
-        color: '#1d1d1f'
-      },
-      maxHeight: 400,
-      navigation: {
-        activeColor: '#3B6EF5',
-        inactiveColor: '#6e6e73'
-      }
-    },
     plotOptions: {
       heatmap: {
         cursor: 'pointer',
