@@ -353,7 +353,7 @@ const showAnomalyDetails = ref(false)
 
 const totalFrames = computed(() => dataStore.totalFrames)
 
-// Atom pairs present in the selected frame (show all types, not filtered)
+// Atom pairs present in the selected frame, filtered by the clicked interaction type
 const frameAtomPairs = computed(() => {
   if (!atomPairData.value || !selectedFrame.value || !props.interactionData) {
     return []
@@ -369,20 +369,24 @@ const frameAtomPairs = computed(() => {
   const frameKey = String(selectedFrame.value)
   const atomsInFrame = byFrame[frameKey] || []
   
-  // Show ALL atom pairs in this frame (not filtered by type)
-  // The user can see which types are present
-  return atomsInFrame.map(frameAtom => {
-    // Find the full stats for this atom pair
-    const fullStats = atomPairData.value.atomPairs?.find(
-      p => p.atomPair === frameAtom.atomPair
-    )
-    return {
-      ...frameAtom,
-      consistency: fullStats?.consistency || 0,
-      frameCount: fullStats?.frameCount || 1,
-      type: frameAtom.interactionType
-    }
-  })
+  // Get the interaction type that was clicked
+  const clickedType = props.interactionData.type
+  
+  // Filter atom pairs to only show those matching the clicked interaction type
+  return atomsInFrame
+    .filter(frameAtom => frameAtom.interactionType === clickedType)
+    .map(frameAtom => {
+      // Find the full stats for this atom pair
+      const fullStats = atomPairData.value.atomPairs?.find(
+        p => p.atomPair === frameAtom.atomPair
+      )
+      return {
+        ...frameAtom,
+        consistency: fullStats?.consistency || 0,
+        frameCount: fullStats?.frameCount || 1,
+        type: frameAtom.interactionType
+      }
+    })
 })
 
 // Extract residue name from pair
