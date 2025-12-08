@@ -216,6 +216,7 @@ const conservationThreshold = ref(0.5) // Default 50%
 const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
 const statistics = ref(null)
+const hiddenTypes = ref(new Set()) // Track hidden interaction types from legend clicks
 
 const conservationTicks = computed(() => {
   const ticks = []
@@ -403,6 +404,11 @@ const updateChart = async () => {
           }
         }
         
+        // Check if type is hidden via legend click
+        if (hiddenTypes.value.has(type)) {
+          return // Skip hidden types
+        }
+        
         typesForThisPair.add(type)
       })
     })
@@ -452,6 +458,11 @@ const updateChart = async () => {
           if (!matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)) {
             return // Skip this type if it doesn't match filter
           }
+        }
+        
+        // LEVEL 4 FILTER: Skip if hidden via legend click
+        if (hiddenTypes.value.has(type)) {
+          return
         }
 
         if (!seriesMap.has(type)) {
@@ -755,19 +766,33 @@ const updateChart = async () => {
     atomic: atomicStats
   }
 
-  // Combine all data into a single heatmap series
-  // Each point needs [x, y, value] and color information
-  const allData = []
-  const interactionTypes = new Set()
+  // Create separate heatmap series for each interaction type (like TimePairMatrix)
+  // This allows legend click to show/hide each type
+  const series = []
+  const allDataPoints = [] // For atom change detection
   
-  seriesMap.forEach((dataPoints, type) => {
-    interactionTypes.add(type)
-    dataPoints.forEach(point => {
-      allData.push({
+  // Collect all available interaction types (including hidden ones) for legend
+  const allAvailableTypes = new Set()
+  stablePairs.forEach(interaction => {
+    const typePersistence = interaction.typePersistence || {}
+    interaction.typesArray.forEach(type => {
+      const typeConservation = typePersistence[type] || 0
+      if (typeConservation >= conservationThreshold.value) {
+        if (dataStore.selectedInteractionTypes.size === 0 || 
+            matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)) {
+          allAvailableTypes.add(type)
+        }
+      }
+    })
+  })
+  
+  // Create series for visible types (with data)
+  Array.from(seriesMap.entries()).sort((a, b) => a[0].localeCompare(b[0])).forEach(([type, dataPoints]) => {
+    const seriesData = dataPoints.map(point => {
+      const dataPoint = {
         x: point.x,
         y: point.y,
         value: 1,
-        color: getInteractionBaseColor(type),
         custom: point.custom,
         pair: point.pair,
         type: point.type,
@@ -775,45 +800,55 @@ const updateChart = async () => {
         pairConsistency: point.pairConsistency,
         typeConservation: point.typeConservation,
         distance: point.distance
-      })
+      }
+      allDataPoints.push(dataPoint)
+      return dataPoint
+    })
+    
+    series.push({
+      type: 'heatmap',
+      name: type,
+      data: seriesData,
+      color: getInteractionBaseColor(type),
+      borderWidth: 1,
+      borderColor: '#e8e8ed',
+      nullColor: 'transparent',
+      colsize: 1,
+      rowsize: 1,
+      dataLabels: {
+        enabled: false
+      },
+      showInLegend: true,
+      visible: true
     })
   })
   
-  // Main heatmap series with all data
-  const series = [{
-    type: 'heatmap',
-    name: 'Interactions',
-    data: allData,
-    borderWidth: 1,
-    borderColor: '#e8e8ed',
-    nullColor: 'transparent',
-    colsize: 1,
-    rowsize: 1,
-    dataLabels: {
-      enabled: false
-    },
-    showInLegend: false
-  }]
-  
-  // Add invisible scatter series for legend items (one per interaction type)
-  Array.from(interactionTypes).sort().forEach(type => {
-    series.push({
-      type: 'scatter',
-      name: type,
-      color: getInteractionBaseColor(type),
-      data: [],  // Empty data - just for legend
-      marker: {
-        symbol: 'square',
-        radius: 7
-      },
-      showInLegend: true,
-      enableMouseTracking: false
-    })
+  // Add hidden types to legend (with empty data, visually grayed out)
+  Array.from(hiddenTypes.value).sort().forEach(type => {
+    // Only add if it's a valid available type
+    if (allAvailableTypes.has(type)) {
+      series.push({
+        type: 'heatmap',
+        name: type,
+        data: [],
+        color: getInteractionBaseColor(type),
+        borderWidth: 1,
+        borderColor: '#e8e8ed',
+        nullColor: 'transparent',
+        colsize: 1,
+        rowsize: 1,
+        dataLabels: {
+          enabled: false
+        },
+        showInLegend: true,
+        visible: false // This makes it appear grayed out in legend
+      })
+    }
   })
   
   // Collect data points where atoms change
   const atomChangeData = []
-  allData.forEach(point => {
+  allDataPoints.forEach(point => {
     const pairString = point.custom?.pair || point.pair || ''
     // Convert "A-LYS8 ↔ B-ASP45" to "A-LYS8_B-ASP45" for pairKey (storage format)
     const pairKey = pairString.includes(' ↔ ') 
@@ -971,6 +1006,21 @@ const updateChart = async () => {
         cursor: 'pointer',
         borderWidth: 1,
         borderColor: '#e8e8ed',
+        events: {
+          legendItemClick: function() {
+            const typeName = this.name
+            // Toggle hidden state
+            if (hiddenTypes.value.has(typeName)) {
+              hiddenTypes.value.delete(typeName)
+            } else {
+              hiddenTypes.value.add(typeName)
+            }
+            // Rebuild chart with updated visibility
+            setTimeout(() => updateChart(), 10)
+            // Prevent default Highcharts behavior (we handle it ourselves)
+            return false
+          }
+        },
         point: {
           events: {
             click: function() {
@@ -985,21 +1035,6 @@ const updateChart = async () => {
                 frames: point.custom?.allFrames || []
               }
               showTrajectoryModal.value = true
-            },
-            mouseOver: function() {
-              const hoveredType = this.type
-              // Dim all cells that are NOT of this type
-              this.series.data.forEach(point => {
-                if (point.type !== hoveredType) {
-                  point.graphic?.attr({ opacity: 0.2 })
-                }
-              })
-            },
-            mouseOut: function() {
-              // Restore all cells to full opacity
-              this.series.data.forEach(point => {
-                point.graphic?.attr({ opacity: 1 })
-              })
             }
           }
         },
@@ -1010,6 +1045,26 @@ const updateChart = async () => {
             borderWidth: 2
           }
         }
+      },
+      scatter: {
+        events: {
+          legendItemClick: function() {
+            const typeName = this.name
+            // Don't handle "Atom Changes" series - let it use default behavior
+            if (typeName === 'Atom Changes') {
+              return true
+            }
+            // Toggle hidden state for interaction types
+            if (hiddenTypes.value.has(typeName)) {
+              hiddenTypes.value.delete(typeName)
+            } else {
+              hiddenTypes.value.add(typeName)
+            }
+            // Rebuild chart with updated visibility
+            setTimeout(() => updateChart(), 10)
+            return false
+          }
+        }
       }
     },
     colorAxis: false,
@@ -1018,24 +1073,15 @@ const updateChart = async () => {
       align: 'right',
       verticalAlign: 'top',
       layout: 'vertical',
-      x: -10,
-      y: 80,
-      symbolWidth: 20,
-      symbolHeight: 14,
       itemStyle: {
         fontSize: '12px',
         fontWeight: '500',
         color: '#1d1d1f'
       },
-      itemMarginTop: 3,
-      itemMarginBottom: 3,
-      padding: 10,
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      borderWidth: 1,
-      borderColor: '#e8e8ed',
-      borderRadius: 8,
-      labelFormatter: function() {
-        return this.name
+      maxHeight: 400,
+      navigation: {
+        activeColor: '#3B6EF5',
+        inactiveColor: '#6e6e73'
       }
     },
     series: series,
