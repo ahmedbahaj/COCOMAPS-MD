@@ -130,8 +130,10 @@ const updateChart = () => {
   const interactionColor = getInteractionBaseColor(selectedInteractionType.value)
   
   // Prepare data for Plotly violin plot
+  const pairLabels = topPairs.map(pair => `${pair.chain1}:${pair.resName1}${pair.resNum1}-${pair.chain2}:${pair.resName2}${pair.resNum2}`)
+
   const traces = topPairs.map((pair, index) => {
-    const pairLabel = `${pair.chain1}:${pair.resName1}${pair.resNum1}-${pair.chain2}:${pair.resName2}${pair.resNum2}`
+    const pairLabel = pairLabels[index]
     
     // Calculate statistics for hover info
     const sorted = [...pair.distances].sort((a, b) => a - b)
@@ -157,7 +159,7 @@ const updateChart = () => {
     return {
       type: 'violin',
       y: pair.distances,
-      x: Array(pair.distances.length).fill(index),
+      x: Array(pair.distances.length).fill(pairLabel),
       name: pairLabel,
       box: {
         visible: false
@@ -209,8 +211,8 @@ const updateChart = () => {
     const mean = pair.distances.reduce((a, b) => a + b, 0) / pair.distances.length
     return {
       mean,
-      x: index,
-      pairLabel: `${pair.chain1}:${pair.resName1}${pair.resNum1}-${pair.chain2}:${pair.resName2}${pair.resNum2}`
+      x: pairLabels[index],
+      pairLabel: pairLabels[index]
     }
   })
   
@@ -228,6 +230,25 @@ const updateChart = () => {
     name: `Global Mean: ${globalMean.toFixed(2)} Å`,
     showlegend: true,
     hoverinfo: 'skip'
+  })
+
+  // Add overlay markers for local means (horizontal line marker)
+  traces.push({
+    type: 'scatter',
+    mode: 'markers',
+    x: meanAnnotations.map(item => item.x),
+    y: meanAnnotations.map(item => item.mean),
+    marker: {
+      symbol: 'line-ew',
+      size: 18,
+      color: interactionColor,
+      line: {
+        width: 2.5,
+        color: interactionColor
+      }
+    },
+    hoverinfo: 'skip',
+    showlegend: false
   })
 
   const layout = {
@@ -257,34 +278,19 @@ const updateChart = () => {
       // Global mean line - rendered on top of all violins
       {
         type: 'line',
-        x0: -0.5,
-        x1: topPairs.length - 0.5,
+        x0: 0,
+        x1: 1,
+        xref: 'paper',
         y0: globalMean,
         y1: globalMean,
+        yref: 'y',
         line: {
           color: '#1d1d1f',  // Black for global mean
           width: 2.5,
           dash: 'dash'
         },
-        layer: 'above',
-        xref: 'x',
-        yref: 'y'
-      },
-      // Local mean dashes for each violin
-      ...meanAnnotations.map((item, index) => ({
-        type: 'line',
-        x0: index - 0.15,  // Short dash: 0.3 width centered on violin
-        x1: index + 0.15,
-        y0: item.mean,
-        y1: item.mean,
-        line: {
-          color: interactionColor,  // Match interaction type color
-          width: 2.5
-        },
-        layer: 'above',  // Render on top of violin fill
-        xref: 'x',
-        yref: 'y'
-      }))
+        layer: 'above'
+      }
     ],
     xaxis: {
       title: {
@@ -296,6 +302,12 @@ const updateChart = () => {
         }
       },
       tickangle: -45,
+      type: 'category',
+      categoryorder: 'array',
+      categoryarray: pairLabels,
+      tickmode: 'array',
+      tickvals: pairLabels,
+      ticktext: pairLabels,
       tickfont: {
         size: 11,
         color: '#1d1d1f'
