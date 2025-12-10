@@ -36,6 +36,15 @@ The API will be available at `http://localhost:5000`
 - `POST /api/upload` - Upload and process PDB file
 - `GET /api/status/<pdb_id>` - Get processing status
 
+#### Selecting the CoCoMaps Docker image
+- Default with REDUCE: `andrpet/cocomaps-backend:0.0.19`.
+- Default no-reduce: `sattamaltwaim/cocomaps-backend:no-reduce` (pulled from Docker Hub).
+- Environment overrides:
+  - `COCOMAPS_IMAGE_REDUCE` (default `andrpet/cocomaps-backend:0.0.19`)
+  - `COCOMAPS_IMAGE_NO_REDUCE` (default `sattamaltwaim/cocomaps-backend:no-reduce`)
+  - `COCOMAPS_USE_REDUCE` (`true`/`false`) for the CLI helper in `run.py`.
+- Per-upload override: send form/query field `reduce=false` to use the no-reduce image for that job.
+
 ## Project Structure
 
 ```
