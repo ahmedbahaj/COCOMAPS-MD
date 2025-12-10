@@ -1,7 +1,6 @@
 <template>
   <div class="chart-wrapper">
     <div ref="chartContainer" class="chart-surface"></div>
-    <InteractionLegend title="Interaction Color Legend" />
     <AtomPairExplorer 
       :visible="showAtomExplorer" 
       :residue-pair="selectedResiduePair"
@@ -16,8 +15,6 @@ import Highcharts from 'highcharts'
 import ArcDiagramModule from 'highcharts/modules/arc-diagram'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionColor } from '../../utils/chartHelpers'
-import { INTERACTION_TYPES } from '../../utils/constants'
-import InteractionLegend from '../InteractionLegend.vue'
 import AtomPairExplorer from '../AtomPairExplorer.vue'
 
 ArcDiagramModule(Highcharts)
