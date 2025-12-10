@@ -182,6 +182,7 @@ import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import Highcharts from 'highcharts'
 import api from '../services/api'
 import { useDataStore } from '../stores/dataStore'
+import { parseResidueId } from '../utils/chartHelpers'
 
 const props = defineProps({
   visible: {
@@ -340,28 +341,19 @@ const loadAtomPairData = async () => {
     // Extract residue info from the pair
     const [id1, id2] = [props.residuePair.id1, props.residuePair.id2]
     
-    // Parse the IDs (format: "A-LYS8")
-    const parseId = (id) => {
-      const match = id.match(/^([A-Z])-(.+?)(\d+)$/)
-      if (match) {
-        return { chain: match[1], name: match[2], num: match[3] }
-      }
-      return null
-    }
-
-    const res1 = parseId(id1)
-    const res2 = parseId(id2)
+    const res1 = parseResidueId(id1)
+    const res2 = parseResidueId(id2)
 
     if (!res1 || !res2) {
       throw new Error('Invalid residue pair format')
     }
 
     const params = {
-      resName1: res1.name,
-      resNum1: res1.num,
+      resName1: res1.resName,
+      resNum1: res1.resNum,
       chain1: res1.chain,
-      resName2: res2.name,
-      resNum2: res2.num,
+      resName2: res2.resName,
+      resNum2: res2.resNum,
       chain2: res2.chain
     }
 

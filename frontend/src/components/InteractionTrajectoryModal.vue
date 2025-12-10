@@ -323,7 +323,7 @@ import { ref, watch, computed, nextTick } from 'vue'
 import Highcharts from 'highcharts'
 import { useDataStore } from '../stores/dataStore'
 import api from '../services/api'
-import { getInteractionBaseColor } from '../utils/chartHelpers'
+import { getInteractionBaseColor, parseResidueId, formatPairKey } from '../utils/chartHelpers'
 
 const props = defineProps({
   visible: {
@@ -426,7 +426,8 @@ const frameHasInteraction = (frame) => {
 const getFrameDistance = (frame) => {
   if (!distanceData.value || !props.interactionData) return null
   
-  const pairKey = props.interactionData.pair.replace(' ↔ ', '_').replace(/-/g, '-')
+  const parts = props.interactionData.pair.split(' ↔ ')
+  const pairKey = parts.length === 2 ? formatPairKey(parts[0], parts[1]) : props.interactionData.pair
   const distances = distanceData.value.distances?.[pairKey]
   if (!distances) return null
   
@@ -694,7 +695,8 @@ const interactionTypeAnalysis = computed(() => {
     return { types: [], cooccurrence: [] }
   }
   
-  const pairKey = props.interactionData.pair.replace(' ↔ ', '_').replace(/-/g, '-')
+  const parts = props.interactionData.pair.split(' ↔ ')
+  const pairKey = parts.length === 2 ? formatPairKey(parts[0], parts[1]) : props.interactionData.pair
   const allDistances = distanceData.value.distances?.[pairKey]
   
   if (!allDistances) {
@@ -963,25 +965,17 @@ const loadAtomPairData = async () => {
     const parts = props.interactionData.pair.split(' ↔ ')
     if (parts.length !== 2) return
     
-    const parseId = (id) => {
-      const match = id.match(/^([A-Z])-(.+?)(\d+)$/)
-      if (match) {
-        return { chain: match[1], name: match[2], num: match[3] }
-      }
-      return null
-    }
-    
-    const res1 = parseId(parts[0])
-    const res2 = parseId(parts[1])
+    const res1 = parseResidueId(parts[0])
+    const res2 = parseResidueId(parts[1])
     
     if (!res1 || !res2) return
     
     const params = {
-      resName1: res1.name,
-      resNum1: res1.num,
+      resName1: res1.resName,
+      resNum1: res1.resNum,
       chain1: res1.chain,
-      resName2: res2.name,
-      resNum2: res2.num,
+      resName2: res2.resName,
+      resNum2: res2.resNum,
       chain2: res2.chain
     }
     
