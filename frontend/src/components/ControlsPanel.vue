@@ -98,8 +98,19 @@
             type="checkbox"
             :checked="dataStore.selectedInteractionTypes.has(type.id)"
             @change="toggleInteractionType(type.id)"
-            class="interaction-checkbox"
+            class="interaction-checkbox-input"
           />
+          <span 
+            class="custom-checkbox"
+            :style="{ 
+              borderColor: getTypeColor(type),
+              backgroundColor: dataStore.selectedInteractionTypes.has(type.id) ? getTypeColor(type) : 'transparent'
+            }"
+          >
+            <svg v-if="dataStore.selectedInteractionTypes.has(type.id)" viewBox="0 0 12 12" class="checkmark">
+              <path d="M2 6l3 3 5-5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
           <span>{{ type.label }}</span>
         </label>
       </div>
@@ -133,8 +144,15 @@
 import { computed } from 'vue'
 import { useDataStore } from '../stores/dataStore'
 import { INTERACTION_TYPES } from '../utils/constants'
+import { getInteractionBaseColor } from '../utils/chartHelpers'
 
 const dataStore = useDataStore()
+
+// Get the color for an interaction type based on its keywords
+const getTypeColor = (type) => {
+  // Use the first keyword to look up the color
+  return getInteractionBaseColor(type.keywords[0])
+}
 
 const SLIDER_MIN = 0.5
 const SLIDER_MAX = 1
@@ -442,11 +460,33 @@ input[type="range"]::-webkit-slider-thumb:hover {
   margin: 0;
 }
 
-.interaction-checkbox {
+.interaction-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.custom-checkbox {
   width: 18px;
   height: 18px;
-  cursor: pointer;
-  accent-color: #1d1d1f;
+  border: 2px solid;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.custom-checkbox .checkmark {
+  width: 12px;
+  height: 12px;
+}
+
+.checkbox-label:hover .custom-checkbox {
+  transform: scale(1.05);
 }
 </style>
 
