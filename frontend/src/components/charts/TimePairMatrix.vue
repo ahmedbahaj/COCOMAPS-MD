@@ -6,7 +6,7 @@
 import { ref, onMounted, watch } from 'vue'
 import Highcharts from 'highcharts'
 import { useDataStore } from '../../stores/dataStore'
-import { getInteractionBaseColor } from '../../utils/chartHelpers'
+import { getInteractionBaseColor, formatResiduePairFromIds, formatPairKey } from '../../utils/chartHelpers'
 import api from '../../services/api'
 
 const dataStore = useDataStore()
@@ -31,7 +31,7 @@ const updateChart = () => {
   // Create unique residue pairs and sort them
   const pairMap = new Map()
   filteredData.forEach(interaction => {
-    const pairKey = `${interaction.id1} ↔ ${interaction.id2}`
+    const pairKey = formatResiduePairFromIds(interaction.id1, interaction.id2)
     if (!pairMap.has(pairKey)) {
       pairMap.set(pairKey, {
         pair: pairKey,
@@ -115,7 +115,7 @@ const updateChart = () => {
       }
       
       // Calculate y position with smart vertical distribution
-      const pairKey = `${interaction.id1}_${interaction.id2}`
+        const pairKey = formatPairKey(interaction.id1, interaction.id2)
       const typeInfo = pairTypeIndexMap.get(pairIndex)
       let yOffset = 0
       

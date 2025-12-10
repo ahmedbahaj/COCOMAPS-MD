@@ -42,7 +42,7 @@
 import { ref, onMounted, watch, computed, onBeforeUnmount } from 'vue'
 import Plotly from 'plotly.js-dist-min'
 import { useDataStore } from '../../stores/dataStore'
-import { getInteractionBaseColor } from '../../utils/chartHelpers'
+import { getInteractionBaseColor, formatResiduePairFromParts } from '../../utils/chartHelpers'
 import api from '../../services/api'
 
 const dataStore = useDataStore()
@@ -130,7 +130,10 @@ const updateChart = () => {
   const interactionColor = getInteractionBaseColor(selectedInteractionType.value)
   
   // Prepare data for Plotly violin plot
-  const pairLabels = topPairs.map(pair => `${pair.chain1}:${pair.resName1}${pair.resNum1}-${pair.chain2}:${pair.resName2}${pair.resNum2}`)
+  const pairLabels = topPairs.map(pair => formatResiduePairFromParts(
+    { resName: pair.resName1, resNum: pair.resNum1, chain: pair.chain1 },
+    { resName: pair.resName2, resNum: pair.resNum2, chain: pair.chain2 }
+  ))
 
   const traces = topPairs.map((pair, index) => {
     const pairLabel = pairLabels[index]

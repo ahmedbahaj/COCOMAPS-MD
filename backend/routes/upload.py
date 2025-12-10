@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from pathlib import Path
 import os
+from distutils.util import strtobool
 import subprocess
 import threading
 import json
@@ -102,12 +103,21 @@ def create_example_input(frame_folder, pdb_filename):
     with open(json_path, 'w') as f:
         json.dump(input_data, f, indent=4)
 
-def run_cocomaps_analysis(pdb_name, frame_count):
+def _get_docker_image(use_reduce: bool) -> str:
+    """Select docker image based on reduce flag and environment overrides."""
+    reduce_image = os.environ.get("COCOMAPS_IMAGE_REDUCE", "andrpet/cocomaps-backend:0.0.19")
+    no_reduce_image = os.environ.get(
+        "COCOMAPS_IMAGE_NO_REDUCE", "sattamaltwaim/cocomaps-backend:no-reduce"
+    )
+    return reduce_image if use_reduce else no_reduce_image
+
+
+def run_cocomaps_analysis(pdb_name, frame_count, use_reduce=True):
     """Run CoCoMaps analysis on all frames"""
     try:
         upload_folder = current_app.config['UPLOAD_FOLDER']
         host_root_dir = os.path.abspath(os.path.join(upload_folder, 'systems', pdb_name))
-        docker_image = "andrpet/cocomaps-backend:0.0.19"
+        docker_image = _get_docker_image(use_reduce)
         container_execution = "python /app/coco2/begin.py"
         input_file_name = "example_input.json"
         
@@ -142,7 +152,7 @@ def run_cocomaps_analysis(pdb_name, frame_count):
             processing_status[pdb_name]['status'] = 'failed'
             processing_status[pdb_name]['error'] = str(e)
 
-def process_pdb_async(app, pdb_file, pdb_name):
+def process_pdb_async(app, pdb_file, pdb_name, use_reduce=True):
     """Process PDB file asynchronously"""
     with app.app_context():
         try:
@@ -156,7 +166,7 @@ def process_pdb_async(app, pdb_file, pdb_name):
             processing_status[pdb_name]['frames'] = frame_count
             
             # Run CoCoMaps analysis
-            run_cocomaps_analysis(pdb_name, frame_count)
+            run_cocomaps_analysis(pdb_name, frame_count, use_reduce)
             
         except Exception as e:
             if pdb_name in processing_status:
@@ -182,6 +192,15 @@ def upload_file():
         pdb_name = Path(filename).stem
         upload_folder = current_app.config['UPLOAD_FOLDER']
         filepath = os.path.join(upload_folder, filename)
+
+        # optional flag to choose no-reduce image (defaults to True/with-reduce)
+        reduce_param = request.form.get('reduce', request.args.get('reduce'))
+        use_reduce = True
+        if reduce_param is not None:
+            try:
+                use_reduce = bool(strtobool(str(reduce_param)))
+            except ValueError:
+                use_reduce = True
         
         # Save file
         file.save(filepath)
@@ -190,12 +209,16 @@ def upload_file():
         processing_status[pdb_name] = {
             'status': 'queued',
             'progress': 0,
-            'frames': 0
+            'frames': 0,
+            'reduce': use_reduce
         }
         
         # Start processing in background thread
         app_instance = current_app._get_current_object()
-        thread = threading.Thread(target=process_pdb_async, args=(app_instance, filepath, pdb_name))
+        thread = threading.Thread(
+            target=process_pdb_async,
+            args=(app_instance, filepath, pdb_name, use_reduce)
+        )
         thread.daemon = True
         thread.start()
         

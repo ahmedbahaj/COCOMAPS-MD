@@ -197,7 +197,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import Highcharts from 'highcharts'
 import HeatmapModule from 'highcharts/modules/heatmap'
 import { useDataStore } from '../../stores/dataStore'
-import { getInteractionBaseColor, matchesSelectedTypes } from '../../utils/chartHelpers'
+import { getInteractionBaseColor, matchesSelectedTypes, formatResiduePairFromIds, formatPairKey, parseResidueId } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
 import api from '../../services/api'
 import InteractionTrajectoryModal from '../InteractionTrajectoryModal.vue'
@@ -348,7 +348,7 @@ const updateChart = async () => {
   // Create unique residue pairs and sort them
   const pairMap = new Map()
   stablePairs.forEach(interaction => {
-    const pairKey = `${interaction.id1} ↔ ${interaction.id2}`
+    const pairKey = formatResiduePairFromIds(interaction.id1, interaction.id2)
     if (!pairMap.has(pairKey)) {
       pairMap.set(pairKey, {
         pair: pairKey,
@@ -489,7 +489,7 @@ const updateChart = async () => {
           return
         }
         
-        const pairKey = `${interaction.id1}_${interaction.id2}`
+        const pairKey = formatPairKey(interaction.id1, interaction.id2)
         const framesSet = new Set(framesForType)
         
         // Create a cell for EACH frame (colored if present, will be filtered by heatmap)
@@ -550,11 +550,11 @@ const updateChart = async () => {
       if (interaction.consistency !== undefined && interaction.consistency !== null && interaction.consistency >= 0.50) {
         residueScores.push(interaction.consistency)
         // Track unique pairs for CR50 count
-        const pairKey = `${interaction.id1}_${interaction.id2}`
+        const pairKey = formatPairKey(interaction.id1, interaction.id2)
         uniquePairs.add(pairKey)
         
         // Track conservation by pair
-        const pairLabel = `${interaction.id1} ↔ ${interaction.id2}`
+        const pairLabel = formatResiduePairFromIds(interaction.id1, interaction.id2)
         if (!pairConservationMap.has(pairLabel)) {
           pairConservationMap.set(pairLabel, [])
         }
@@ -850,9 +850,9 @@ const updateChart = async () => {
   const atomChangeData = []
   allDataPoints.forEach(point => {
     const pairString = point.custom?.pair || point.pair || ''
-    // Convert "A-LYS8 ↔ B-ASP45" to "A-LYS8_B-ASP45" for pairKey (storage format)
-    const pairKey = pairString.includes(' ↔ ') 
-      ? pairString.replace(' ↔ ', '_')
+    const pairParts = pairString.split(' ↔ ')
+    const pairKey = pairParts.length === 2
+      ? formatPairKey(pairParts[0], pairParts[1])
       : pairString
     
     // Skip if frame is 1 (no previous frame to compare)
@@ -1207,15 +1207,6 @@ const loadDistanceData = async () => {
   }
 }
 
-// Parse residue ID (format: "A-LYS8")
-const parseResidueId = (id) => {
-  const match = id.match(/^([A-Z])-(.+?)(\d+)$/)
-  if (match) {
-    return { chain: match[1], name: match[2], num: match[3] }
-  }
-  return null
-}
-
 // Load atom pair data for a specific residue pair
 const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
   if (!dataStore.currentSystem) return null
@@ -1234,11 +1225,11 @@ const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
     }
     
     const params = {
-      resName1: res1.name,
-      resNum1: res1.num,
+      resName1: res1.resName,
+      resNum1: res1.resNum,
       chain1: res1.chain,
-      resName2: res2.name,
-      resNum2: res2.num,
+      resName2: res2.resName,
+      resNum2: res2.resNum,
       chain2: res2.chain
     }
     
@@ -1263,7 +1254,7 @@ const loadAtomPairDataForAllPairs = async () => {
   // Get unique pairs
   const uniquePairs = new Map()
   stablePairs.forEach(interaction => {
-    const pairKey = `${interaction.id1}_${interaction.id2}`
+    const pairKey = formatPairKey(interaction.id1, interaction.id2)
     if (!uniquePairs.has(pairKey)) {
       uniquePairs.set(pairKey, {
         pairKey,

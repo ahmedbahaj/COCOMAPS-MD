@@ -70,6 +70,37 @@ export function matchesSelectedTypes(interactionTypes, selectedTypes, interactio
 }
 
 /**
+ * Unified residue formatting helpers
+ */
+const residueIdPattern = /^([A-Za-z0-9]+?)(\d+)_([A-Za-z0-9]+)$/
+
+export function formatResidueId(resName, resNum, chain) {
+  if (!resName || resNum === undefined || resNum === null || !chain) return ''
+  return `${String(resName).trim()}${resNum}_${String(chain).trim()}`
+}
+
+export function parseResidueId(id) {
+  if (!id) return null
+  const match = String(id).match(residueIdPattern)
+  if (!match) return null
+  return { resName: match[1], resNum: match[2], chain: match[3] }
+}
+
+export function formatResiduePairFromParts(res1, res2, delimiter = ' ↔ ') {
+  if (!res1 || !res2) return ''
+  return `${formatResidueId(res1.resName, res1.resNum, res1.chain)}${delimiter}${formatResidueId(res2.resName, res2.resNum, res2.chain)}`
+}
+
+export function formatResiduePairFromIds(id1, id2, delimiter = ' ↔ ') {
+  if (!id1 || !id2) return ''
+  return `${id1}${delimiter}${id2}`
+}
+
+export function formatPairKey(id1, id2) {
+  return `${id1}__${id2}`
+}
+
+/**
  * Export INTERACTION_TYPES for use in components
  */
 export { INTERACTION_TYPES } from './constants'

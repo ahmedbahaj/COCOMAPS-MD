@@ -61,6 +61,24 @@ def _normalize_interaction_type(type_label):
     
     return clean_label
 
+
+def _format_residue_id(res_name, res_num, chain):
+    """Return residue identifier in RES123_CHAIN format."""
+    if res_name is None or res_num is None or chain is None:
+        return ''
+    res_str = str(res_name).strip()
+    chain_str = str(chain).strip()
+    try:
+        res_num_clean = int(str(res_num).strip())
+    except (TypeError, ValueError):
+        res_num_clean = str(res_num).strip()
+    return f"{res_str}{res_num_clean}_{chain_str}"
+
+
+def _format_pair_key(res_id1, res_id2):
+    """Stable residue pair key using a separator unlikely to appear in IDs."""
+    return f"{res_id1}__{res_id2}"
+
 @bp.route('/systems/<system_id>/interactions', methods=['GET'])
 def get_interactions(system_id):
     """
@@ -103,8 +121,10 @@ def get_interactions(system_id):
                                                       'Res. Name 2', 'Res. Number 2', 'Chain 2']):
                         continue
                     
-                    # Create unique key for residue-residue interaction
-                    key = f"{row['Res. Name 1']}{row['Res. Number 1']}_{row['Res. Name 2']}{row['Res. Number 2']}"
+                    # Create unique key for residue-residue interaction using unified ID format
+                    res_id1 = _format_residue_id(row['Res. Name 1'], row['Res. Number 1'], row['Chain 1'])
+                    res_id2 = _format_residue_id(row['Res. Name 2'], row['Res. Number 2'], row['Chain 2'])
+                    key = _format_pair_key(res_id1, res_id2)
                     
                     if key not in interaction_map:
                         interaction_map[key] = {
@@ -158,13 +178,13 @@ def get_interactions(system_id):
                 'resName1': entry['resName1'],
                 'resNum1': entry['resNum1'],
                 'chain1': entry['chain1'],
+                    'id1': _format_residue_id(entry['resName1'], entry['resNum1'], entry['chain1']),
                 'resName2': entry['resName2'],
                 'resNum2': entry['resNum2'],
                 'chain2': entry['chain2'],
+                    'id2': _format_residue_id(entry['resName2'], entry['resNum2'], entry['chain2']),
                 'frameCount': len(frame_set),
                 'consistency': len(frame_set) / total_frames,
-                'id1': f"{entry['chain1']}-{entry['resName1']}{entry['resNum1']}",
-                'id2': f"{entry['chain2']}-{entry['resName2']}{entry['resNum2']}",
                 'typesArray': typesArray,
                 'typePersistence': typePersistence,
                 'frames': sorted(list(frame_set)),  # Sorted list of frame numbers where interaction occurs
@@ -437,14 +457,14 @@ def get_similarity_matrix(system_id):
                     # Normalize: always put smaller chain/residue first for consistency
                     chain1 = row['Chain 1']
                     chain2 = row['Chain 2']
-                    res1 = f"{row['Res. Name 1']}{row['Res. Number 1']}"
-                    res2 = f"{row['Res. Name 2']}{row['Res. Number 2']}"
+                    res_id1 = _format_residue_id(row['Res. Name 1'], row['Res. Number 1'], chain1)
+                    res_id2 = _format_residue_id(row['Res. Name 2'], row['Res. Number 2'], chain2)
                     
                     # Create normalized pair key (smaller chain first, then by residue number)
                     if chain1 < chain2 or (chain1 == chain2 and int(row['Res. Number 1']) < int(row['Res. Number 2'])):
-                        pair_key = f"{chain1}-{res1}_{chain2}-{res2}"
+                        pair_key = _format_pair_key(res_id1, res_id2)
                     else:
-                        pair_key = f"{chain2}-{res2}_{chain1}-{res1}"
+                        pair_key = _format_pair_key(res_id2, res_id1)
                     
                     frame_pairs.add(pair_key)
                     all_residue_pairs.add(pair_key)
@@ -902,8 +922,8 @@ def get_atom_pairs(system_id):
                 'resName2': res_name2,
                 'resNum2': int(res_num2),
                 'chain2': chain2,
-                'id1': f"{chain1}-{res_name1}{res_num1}",
-                'id2': f"{chain2}-{res_name2}{res_num2}"
+            'id1': _format_residue_id(res_name1, res_num1, chain1),
+            'id2': _format_residue_id(res_name2, res_num2, chain2)
             },
             'totalFrames': total_frames,
             'atomPairs': atom_pair_list,
@@ -1000,7 +1020,9 @@ def get_interaction_distances(system_id):
                             if 'Distance (Å)' not in type_row:
                                 continue
                             
-                            pair_key = f"{type_row['Chain 1']}-{type_row['Res. Name 1']}{type_row['Res. Number 1']}_{type_row['Chain 2']}-{type_row['Res. Name 2']}{type_row['Res. Number 2']}"
+                            res_id1 = _format_residue_id(type_row['Res. Name 1'], type_row['Res. Number 1'], type_row['Chain 1'])
+                            res_id2 = _format_residue_id(type_row['Res. Name 2'], type_row['Res. Number 2'], type_row['Chain 2'])
+                            pair_key = _format_pair_key(res_id1, res_id2)
                             
                             # Get distance
                             distance_str = type_row.get('Distance (Å)', '').strip()
@@ -1143,8 +1165,10 @@ def get_distance_distributions(system_id):
                             except ValueError:
                                 continue
                             
-                            # Create pair key
-                            pair_key = f"{row['Chain 1']}:{row['Res. Name 1']}:{row['Res. Number 1']}-{row['Chain 2']}:{row['Res. Name 2']}:{row['Res. Number 2']}"
+                            # Create pair key in unified residue format
+                            res_id1 = _format_residue_id(row['Res. Name 1'], row['Res. Number 1'], row['Chain 1'])
+                            res_id2 = _format_residue_id(row['Res. Name 2'], row['Res. Number 2'], row['Chain 2'])
+                            pair_key = _format_pair_key(res_id1, res_id2)
                             compound_key = (pair_key, normalized_type)
                             
                             # Store pair info
@@ -1155,7 +1179,9 @@ def get_distance_distributions(system_id):
                                     'resNum1': int(row['Res. Number 1']),
                                     'chain2': row['Chain 2'],
                                     'resName2': row['Res. Name 2'],
-                                    'resNum2': int(row['Res. Number 2'])
+                                    'resNum2': int(row['Res. Number 2']),
+                                    'id1': res_id1,
+                                    'id2': res_id2
                                 }
                             
                             # Store distance and track frame
@@ -1193,7 +1219,9 @@ def get_distance_distributions(system_id):
                     'totalMeasurements': len(distances),  # Total distance measurements (can be > frames)
                     'avgDistance': sum(distances) / len(distances) if distances else 0,
                     'minDistance': min(distances) if distances else 0,
-                    'maxDistance': max(distances) if distances else 0
+                    'maxDistance': max(distances) if distances else 0,
+                    'id1': info.get('id1'),
+                    'id2': info.get('id2')
                 })
         
         # Sort by consistency (most persistent first)
