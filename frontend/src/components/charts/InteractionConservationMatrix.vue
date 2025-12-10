@@ -867,7 +867,20 @@ const updateChart = async () => {
         y: point.y,
         pair: pairString,
         type: type,
-        frame: frame
+        frame: frame,
+        // Include all data needed for the modal
+        pairConsistency: point.custom?.pairConsistency || point.pairConsistency,
+        typeConservation: point.custom?.typeConservation || point.typeConservation,
+        distance: point.custom?.distance || point.distance,
+        custom: {
+          pair: pairString,
+          type: type,
+          frame: frame,
+          pairConsistency: point.custom?.pairConsistency || point.pairConsistency,
+          typeConservation: point.custom?.typeConservation || point.typeConservation,
+          distance: point.custom?.distance || point.distance,
+          allFrames: point.custom?.allFrames || []
+        }
       })
     }
   })
@@ -881,13 +894,14 @@ const updateChart = async () => {
       data: atomChangeData,
       marker: {
         symbol: 'circle',
-        radius: 2,
+        radius: 4,
         fillColor: '#FF9500',
         lineColor: '#FFFFFF',
-        lineWidth: 0.5
+        lineWidth: 1
       },
       showInLegend: true,
       enableMouseTracking: true,
+      cursor: 'pointer',
       zIndex: 10 // Above heatmap
     })
   }
@@ -1047,6 +1061,7 @@ const updateChart = async () => {
         }
       },
       scatter: {
+        cursor: 'pointer',
         events: {
           legendItemClick: function() {
             const typeName = this.name
@@ -1063,6 +1078,24 @@ const updateChart = async () => {
             // Rebuild chart with updated visibility
             setTimeout(() => updateChart(), 10)
             return false
+          }
+        },
+        point: {
+          events: {
+            click: function() {
+              const point = this
+              // Open trajectory modal for atom change dots
+              selectedInteraction.value = {
+                pair: point.custom?.pair || point.pair,
+                type: point.custom?.type || point.type,
+                frame: point.custom?.frame || point.frame,
+                pairConsistency: point.custom?.pairConsistency || point.pairConsistency,
+                typeConservation: point.custom?.typeConservation || point.typeConservation,
+                distance: point.custom?.distance || point.distance,
+                frames: point.custom?.allFrames || []
+              }
+              showTrajectoryModal.value = true
+            }
           }
         }
       }
