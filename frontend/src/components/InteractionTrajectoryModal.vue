@@ -94,11 +94,6 @@
             <div class="stat-sublabel">{{ stats.distanceRange }}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">{{ stats.variability }}</div>
-            <div class="stat-label">Variability</div>
-            <div class="stat-sublabel">σ = {{ stats.stdDev }}</div>
-          </div>
-          <div class="stat-card">
             <div class="stat-value">{{ stats.longestStretch }}</div>
             <div class="stat-label">Longest Stretch</div>
             <div class="stat-sublabel">Consecutive frames</div>
@@ -161,53 +156,10 @@
           </div>
         </div>
 
-        <!-- Distance Evolution Chart -->
+        <!-- Distance Trajectory Chart -->
         <div class="section">
-          <h4>Distance Evolution Over Time</h4>
-          <div v-if="anomalies.length > 0" class="anomaly-summary">
-            <span class="anomaly-icon">⚠️</span>
-            <span>{{ anomalies.length }} anomalies detected</span>
-            <button class="anomaly-toggle" @click="showAnomalyDetails = !showAnomalyDetails">
-              {{ showAnomalyDetails ? 'Hide' : 'Show' }}
-            </button>
-          </div>
-          <div v-if="showAnomalyDetails && anomalies.length > 0" class="anomaly-list">
-            <div 
-              v-for="(anomaly, idx) in anomalies" 
-              :key="idx"
-              class="anomaly-item"
-              :class="'anomaly-' + anomaly.type"
-              @click="selectFrame(anomaly.frame)"
-            >
-              <span class="anomaly-badge">{{ anomaly.type === 'outlier' ? '📊' : '⚡' }}</span>
-              <span class="anomaly-desc">{{ anomaly.description }}</span>
-              <span class="anomaly-frame">Frame {{ anomaly.frame }}</span>
-            </div>
-          </div>
+          <h4>Distance Trajectory</h4>
           <div ref="distanceChart" class="chart-container"></div>
-        </div>
-
-        <!-- Distance Distribution Histogram -->
-        <div v-if="distanceHistogram.length > 0" class="section">
-          <h4>Distance Distribution</h4>
-          <p class="section-description">
-            Distribution of distances across all frames where interaction is present
-          </p>
-          <div ref="histogramChart" class="chart-container-small"></div>
-          <div class="distribution-stats">
-            <div class="dist-stat">
-              <span class="dist-label">Mode:</span>
-              <span class="dist-value">{{ distanceStats.mode }}</span>
-            </div>
-            <div class="dist-stat">
-              <span class="dist-label">Median:</span>
-              <span class="dist-value">{{ distanceStats.median }}</span>
-            </div>
-            <div class="dist-stat">
-              <span class="dist-label">Skewness:</span>
-              <span class="dist-value">{{ distanceStats.skewness }}</span>
-            </div>
-          </div>
         </div>
 
         <!-- Interaction Type Analysis -->
@@ -304,16 +256,7 @@
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-          <button class="action-btn secondary-btn" @click="exportData">
-            Export Data
-          </button>
-          <button class="action-btn primary-btn" @click="openAtomPairExplorer">
-            View Atom Pairs
-          </button>
         </div>
-      </div>
     </div>
   </div>
 </template>
@@ -336,7 +279,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'openAtomPairExplorer'])
+const emit = defineEmits(['close'])
 
 const dataStore = useDataStore()
 const loading = ref(false)
@@ -344,12 +287,9 @@ const error = ref(null)
 const distanceData = ref(null)
 const atomPairData = ref(null)
 const distanceChart = ref(null)
-const histogramChart = ref(null)
 const timelineBar = ref(null)
 let chartInstance = null
-let histogramInstance = null
 const selectedFrame = ref(null)
-const showAnomalyDetails = ref(false)
 
 const totalFrames = computed(() => dataStore.totalFrames)
 
@@ -410,12 +350,6 @@ const close = () => {
   emit('close')
 }
 
-const openAtomPairExplorer = () => {
-  emit('openAtomPairExplorer', {
-    pair: props.interactionData.pair
-  })
-}
-
 // Check if frame has this interaction
 const frameHasInteraction = (frame) => {
   if (!props.interactionData?.frames) return false
@@ -463,8 +397,6 @@ const stats = computed(() => {
       presentFrames: 0,
       avgDistance: '—',
       distanceRange: '—',
-      variability: '—',
-      stdDev: '—',
       longestStretch: 0
     }
   }
@@ -481,8 +413,6 @@ const stats = computed(() => {
   
   let avgDistance = '—'
   let distanceRange = '—'
-  let variability = '—'
-  let stdDev = '—'
   
   if (distances.length > 0) {
     const avg = distances.reduce((sum, d) => sum + d, 0) / distances.length
@@ -491,14 +421,6 @@ const stats = computed(() => {
     const min = Math.min(...distances)
     const max = Math.max(...distances)
     distanceRange = `${min.toFixed(1)} - ${max.toFixed(1)} Å`
-    
-    const variance = distances.reduce((sum, d) => sum + Math.pow(d - avg, 2), 0) / distances.length
-    const std = Math.sqrt(variance)
-    stdDev = std.toFixed(2)
-    
-    if (std < 0.3) variability = 'Low'
-    else if (std < 0.8) variability = 'Medium'
-    else variability = 'High'
   }
   
   // Calculate longest consecutive stretch
@@ -518,8 +440,6 @@ const stats = computed(() => {
     presentFrames: frames.length,
     avgDistance,
     distanceRange,
-    variability,
-    stdDev,
     longestStretch
   }
 })
@@ -554,139 +474,6 @@ const bindingEvents = computed(() => {
   }
   
   return events
-})
-
-// Distance histogram data
-const distanceHistogram = computed(() => {
-  if (!props.interactionData || !distanceData.value) return []
-  
-  const distances = []
-  const frames = props.interactionData.frames || []
-  
-  frames.forEach(frame => {
-    const dist = getFrameDistance(frame)
-    if (dist !== null) distances.push(dist)
-  })
-  
-  if (distances.length === 0) return []
-  
-  // Create bins
-  const min = Math.floor(Math.min(...distances) * 10) / 10
-  const max = Math.ceil(Math.max(...distances) * 10) / 10
-  const binWidth = 0.2 // 0.2 Å bins
-  const numBins = Math.ceil((max - min) / binWidth)
-  
-  const bins = []
-  for (let i = 0; i < numBins; i++) {
-    const binStart = min + (i * binWidth)
-    const binEnd = binStart + binWidth
-    const count = distances.filter(d => d >= binStart && d < binEnd).length
-    bins.push({
-      range: `${binStart.toFixed(1)}-${binEnd.toFixed(1)}`,
-      start: binStart,
-      end: binEnd,
-      count: count,
-      percentage: Math.round((count / distances.length) * 100)
-    })
-  }
-  
-  return bins
-})
-
-// Distance statistics for histogram
-const distanceStats = computed(() => {
-  if (!props.interactionData || !distanceData.value) {
-    return { mode: '—', median: '—', skewness: '—' }
-  }
-  
-  const distances = []
-  const frames = props.interactionData.frames || []
-  
-  frames.forEach(frame => {
-    const dist = getFrameDistance(frame)
-    if (dist !== null) distances.push(dist)
-  })
-  
-  if (distances.length === 0) {
-    return { mode: '—', median: '—', skewness: '—' }
-  }
-  
-  // Sort for median
-  const sorted = [...distances].sort((a, b) => a - b)
-  const median = sorted.length % 2 === 0
-    ? ((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2).toFixed(2) + ' Å'
-    : sorted[Math.floor(sorted.length / 2)].toFixed(2) + ' Å'
-  
-  // Find mode (most common bin)
-  const modeBin = distanceHistogram.value.reduce((max, bin) => 
-    bin.count > max.count ? bin : max, { count: 0 })
-  const mode = modeBin.range ? `${modeBin.range} Å` : '—'
-  
-  // Calculate skewness
-  const avg = distances.reduce((s, d) => s + d, 0) / distances.length
-  const std = Math.sqrt(distances.reduce((s, d) => s + Math.pow(d - avg, 2), 0) / distances.length)
-  const skew = std > 0 
-    ? distances.reduce((s, d) => s + Math.pow((d - avg) / std, 3), 0) / distances.length
-    : 0
-  
-  let skewness = 'Symmetric'
-  if (skew > 0.5) skewness = 'Right-skewed'
-  else if (skew < -0.5) skewness = 'Left-skewed'
-  
-  return { mode, median, skewness }
-})
-
-// Anomaly detection
-const anomalies = computed(() => {
-  if (!props.interactionData || !distanceData.value) return []
-  
-  const detected = []
-  const frames = props.interactionData.frames || []
-  const distances = []
-  
-  frames.forEach(frame => {
-    const dist = getFrameDistance(frame)
-    if (dist !== null) distances.push({ frame, distance: dist })
-  })
-  
-  if (distances.length < 3) return []
-  
-  // Calculate mean and std
-  const values = distances.map(d => d.distance)
-  const avg = values.reduce((s, d) => s + d, 0) / values.length
-  const std = Math.sqrt(values.reduce((s, d) => s + Math.pow(d - avg, 2), 0) / values.length)
-  
-  // Detect outliers (beyond 2 std)
-  distances.forEach(d => {
-    if (Math.abs(d.distance - avg) > 2 * std) {
-      detected.push({
-        type: 'outlier',
-        frame: d.frame,
-        description: `Distance ${d.distance.toFixed(2)}Å is ${d.distance > avg ? 'unusually high' : 'unusually low'}`,
-        value: d.distance
-      })
-    }
-  })
-  
-  // Detect sudden jumps (large change between consecutive frames)
-  const sortedDistances = [...distances].sort((a, b) => a.frame - b.frame)
-  for (let i = 1; i < sortedDistances.length; i++) {
-    const prev = sortedDistances[i - 1]
-    const curr = sortedDistances[i]
-    const change = Math.abs(curr.distance - prev.distance)
-    
-    // If consecutive frames and jump > 1.5Å (significant)
-    if (curr.frame - prev.frame === 1 && change > 1.5) {
-      detected.push({
-        type: 'jump',
-        frame: curr.frame,
-        description: `Sudden ${change.toFixed(2)}Å jump from frame ${prev.frame}`,
-        value: change
-      })
-    }
-  }
-  
-  return detected.sort((a, b) => a.frame - b.frame)
 })
 
 // Interaction type analysis
@@ -757,63 +544,6 @@ const interactionTypeAnalysis = computed(() => {
   return { types, cooccurrence: cooccurrence.sort((a, b) => b.percentage - a.percentage) }
 })
 
-// Update histogram chart
-const updateHistogramChart = () => {
-  if (!histogramChart.value || distanceHistogram.value.length === 0) return
-  
-  if (histogramInstance) {
-    histogramInstance.destroy()
-  }
-  
-  const chartData = distanceHistogram.value.map(bin => ({
-    name: bin.range,
-    y: bin.count,
-    percentage: bin.percentage
-  }))
-  
-  histogramInstance = Highcharts.chart(histogramChart.value, {
-    chart: {
-      type: 'column',
-      backgroundColor: 'transparent',
-      height: 200
-    },
-    title: { text: null },
-    credits: { enabled: false },
-    xAxis: {
-      type: 'category',
-      labels: {
-        rotation: -45,
-        style: { fontSize: '10px', color: '#6e6e73' }
-      },
-      title: { text: 'Distance (Å)', style: { fontSize: '11px', color: '#6e6e73' } }
-    },
-    yAxis: {
-      title: { text: 'Frames', style: { fontSize: '11px', color: '#6e6e73' } },
-      labels: { style: { fontSize: '10px', color: '#6e6e73' } }
-    },
-    legend: { enabled: false },
-    plotOptions: {
-      column: {
-        color: '#3B6EF5',
-        borderRadius: 3,
-        dataLabels: {
-          enabled: true,
-          format: '{point.y}',
-          style: { fontSize: '9px', color: '#6e6e73' }
-        }
-      }
-    },
-    tooltip: {
-      backgroundColor: 'rgba(255, 255, 255, 0.98)',
-      borderRadius: 8,
-      formatter: function() {
-        return `<b>${this.point.name} Å</b><br/>Frames: ${this.point.y} (${this.point.percentage}%)`
-      }
-    },
-    series: [{ name: 'Frames', data: chartData }]
-  })
-}
-
 // Update distance chart
 const updateDistanceChart = () => {
   if (!distanceChart.value || !props.interactionData) return
@@ -823,23 +553,18 @@ const updateDistanceChart = () => {
   }
   
   const chartData = []
-  const anomalyFrames = new Set(anomalies.value.map(a => a.frame))
   
   for (let i = 1; i <= totalFrames.value; i++) {
     const dist = getFrameDistance(i)
     if (dist !== null) {
-      const isAnomaly = anomalyFrames.has(i)
       chartData.push({
         x: i,
         y: dist,
         marker: {
-          fillColor: isAnomaly ? '#FF3B30' : (frameHasInteraction(i) ? '#3B6EF5' : '#CC0000'),
-          radius: isAnomaly ? 7 : 4,
-          symbol: isAnomaly ? 'diamond' : 'circle',
-          lineWidth: isAnomaly ? 2 : 0,
-          lineColor: '#FF3B30'
-        },
-        isAnomaly: isAnomaly
+          fillColor: frameHasInteraction(i) ? '#3B6EF5' : '#CC0000',
+          radius: 4,
+          symbol: 'circle'
+        }
       })
     }
   }
@@ -922,8 +647,7 @@ const updateDistanceChart = () => {
       borderWidth: 1,
       borderColor: '#d2d2d7',
       formatter: function() {
-        const anomalyInfo = this.point.isAnomaly ? '<br/><span style="color:#FF3B30">⚠️ Anomaly detected</span>' : ''
-        return `<b>Frame ${this.x}</b><br/>Distance: ${this.y.toFixed(2)} Å${anomalyInfo}`
+        return `<b>Frame ${this.x}</b><br/>Distance: ${this.y.toFixed(2)} Å`
       }
     },
     series: [{
@@ -939,7 +663,6 @@ const loadDistanceData = async () => {
   
   loading.value = true
   error.value = null
-  showAnomalyDetails.value = false
   
   try {
     const response = await api.getInteractionDistances(dataStore.currentSystem.id)
@@ -947,7 +670,6 @@ const loadDistanceData = async () => {
     
     await nextTick()
     updateDistanceChart()
-    updateHistogramChart()
   } catch (err) {
     error.value = err.message || 'Failed to load distance data'
     console.error('Error loading distance data:', err)
@@ -985,30 +707,6 @@ const loadAtomPairData = async () => {
     console.error('Error loading atom pair data:', err)
     // Don't show error - atom pairs are supplementary data
   }
-}
-
-// Export data as CSV
-const exportData = () => {
-  if (!props.interactionData) return
-  
-  let csv = 'Frame,Status,Distance (Å),Type\n'
-  
-  for (let i = 1; i <= totalFrames.value; i++) {
-    const status = frameHasInteraction(i) ? 'Present' : 'Absent'
-    const dist = getFrameDistance(i)
-    const distStr = dist !== null ? dist.toFixed(2) : ''
-    const type = frameHasInteraction(i) ? props.interactionData.type : ''
-    
-    csv += `${i},${status},${distStr},${type}\n`
-  }
-  
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${props.interactionData.pair.replace(' ↔ ', '_')}_trajectory.csv`
-  a.click()
-  window.URL.revokeObjectURL(url)
 }
 
 watch(() => props.visible, (newVal) => {
@@ -1575,123 +1273,6 @@ td {
 
 .secondary-btn {
   background: #f5f5f7;
-  color: #1d1d1f;
-}
-
-.secondary-btn:hover {
-  background: #e8e8ed;
-}
-
-/* Anomaly Detection Styles */
-.anomaly-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: #FFF5F5;
-  border: 1px solid #FFCCCC;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: #CC0000;
-}
-
-.anomaly-icon {
-  font-size: 16px;
-}
-
-.anomaly-toggle {
-  margin-left: auto;
-  padding: 4px 12px;
-  background: #FF3B30;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.anomaly-toggle:hover {
-  background: #CC0000;
-}
-
-.anomaly-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-  max-height: 150px;
-  overflow-y: auto;
-  padding: 8px;
-  background: #fafafa;
-  border-radius: 8px;
-}
-
-.anomaly-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: white;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid #e8e8ed;
-}
-
-.anomaly-item:hover {
-  border-color: #FF3B30;
-  background: #FFF5F5;
-}
-
-.anomaly-badge {
-  font-size: 14px;
-}
-
-.anomaly-desc {
-  flex: 1;
-  color: #1d1d1f;
-}
-
-.anomaly-frame {
-  color: #6e6e73;
-  font-weight: 600;
-}
-
-/* Distance Histogram Styles */
-.chart-container-small {
-  min-height: 200px;
-  width: 100%;
-}
-
-.distribution-stats {
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-  margin-top: 12px;
-  padding: 12px;
-  background: #f5f5f7;
-  border-radius: 8px;
-}
-
-.dist-stat {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.dist-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6e6e73;
-}
-
-.dist-value {
-  font-size: 13px;
-  font-weight: 600;
   color: #1d1d1f;
 }
 
