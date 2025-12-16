@@ -69,6 +69,11 @@ export default {
     return response.data
   },
 
+  async getAtomPairsBatch(systemId, pairs) {
+    const response = await api.post(`/systems/${systemId}/atom-pairs/batch`, { pairs })
+    return response.data
+  },
+
   async getInteractionDistances(systemId) {
     const response = await api.get(`/systems/${systemId}/interaction-distances`)
     return response.data

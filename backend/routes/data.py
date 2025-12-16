@@ -939,6 +939,278 @@ def get_atom_pairs(system_id):
         import traceback
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
+@bp.route('/systems/<system_id>/atom-pairs/batch', methods=['POST'])
+def get_atom_pairs_batch(system_id):
+    """
+    Get atom pair data for multiple residue pairs at once.
+    POST body: { "pairs": [ { "resName1", "resNum1", "chain1", "resName2", "resNum2", "chain2" }, ... ] }
+    Returns: { "pairKey1": { atomPairs, atomPairsByFrame, ... }, "pairKey2": {...}, ... }
+    """
+    from flask import request
+    
+    try:
+        data = request.get_json()
+        if not data or 'pairs' not in data:
+            return jsonify({'error': 'Missing pairs array in request body'}), 400
+        
+        pairs = data['pairs']
+        if not pairs or len(pairs) == 0:
+            return jsonify({}), 200
+        
+        data_folder = current_app.config['DATA_FOLDER']
+        system_path = Path(data_folder) / 'systems' / system_id
+        
+        if not system_path.exists():
+            return jsonify({'error': 'System not found'}), 404
+        
+        # Find all frame folders once
+        frame_folders = sorted(
+            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
+            key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else f.name
+        )
+        
+        if not frame_folders:
+            return jsonify({'error': 'No frames found for this system'}), 404
+        
+        total_frames = len(frame_folders)
+        
+        # Build a lookup structure for all pairs we're interested in
+        # Key: (res_name1, res_num1, chain1, res_name2, res_num2, chain2) -> pair_key
+        pair_lookup = {}
+        pair_keys = {}
+        
+        for pair in pairs:
+            res_name1 = pair.get('resName1')
+            res_num1 = str(pair.get('resNum1'))
+            chain1 = pair.get('chain1')
+            res_name2 = pair.get('resName2')
+            res_num2 = str(pair.get('resNum2'))
+            chain2 = pair.get('chain2')
+            
+            if not all([res_name1, res_num1, chain1, res_name2, res_num2, chain2]):
+                continue
+            
+            # Create a unique key for this pair
+            pair_key = f"{chain1}-{res_name1}{res_num1}_{chain2}-{res_name2}{res_num2}"
+            
+            # Store both orderings for matching
+            key1 = (res_name1, res_num1, chain1, res_name2, res_num2, chain2)
+            key2 = (res_name2, res_num2, chain2, res_name1, res_num1, chain1)
+            
+            pair_lookup[key1] = {
+                'pair_key': pair_key,
+                'res_name1': res_name1, 'res_num1': res_num1, 'chain1': chain1,
+                'res_name2': res_name2, 'res_num2': res_num2, 'chain2': chain2,
+                'order': 1
+            }
+            pair_lookup[key2] = {
+                'pair_key': pair_key,
+                'res_name1': res_name1, 'res_num1': res_num1, 'chain1': chain1,
+                'res_name2': res_name2, 'res_num2': res_num2, 'chain2': chain2,
+                'order': 2
+            }
+            pair_keys[pair_key] = {
+                'res_name1': res_name1, 'res_num1': res_num1, 'chain1': chain1,
+                'res_name2': res_name2, 'res_num2': res_num2, 'chain2': chain2,
+                'interaction_types': set(),
+                'atom_pairs_by_frame': {},
+                'atom_pair_stats': {}
+            }
+        
+        # First pass: collect interaction types for each pair from final_file.csv
+        for frame_folder in frame_folders:
+            csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_final_file.csv"
+            if not csv_file.exists():
+                continue
+            
+            with open(csv_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    row_key = (
+                        row.get('Res. Name 1'), row.get('Res. Number 1'), row.get('Chain 1'),
+                        row.get('Res. Name 2'), row.get('Res. Number 2'), row.get('Chain 2')
+                    )
+                    
+                    if row_key in pair_lookup:
+                        pair_info = pair_lookup[row_key]
+                        pair_key = pair_info['pair_key']
+                        
+                        if row.get('Type of Interactions'):
+                            raw_types = [t.strip() for t in row['Type of Interactions'].split(';') if t.strip()]
+                            for raw_type in raw_types:
+                                normalized = _normalize_interaction_type(raw_type)
+                                if normalized:
+                                    pair_keys[pair_key]['interaction_types'].add(normalized)
+        
+        # Get all unique interaction types across all pairs
+        all_interaction_types = set()
+        for pk_data in pair_keys.values():
+            all_interaction_types.update(pk_data['interaction_types'])
+        
+        # Second pass: collect atom pairs from interaction-specific CSV files
+        for frame_folder in frame_folders:
+            frame_num = int(frame_folder.name.split('_')[1])
+            
+            # Initialize frame data for all pairs
+            for pair_key in pair_keys:
+                if frame_num not in pair_keys[pair_key]['atom_pairs_by_frame']:
+                    pair_keys[pair_key]['atom_pairs_by_frame'][frame_num] = []
+            
+            # Check each interaction type CSV file
+            for interaction_type in all_interaction_types:
+                csv_filename = _get_interaction_csv_filename(interaction_type)
+                if not csv_filename:
+                    continue
+                
+                csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_{csv_filename}.csv"
+                if not csv_file.exists():
+                    continue
+                
+                with open(csv_file, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        row_key = (
+                            row.get('Res. Name 1'), row.get('Res. Number 1'), row.get('Chain 1'),
+                            row.get('Res. Name 2'), row.get('Res. Number 2'), row.get('Chain 2')
+                        )
+                        
+                        if row_key not in pair_lookup:
+                            continue
+                        
+                        pair_info = pair_lookup[row_key]
+                        pair_key = pair_info['pair_key']
+                        
+                        # Skip if this pair doesn't have this interaction type
+                        if interaction_type not in pair_keys[pair_key]['interaction_types']:
+                            continue
+                        
+                        # Get atom labels (simplified version - use existing logic patterns)
+                        is_pi_interaction = 'π' in interaction_type or 'pi' in interaction_type.lower()
+                        
+                        if is_pi_interaction:
+                            is_pi_pi = interaction_type.lower().count('pi') >= 2 or 'π-π' in interaction_type
+                            is_ch_pi = ('ch' in interaction_type.lower() or 'c-h' in interaction_type.lower()) and not is_pi_pi
+                            is_cation_pi = 'cation' in interaction_type.lower()
+                            is_anion_pi = 'anion' in interaction_type.lower()
+                            is_lp_pi = 'lp' in interaction_type.lower() or 'lone' in interaction_type.lower()
+                            is_amino_pi = 'amino' in interaction_type.lower() or 'polar' in interaction_type.lower()
+                            is_ons_h_pi = 'o/n/s' in interaction_type.lower() or 'n-s-o-h' in interaction_type.lower()
+                            
+                            if is_pi_pi:
+                                atom1, atom2 = "Pi-Ring", "Pi-Ring"
+                            elif is_ch_pi or is_ons_h_pi:
+                                c_atom = row.get('C Atom', '').strip()
+                                h_atom = row.get('H Atom', '').strip()
+                                ch_label = f"{c_atom}({h_atom})" if c_atom and h_atom else (c_atom if c_atom else "CH")
+                                atom1, atom2 = ch_label, "Pi-Ring"
+                            elif is_cation_pi:
+                                cation_atom = row.get('Cation Atom', '').strip()
+                                atom1, atom2 = cation_atom if cation_atom else "Cation", "Pi-Ring"
+                            elif is_anion_pi:
+                                anion_atom = row.get('Anion Atom', '').strip()
+                                atom1, atom2 = anion_atom if anion_atom else "Anion", "Pi-Ring"
+                            elif is_lp_pi:
+                                lp_atom = row.get('Lone_pair Atom', '').strip()
+                                atom1, atom2 = lp_atom if lp_atom else "Lone_pair", "Pi-Ring"
+                            elif is_amino_pi:
+                                polar_atom = row.get('Polar Atom', '').strip()
+                                atom1, atom2 = polar_atom if polar_atom else "Polar", "Pi-Ring"
+                            else:
+                                atom1 = row.get('Atom 1', '').strip() or "Partner"
+                                atom2 = "Pi-Ring"
+                        else:
+                            if pair_info['order'] == 1:
+                                atom1 = row.get('Atom 1', '').strip()
+                                atom2 = row.get('Atom 2', '').strip()
+                            else:
+                                atom1 = row.get('Atom 2', '').strip()
+                                atom2 = row.get('Atom 1', '').strip()
+                        
+                        if not atom1 or not atom2:
+                            continue
+                        
+                        atom_pair_key = f"{atom1}-{atom2}"
+                        
+                        # Get distance
+                        distance_str = row.get('Distance (Å)', '').strip().replace('*', '')
+                        distance = None
+                        if distance_str:
+                            try:
+                                distance = float(distance_str)
+                            except ValueError:
+                                pass
+                        
+                        atom_pair_entry = {
+                            'atom1': atom1,
+                            'atom2': atom2,
+                            'atomPair': atom_pair_key,
+                            'interactionType': interaction_type,
+                            'distance': distance,
+                            'frame': frame_num
+                        }
+                        
+                        pair_keys[pair_key]['atom_pairs_by_frame'][frame_num].append(atom_pair_entry)
+                        
+                        # Update stats
+                        stats = pair_keys[pair_key]['atom_pair_stats']
+                        if atom_pair_key not in stats:
+                            stats[atom_pair_key] = {
+                                'atom1': atom1,
+                                'atom2': atom2,
+                                'atomPair': atom_pair_key,
+                                'frames': [],
+                                'distances': [],
+                                'count': 0,
+                                'interactionTypes': set()
+                            }
+                        
+                        stats[atom_pair_key]['frames'].append(frame_num)
+                        stats[atom_pair_key]['interactionTypes'].add(interaction_type)
+                        stats[atom_pair_key]['count'] += 1
+                        if distance is not None:
+                            stats[atom_pair_key]['distances'].append(distance)
+        
+        # Build response for each pair
+        result = {}
+        for pair_key, pk_data in pair_keys.items():
+            atom_pair_list = []
+            for key, stats in pk_data['atom_pair_stats'].items():
+                frames_set = sorted(list(set(stats['frames'])))
+                atom_pair_list.append({
+                    'atom1': stats['atom1'],
+                    'atom2': stats['atom2'],
+                    'atomPair': stats['atomPair'],
+                    'frames': frames_set,
+                    'frameCount': len(frames_set),
+                    'consistency': len(frames_set) / total_frames if total_frames > 0 else 0,
+                    'count': stats['count'],
+                    'interactionTypes': list(stats['interactionTypes']),
+                    'avgDistance': sum(stats['distances']) / len(stats['distances']) if stats['distances'] else None
+                })
+            
+            atom_pair_list.sort(key=lambda x: x['consistency'], reverse=True)
+            
+            result[pair_key] = {
+                'residuePair': {
+                    'resName1': pk_data['res_name1'],
+                    'resNum1': int(pk_data['res_num1']),
+                    'chain1': pk_data['chain1'],
+                    'resName2': pk_data['res_name2'],
+                    'resNum2': int(pk_data['res_num2']),
+                    'chain2': pk_data['chain2']
+                },
+                'totalFrames': total_frames,
+                'atomPairs': atom_pair_list,
+                'atomPairsByFrame': {str(k): v for k, v in pk_data['atom_pairs_by_frame'].items()},
+                'interactionTypes': list(pk_data['interaction_types'])
+            }
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
 @bp.route('/systems/<system_id>/interaction-distances', methods=['GET'])
 def get_interaction_distances(system_id):
     """

@@ -1276,7 +1276,7 @@ const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
   }
 }
 
-// Load atom pair data for all unique pairs in the current filtered interactions
+// Load atom pair data for all unique pairs in the current filtered interactions (BATCH)
 const loadAtomPairDataForAllPairs = async () => {
   if (!dataStore.currentSystem) return
   
@@ -1285,25 +1285,56 @@ const loadAtomPairDataForAllPairs = async () => {
   
   if (stablePairs.length === 0) return
   
-  // Get unique pairs
+  // Get unique pairs that haven't been loaded yet
+  const pairsToLoad = []
   const uniquePairs = new Map()
+  
   stablePairs.forEach(interaction => {
     const pairKey = formatPairKey(interaction.id1, interaction.id2)
-    if (!uniquePairs.has(pairKey)) {
-      uniquePairs.set(pairKey, {
-        pairKey,
-        id1: interaction.id1,
-        id2: interaction.id2
-      })
+    if (!uniquePairs.has(pairKey) && !atomPairDataByPair.value.has(pairKey)) {
+      const res1 = parseResidueId(interaction.id1)
+      const res2 = parseResidueId(interaction.id2)
+      
+      if (res1 && res2) {
+        uniquePairs.set(pairKey, true)
+        pairsToLoad.push({
+          resName1: res1.resName,
+          resNum1: res1.resNum,
+          chain1: res1.chain,
+          resName2: res2.resName,
+          resNum2: res2.resNum,
+          chain2: res2.chain,
+          pairKey: pairKey
+        })
+      }
     }
   })
   
-  // Load atom pair data for all unique pairs in parallel
-  const loadPromises = Array.from(uniquePairs.values()).map(pair => 
-    loadAtomPairDataForPair(pair.pairKey, pair.id1, pair.id2)
-  )
+  // If nothing to load, return early
+  if (pairsToLoad.length === 0) return
   
-  await Promise.all(loadPromises)
+  try {
+    // Make a single batch API call
+    const batchResult = await api.getAtomPairsBatch(dataStore.currentSystem.id, pairsToLoad)
+    
+    // Store results in the cache, mapping the returned keys to our expected keys
+    pairsToLoad.forEach(pair => {
+      // The backend returns keys in format: "chain1-resName1resNum1_chain2-resName2resNum2"
+      const backendKey = `${pair.chain1}-${pair.resName1}${pair.resNum1}_${pair.chain2}-${pair.resName2}${pair.resNum2}`
+      
+      if (batchResult[backendKey]) {
+        atomPairDataByPair.value.set(pair.pairKey, batchResult[backendKey])
+      }
+    })
+  } catch (error) {
+    console.error('Error loading atom pair data batch:', error)
+    // Fallback: load individually (slower but works)
+    for (const pair of pairsToLoad) {
+      await loadAtomPairDataForPair(pair.pairKey, 
+        `${pair.chain1}-${pair.resName1}${pair.resNum1}`, 
+        `${pair.chain2}-${pair.resName2}${pair.resNum2}`)
+    }
+  }
 }
 
 // Get atom pairs for a specific frame (returns array of atomPair strings)
