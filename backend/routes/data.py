@@ -680,131 +680,133 @@ def get_atom_pairs(system_id):
                             row.get('Chain 2') == chain1)
                         
                         if matches_order1 or matches_order2:
-                            # Aromatic residues that have Pi rings (STRICT: only these 4)
-                            pi_ring_residues = {'HIS', 'TRP', 'TYR', 'PHE'}
-                            
                             # Check if this is a Pi interaction type
                             is_pi_interaction = 'π' in interaction_type or 'pi' in interaction_type.lower()
                             
-                            # Get atoms and residue info in correct order relative to our query
+                            # Get residue info in correct order relative to our query
                             if matches_order1:
-                                raw_atom1 = row.get('Atom 1', '').strip()
-                                raw_atom2 = row.get('Atom 2', '').strip()
                                 row_res_name1 = res_name1
                                 row_res_name2 = res_name2
                                 row_res_num1 = res_num1
                                 row_res_num2 = res_num2
+                                row_chain1 = chain1
+                                row_chain2 = chain2
                             else:
-                                # Swap atoms to match query order
-                                raw_atom1 = row.get('Atom 2', '').strip()
-                                raw_atom2 = row.get('Atom 1', '').strip()
                                 row_res_name1 = res_name1
                                 row_res_name2 = res_name2
                                 row_res_num1 = res_num1
                                 row_res_num2 = res_num2
+                                row_chain1 = chain1
+                                row_chain2 = chain2
                             
-                            # For Pi interactions, enforce strict labeling rules:
-                            # - Aromatic residue (PHE/TYR/TRP/HIS) → ALWAYS "Pi-Ring (RESNAME)"
-                            # - Non-aromatic partner → labeled based on interaction type
+                            # For Pi interactions, use the CSV columns directly
                             if is_pi_interaction:
-                                res1_is_aromatic = row_res_name1 in pi_ring_residues
-                                res2_is_aromatic = row_res_name2 in pi_ring_residues
-                                
-                                # Partner residues for specific interaction types
-                                cation_residues = {'LYS', 'ARG', 'HIS'}  # HIS can be protonated
-                                
                                 # Determine interaction subtype
-                                is_ch_pi = 'ch' in interaction_type.lower() or 'c-h' in interaction_type.lower()
-                                is_cation_pi = 'cation' in interaction_type.lower()
                                 is_pi_pi = interaction_type.lower().count('pi') >= 2 or 'π-π' in interaction_type
-                                is_metal_pi = 'metal' in interaction_type.lower()
+                                is_ch_pi = ('ch' in interaction_type.lower() or 'c-h' in interaction_type.lower()) and not is_pi_pi
+                                is_cation_pi = 'cation' in interaction_type.lower()
+                                is_anion_pi = 'anion' in interaction_type.lower()
+                                is_lp_pi = 'lp' in interaction_type.lower() or 'lone' in interaction_type.lower()
+                                is_amino_pi = 'amino' in interaction_type.lower() or 'polar' in interaction_type.lower()
+                                is_ons_h_pi = 'o/n/s' in interaction_type.lower() or 'n-s-o-h' in interaction_type.lower()
                                 
-                                # --- STRICT LABELING RULES ---
+                                # Get Ring From column to know which residue is the pi-ring
+                                ring_from = row.get('Ring From', '').strip()
                                 
-                                # Rule: π-π interaction - both sides MUST be Pi-Rings
+                                # Helper to check if a residue matches Ring From
+                                # Ring From format: "RESNAME-RESNUM" e.g., "U-23", "C-22", "ARG-2"
+                                def is_ring_residue(res_name, res_num, chain):
+                                    if not ring_from:
+                                        return False
+                                    # Ring From can be "RESNAME-RESNUM" or "CHAIN-RESNUM"
+                                    return f"{res_name}-{res_num}" in ring_from or f"{chain}-{res_num}" in ring_from
+                                
+                                # Determine which residue is the ring based on Ring From column
+                                res1_is_ring = is_ring_residue(row_res_name1, row_res_num1, row_chain1)
+                                res2_is_ring = is_ring_residue(row_res_name2, row_res_num2, row_chain2)
+                                
+                                # If Ring From doesn't help, check if residue appears in Ring From at all
+                                if not res1_is_ring and not res2_is_ring and ring_from:
+                                    # Try matching just the residue number
+                                    if str(row_res_num1) in ring_from:
+                                        res1_is_ring = True
+                                    elif str(row_res_num2) in ring_from:
+                                        res2_is_ring = True
+                                
+                                # --- LABELING BASED ON INTERACTION TYPE AND CSV COLUMNS ---
+                                # Format: ALWAYS "Atom ↔ Pi-Ring" (atom first, pi-ring second)
+                                
+                                # Rule: π-π interaction - both sides are Pi-Rings (no residue names)
                                 if is_pi_pi:
-                                    atom1 = f"Pi-Ring ({row_res_name1}{row_res_num1})"
-                                    atom2 = f"Pi-Ring ({row_res_name2}{row_res_num2})"
+                                    atom1 = "Pi-Ring"
+                                    atom2 = "Pi-Ring"
                                 
-                                # Rule: CH-π interaction
-                                # - π-side (aromatic) → Pi-Ring
-                                # - partner (C-H group) → use atom if provided, else "CH"
-                                elif is_ch_pi:
-                                    if res1_is_aromatic and not res2_is_aromatic:
-                                        # Residue 1 is Pi-ring, Residue 2 is CH donor
-                                        atom1 = f"Pi-Ring ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"CH ({row_res_name2}{row_res_num2})"
-                                    elif res2_is_aromatic and not res1_is_aromatic:
-                                        # Residue 2 is Pi-ring, Residue 1 is CH donor
-                                        atom1 = raw_atom1 if raw_atom1 else f"CH ({row_res_name1}{row_res_num1})"
-                                        atom2 = f"Pi-Ring ({row_res_name2}{row_res_num2})"
-                                    elif res1_is_aromatic and res2_is_aromatic:
-                                        # Both aromatic - unusual for CH-π, but handle it
-                                        # One must be acting as CH donor (has the atom), other is Pi-ring
-                                        if raw_atom1 and not raw_atom2:
-                                            atom1 = raw_atom1
-                                            atom2 = f"Pi-Ring ({row_res_name2}{row_res_num2})"
-                                        elif raw_atom2 and not raw_atom1:
-                                            atom1 = f"Pi-Ring ({row_res_name1}{row_res_num1})"
-                                            atom2 = raw_atom2
-                                        else:
-                                            # Default: first aromatic as CH donor, second as Pi-ring
-                                            atom1 = raw_atom1 if raw_atom1 else f"CH ({row_res_name1}{row_res_num1})"
-                                            atom2 = f"Pi-Ring ({row_res_name2}{row_res_num2})"
-                                    else:
-                                        # Neither aromatic - shouldn't happen for CH-π
-                                        atom1 = raw_atom1 if raw_atom1 else f"CH ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"CH ({row_res_name2}{row_res_num2})"
+                                # Rule: CH-π interaction (C-H_pi.csv and N-S-O-H_pi.csv)
+                                # Columns: C Atom, H Atom, C Atom From, Ring From
+                                elif is_ch_pi or is_ons_h_pi:
+                                    c_atom = row.get('C Atom', '').strip()
+                                    h_atom = row.get('H Atom', '').strip()
+                                    c_atom_from = row.get('C Atom From', '').strip()
+                                    
+                                    # Format: "C_ATOM(H_ATOM)" for the CH side
+                                    ch_label = f"{c_atom}({h_atom})" if c_atom and h_atom else (c_atom if c_atom else "CH")
+                                    
+                                    # ALWAYS put atom first, Pi-Ring second
+                                    atom1 = ch_label
+                                    atom2 = "Pi-Ring"
                                 
                                 # Rule: Cation-π interaction
-                                # - π-side (aromatic) → Pi-Ring
-                                # - partner (cation: ARG, LYS, protonated HIS) → use atom if provided, else "Cation"
+                                # Columns: Cation Atom, Cation From, Ring From
                                 elif is_cation_pi:
-                                    if res1_is_aromatic and row_res_name2 in cation_residues:
-                                        atom1 = f"Pi-Ring ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"Cation ({row_res_name2}{row_res_num2})"
-                                    elif res2_is_aromatic and row_res_name1 in cation_residues:
-                                        atom1 = raw_atom1 if raw_atom1 else f"Cation ({row_res_name1}{row_res_num1})"
-                                        atom2 = f"Pi-Ring ({row_res_name2}{row_res_num2})"
-                                    elif res1_is_aromatic:
-                                        atom1 = f"Pi-Ring ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"Cation ({row_res_name2}{row_res_num2})"
-                                    elif res2_is_aromatic:
-                                        atom1 = raw_atom1 if raw_atom1 else f"Cation ({row_res_name1}{row_res_num1})"
-                                        atom2 = f"Pi-Ring ({row_res_name2}{row_res_num2})"
-                                    else:
-                                        atom1 = raw_atom1 if raw_atom1 else f"Cation ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"Cation ({row_res_name2}{row_res_num2})"
+                                    cation_atom = row.get('Cation Atom', '').strip()
+                                    cation_label = cation_atom if cation_atom else "Cation"
+                                    
+                                    # ALWAYS put atom first, Pi-Ring second
+                                    atom1 = cation_label
+                                    atom2 = "Pi-Ring"
                                 
-                                # Rule: Metal-π interaction
-                                # - π-side (aromatic) → Pi-Ring
-                                # - partner (metal ion) → use atom if provided, else "Metal"
-                                elif is_metal_pi:
-                                    if res1_is_aromatic:
-                                        atom1 = f"Pi-Ring ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"Metal ({row_res_name2}{row_res_num2})"
-                                    elif res2_is_aromatic:
-                                        atom1 = raw_atom1 if raw_atom1 else f"Metal ({row_res_name1}{row_res_num1})"
-                                        atom2 = f"Pi-Ring ({row_res_name2}{row_res_num2})"
-                                    else:
-                                        atom1 = raw_atom1 if raw_atom1 else f"Metal ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"Metal ({row_res_name2}{row_res_num2})"
+                                # Rule: Anion-π interaction
+                                # Columns: Anion Atom, Anion From, Ring From
+                                elif is_anion_pi:
+                                    anion_atom = row.get('Anion Atom', '').strip()
+                                    anion_label = anion_atom if anion_atom else "Anion"
+                                    
+                                    # ALWAYS put atom first, Pi-Ring second
+                                    atom1 = anion_label
+                                    atom2 = "Pi-Ring"
                                 
-                                # Other Pi interactions (Anion-π, lp-π, etc.)
+                                # Rule: Lone pair-π interaction
+                                # Columns: Lone_pair Atom, Lone_pair From, Ring From
+                                elif is_lp_pi:
+                                    lp_atom = row.get('Lone_pair Atom', '').strip()
+                                    lp_label = lp_atom if lp_atom else "Lone_pair"
+                                    
+                                    # ALWAYS put atom first, Pi-Ring second
+                                    atom1 = lp_label
+                                    atom2 = "Pi-Ring"
+                                
+                                # Rule: Amino-π (Polar-π) interaction
+                                # Columns: Polar Atom, Polar From, Ring From
+                                elif is_amino_pi:
+                                    polar_atom = row.get('Polar Atom', '').strip()
+                                    polar_label = polar_atom if polar_atom else "Polar"
+                                    
+                                    # ALWAYS put atom first, Pi-Ring second
+                                    atom1 = polar_label
+                                    atom2 = "Pi-Ring"
+                                
+                                # Other Pi interactions - generic fallback
                                 else:
-                                    if res1_is_aromatic:
-                                        atom1 = f"Pi-Ring ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"Partner ({row_res_name2}{row_res_num2})"
-                                    elif res2_is_aromatic:
-                                        atom1 = raw_atom1 if raw_atom1 else f"Partner ({row_res_name1}{row_res_num1})"
-                                        atom2 = f"Pi-Ring ({row_res_name2}{row_res_num2})"
-                                    else:
-                                        atom1 = raw_atom1 if raw_atom1 else f"Atom ({row_res_name1}{row_res_num1})"
-                                        atom2 = raw_atom2 if raw_atom2 else f"Atom ({row_res_name2}{row_res_num2})"
+                                    atom1 = row.get('Atom 1', '').strip() or "Partner"
+                                    atom2 = "Pi-Ring"
                             else:
                                 # Non-Pi interaction - use atom names directly
-                                atom1 = raw_atom1
-                                atom2 = raw_atom2
+                                if matches_order1:
+                                    atom1 = row.get('Atom 1', '').strip()
+                                    atom2 = row.get('Atom 2', '').strip()
+                                else:
+                                    atom1 = row.get('Atom 2', '').strip()
+                                    atom2 = row.get('Atom 1', '').strip()
                             
                             if atom1 and atom2:
                                 atom_pair_key = f"{atom1}-{atom2}"
