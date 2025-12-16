@@ -41,6 +41,32 @@
           </div>
         </div>
       </div>
+      <div class="atom-change-selector">
+        <label class="selector-label">
+          <span class="label-icon">●</span>
+          Atom Change Detection Mode
+        </label>
+        <div class="selector-wrapper">
+          <select 
+            v-model="atomChangeMode" 
+            @change="updateChart"
+            class="mode-select"
+          >
+            <option 
+              v-for="option in atomChangeModeOptions" 
+              :key="option.value" 
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+          <span class="select-arrow">▼</span>
+        </div>
+        <p class="selector-description">
+          {{ atomChangeModeOptions.find(o => o.value === atomChangeMode)?.description }}
+        </p>
+      </div>
+      
       <div class="info-notice">
         <strong>Interaction Timeline View:</strong> Click on a segment for trajectory analysis.
       </div>
@@ -217,6 +243,14 @@ const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
 const statistics = ref(null)
 const hiddenTypes = ref(new Set()) // Track hidden interaction types from legend clicks
+const atomChangeMode = ref('previous') // 'previous' | 'dominant' | 'first'
+
+// Atom change comparison mode options
+const atomChangeModeOptions = [
+  { value: 'previous', label: 'Previous Frame', description: 'Compare with the immediately preceding frame' },
+  { value: 'dominant', label: 'Most Dominant Atom Pair', description: 'Compare with the most frequently occurring atom pair' },
+  { value: 'first', label: 'First Frame', description: 'Compare with the first frame where interaction appears' }
+]
 
 const conservationTicks = computed(() => {
   const ticks = []
@@ -1281,69 +1315,125 @@ const getAtomPairsForFrame = (atomPairData, frame) => {
   return [...new Set(frameData.map(entry => entry.atomPair))]
 }
 
-// Check if atoms changed between frames
-// Returns true if atom pairs for the given interaction type are different between current and previous frame
+// Get atom pairs for a specific frame and type
+const getAtomPairsForFrameAndType = (atomPairData, frame, type) => {
+  if (!atomPairData || !atomPairData.atomPairsByFrame) return []
+  const frameKey = String(frame)
+  const frameData = atomPairData.atomPairsByFrame[frameKey] || []
+  const typePairs = frameData
+    .filter(entry => entry.interactionType === type)
+    .map(entry => entry.atomPair)
+  return [...new Set(typePairs)].sort()
+}
+
+// Get the most dominant (most frequent) atom pair set for a given type
+const getDominantAtomPairs = (atomPairData, type) => {
+  if (!atomPairData || !atomPairData.atomPairsByFrame) return []
+  
+  // Count frequency of each unique atom pair combination
+  const combinationCounts = new Map()
+  
+  Object.keys(atomPairData.atomPairsByFrame).forEach(frameKey => {
+    const frameData = atomPairData.atomPairsByFrame[frameKey] || []
+    const typePairs = frameData
+      .filter(entry => entry.interactionType === type)
+      .map(entry => entry.atomPair)
+    const uniqueSorted = [...new Set(typePairs)].sort()
+    
+    if (uniqueSorted.length > 0) {
+      const key = uniqueSorted.join('|')
+      combinationCounts.set(key, (combinationCounts.get(key) || 0) + 1)
+    }
+  })
+  
+  // Find the most frequent combination
+  let maxCount = 0
+  let dominantKey = ''
+  combinationCounts.forEach((count, key) => {
+    if (count > maxCount) {
+      maxCount = count
+      dominantKey = key
+    }
+  })
+  
+  return dominantKey ? dominantKey.split('|') : []
+}
+
+// Get the first frame where this interaction type appears
+const getFirstFrameAtomPairs = (atomPairData, type) => {
+  if (!atomPairData || !atomPairData.atomPairsByFrame) return []
+  
+  // Get all frame numbers and sort them
+  const frameNumbers = Object.keys(atomPairData.atomPairsByFrame)
+    .map(k => parseInt(k))
+    .sort((a, b) => a - b)
+  
+  // Find the first frame with this interaction type
+  for (const frameNum of frameNumbers) {
+    const pairs = getAtomPairsForFrameAndType(atomPairData, frameNum, type)
+    if (pairs.length > 0) {
+      return pairs
+    }
+  }
+  
+  return []
+}
+
+// Compare two sorted atom pair arrays
+const atomPairSetsEqual = (set1, set2) => {
+  if (set1.length !== set2.length) return false
+  for (let i = 0; i < set1.length; i++) {
+    if (set1[i] !== set2[i]) return false
+  }
+  return true
+}
+
+// Check if atoms changed based on selected comparison mode
+// Returns true if atom pairs for the given interaction type differ from the reference
 const hasAtomChange = (pairKey, frame, type) => {
   // pairKey format: "A-LYS8_B-ASP45" (from loadAtomPairDataForPair)
   const atomPairData = atomPairDataByPair.value.get(pairKey)
   if (!atomPairData) return false
   
-  // Can't compare if frame is 1 (no previous frame)
-  if (frame <= 1) return false
+  // Get current frame's atom pairs
+  const currentPairs = getAtomPairsForFrameAndType(atomPairData, frame, type)
   
-  const currentFrame = frame
-  const previousFrame = frame - 1
+  // If current frame has no atoms for this type, no change to show
+  if (currentPairs.length === 0) return false
   
-  // Get frame data (keys are strings in the response)
-  const frameKey = String(currentFrame)
-  const prevFrameKey = String(previousFrame)
-  const currentFrameData = atomPairData.atomPairsByFrame[frameKey] || []
-  const prevFrameData = atomPairData.atomPairsByFrame[prevFrameKey] || []
+  let referencePairs = []
   
-  // Filter atom pairs by interaction type and get unique sorted sets
-  const currentTypePairs = currentFrameData
-    .filter(entry => entry.interactionType === type)
-    .map(entry => entry.atomPair)
-  const prevTypePairs = prevFrameData
-    .filter(entry => entry.interactionType === type)
-    .map(entry => entry.atomPair)
-  
-  // Remove duplicates and sort for comparison
-  const currentUnique = [...new Set(currentTypePairs)].sort()
-  const prevUnique = [...new Set(prevTypePairs)].sort()
-  
-  // If both frames have no atoms for this type, no change
-  if (currentUnique.length === 0 && prevUnique.length === 0) {
-    return false
+  switch (atomChangeMode.value) {
+    case 'previous':
+      // Compare with previous frame
+      if (frame <= 1) return false // No previous frame
+      referencePairs = getAtomPairsForFrameAndType(atomPairData, frame - 1, type)
+      // If previous frame had no atoms, this is a new appearance, not a change
+      if (referencePairs.length === 0) return false
+      break
+      
+    case 'dominant':
+      // Compare with most frequent atom pair combination
+      referencePairs = getDominantAtomPairs(atomPairData, type)
+      // If no dominant pair found, no comparison possible
+      if (referencePairs.length === 0) return false
+      break
+      
+    case 'first':
+      // Compare with first frame where this type appears
+      referencePairs = getFirstFrameAtomPairs(atomPairData, type)
+      // If this IS the first frame, no change
+      if (atomPairSetsEqual(currentPairs, referencePairs)) return false
+      // If no first frame found, no comparison possible
+      if (referencePairs.length === 0) return false
+      break
+      
+    default:
+      return false
   }
   
-  // If previous frame had no atoms but current frame has atoms, this is NOT a change
-  // (it's a new interaction appearing, not atoms changing)
-  if (prevUnique.length === 0 && currentUnique.length > 0) {
-    return false
-  }
-  
-  // If current frame has no atoms but previous frame had atoms, this IS a change
-  // (atoms disappeared)
-  if (currentUnique.length === 0 && prevUnique.length > 0) {
-    return true
-  }
-  
-  // Both frames have atoms - compare the sets
-  // If different lengths, definitely changed
-  if (currentUnique.length !== prevUnique.length) {
-    return true
-  }
-  
-  // Same length - check if the sets are identical
-  for (let i = 0; i < currentUnique.length; i++) {
-    if (currentUnique[i] !== prevUnique[i]) {
-      return true // Different atom pairs found
-    }
-  }
-  
-  // Sets are identical - no change
-  return false
+  // Compare current with reference
+  return !atomPairSetsEqual(currentPairs, referencePairs)
 }
 
 onMounted(async () => {
@@ -1527,6 +1617,82 @@ input[type="range"]::-moz-range-thumb:hover {
   font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
+}
+
+.atom-change-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e8e8ed;
+}
+
+.selector-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.022em;
+}
+
+.label-icon {
+  color: #FF9500;
+  font-size: 12px;
+}
+
+.selector-wrapper {
+  position: relative;
+  display: inline-flex;
+  max-width: 320px;
+}
+
+.mode-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  padding: 10px 40px 10px 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: 2px solid #d2d2d7;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.mode-select:hover {
+  border-color: #b4b4bb;
+  background: #f0f0f2;
+}
+
+.mode-select:focus {
+  outline: none;
+  border-color: #FF9500;
+  box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.15);
+}
+
+.select-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #6e6e73;
+  pointer-events: none;
+}
+
+.selector-description {
+  margin: 0;
+  font-size: 13px;
+  color: #6e6e73;
+  font-weight: 500;
+  font-style: italic;
 }
 
 .info-notice {
