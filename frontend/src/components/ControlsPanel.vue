@@ -159,9 +159,7 @@ const SLIDER_MAX = 1
 const SLIDER_STEP = 0.1
 
 const showSlider = computed(() => {
-  // Do NOT show the global conservation slider for interactionTimeline;
-  // that chart always shows all interactions.
-  return ['arc', 'chord', 'filteredHeatmap', 'timePairMatrix'].includes(dataStore.currentChartType)
+  return ['chord', 'filteredHeatmap'].includes(dataStore.currentChartType)
 })
 
 const showLogScale = computed(() => {
@@ -169,7 +167,7 @@ const showLogScale = computed(() => {
 })
 
 const showInteractionFilter = computed(() => {
-  return ['arc', 'chord', 'heatmap', 'filteredHeatmap', 'interactionConservationMatrix', 'conservationScatter'].includes(dataStore.currentChartType)
+  return ['chord', 'filteredHeatmap', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
 })
 
 const thresholdPercent = computed(() => {

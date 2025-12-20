@@ -59,11 +59,6 @@ export default {
     return response.data
   },
 
-  async getSimilarityMatrix(systemId) {
-    const response = await api.get(`/systems/${systemId}/similarity-matrix`)
-    return response.data
-  },
-
   async getAtomPairs(systemId, params) {
     const response = await api.get(`/systems/${systemId}/atom-pairs`, { params })
     return response.data

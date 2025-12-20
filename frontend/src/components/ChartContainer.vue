@@ -21,17 +21,11 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useDataStore } from '../stores/dataStore'
-import ArcDiagram from './charts/ArcDiagram.vue'
 import ChordDiagram from './charts/ChordDiagram.vue'
-import Heatmap from './charts/Heatmap.vue'
 import FilteredHeatmap from './charts/FilteredHeatmap.vue'
 import AreaChart from './charts/AreaChart.vue'
 import LineChart from './charts/LineChart.vue'
-import SimilarityMatrix from './charts/SimilarityMatrix.vue'
-import TimePairMatrix from './charts/TimePairMatrix.vue'
-import InteractionTimeline from './charts/InteractionTimeline.vue'
 import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
-import ConservationScatterChart from './charts/ConservationScatterChart.vue'
 import ViolinChart from './charts/ViolinChart.vue'
 
 const dataStore = useDataStore()
@@ -55,22 +49,16 @@ const hasData = computed(() => {
 })
 
 const chartComponents = {
-  arc: ArcDiagram,
   chord: ChordDiagram,
-  heatmap: Heatmap,
   filteredHeatmap: FilteredHeatmap,
   area: AreaChart,
   line: LineChart,
-  similarity: SimilarityMatrix,
-  timePairMatrix: TimePairMatrix,
-  interactionTimeline: InteractionTimeline,
   interactionConservationMatrix: InteractionConservationMatrix,
-  conservationScatter: ConservationScatterChart,
   violinPlot: ViolinChart
 }
 
 const currentChartComponent = computed(() => {
-  return chartComponents[dataStore.currentChartType] || ArcDiagram
+  return chartComponents[dataStore.currentChartType] || ChordDiagram
 })
 
 // Force re-render when chart type or data changes

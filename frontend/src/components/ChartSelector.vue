@@ -24,17 +24,11 @@ import { useDataStore } from '../stores/dataStore'
 const dataStore = useDataStore()
 
 const charts = [
-  { id: 'arc', label: 'Arc Diagram' },
   { id: 'chord', label: 'Chord Diagram' },
-  { id: 'heatmap', label: 'Heatmap' },
   { id: 'filteredHeatmap', label: 'Filtered Heatmap' },
   { id: 'area', label: 'Area Chart' },
   { id: 'line', label: 'Interaction Trends' },
-  { id: 'similarity', label: 'Similarity Matrix' },
-  { id: 'timePairMatrix', label: 'Time-Pair Matrix' },
-  { id: 'interactionTimeline', label: 'Interaction Time-line' },
   { id: 'interactionConservationMatrix', label: 'Interaction Conservation Matrix' },
-  { id: 'conservationScatter', label: '2D Conservation Plot' },
   { id: 'violinPlot', label: 'Distance Distribution' }
 ]
 
