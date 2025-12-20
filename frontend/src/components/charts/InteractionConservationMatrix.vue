@@ -680,7 +680,7 @@ const updateChart = async () => {
             const distance = distances?.[frameNum]?.[type] || null
             
             seriesMap.get(type).push({
-              x: frameNum - 1,  // Frame (0-indexed for chart)
+              x: frameNum,  // Frame number (1-indexed)
               y: rowIndex,
               value: 1,  // Present
               pair: pairData.pair,
@@ -1222,8 +1222,8 @@ const updateChart = async () => {
           color: '#1d1d1f'
         }
       },
-      min: -0.5,
-      max: totalFrames - 0.5,
+      min: 0.5,
+      max: totalFrames + 0.5,
       tickInterval: Math.max(1, Math.floor(totalFrames / 20)),
       labels: {
         style: {
@@ -1232,15 +1232,20 @@ const updateChart = async () => {
           color: '#6e6e73'
         },
         formatter: function() {
-          return Math.round(this.value) + 1
+          return Math.round(this.value)
         }
       },
-      gridLineWidth: 1,
-      gridLineColor: '#e8e8ed',
+      gridLineWidth: 0,  // Disable default grid lines
       lineWidth: 1,
       lineColor: '#d2d2d7',
       tickWidth: 1,
-      tickColor: '#d2d2d7'
+      tickColor: '#d2d2d7',
+      plotLines: Array.from({ length: totalFrames + 1 }, (_, i) => ({
+        value: i + 0.5,
+        color: '#e8e8ed',
+        width: 1,
+        zIndex: 1
+      }))
     },
     yAxis: {
       title: {
@@ -1380,6 +1385,7 @@ const updateChart = async () => {
       align: 'right',
       verticalAlign: 'top',
       layout: 'vertical',
+      y: 60,
       itemStyle: {
         fontSize: '12px',
         fontWeight: '500',
