@@ -33,7 +33,7 @@
             :value="thresholdPercent"
             @input="updateThresholdFromInput"
             @blur="validateThresholdInput"
-            min="50"
+            min="0"
             max="100"
             step="1"
             class="value-input"
@@ -154,7 +154,7 @@ const getTypeColor = (type) => {
   return getInteractionBaseColor(type.keywords[0])
 }
 
-const SLIDER_MIN = 0.5
+const SLIDER_MIN = 0
 const SLIDER_MAX = 1
 const SLIDER_STEP = 0.1
 
@@ -205,7 +205,7 @@ const updateThreshold = (event) => {
 
 const updateThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
-  if (!isNaN(value) && value >= 50 && value <= 100) {
+  if (!isNaN(value) && value >= 0 && value <= 100) {
     dataStore.setThreshold(value / 100)
   }
 }
@@ -216,8 +216,8 @@ const validateThresholdInput = (event) => {
     event.target.value = thresholdPercent.value
     return
   }
-  // Clamp value between 50 and 100
-  value = Math.max(50, Math.min(100, value))
+  // Clamp value between 0 and 100
+  value = Math.max(0, Math.min(100, value))
   event.target.value = value
   dataStore.setThreshold(value / 100)
 }

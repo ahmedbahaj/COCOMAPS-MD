@@ -26,7 +26,7 @@ const dataStore = useDataStore()
 const charts = [
   { id: 'chord', label: 'Chord Diagram' },
   { id: 'filteredHeatmap', label: 'Filtered Heatmap' },
-  { id: 'area', label: 'Buried Surface Area' },
+  { id: 'area', label: 'Area Chart' },
   { id: 'line', label: 'Interaction Trends' },
   { id: 'interactionConservationMatrix', label: 'Interaction Conservation Matrix' },
   { id: 'violinPlot', label: 'Distance Distribution' }

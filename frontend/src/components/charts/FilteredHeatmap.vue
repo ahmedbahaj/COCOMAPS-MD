@@ -95,11 +95,56 @@ const updateChart = () => {
     chart.destroy()
   }
 
+  // ============ DYNAMIC LABEL OPTIMIZATION ============
+  const xCount = chainAArray.length
+  const yCount = chainBArray.length
+  
+  // X-axis: Dynamic font size and rotation based on label count
+  // Fewer labels = bigger font, less rotation (more readable)
+  // More labels = smaller font, more rotation (fits better)
+  const getXAxisConfig = (count) => {
+    if (count <= 10) {
+      return { fontSize: '14px', rotation: 0 }
+    } else if (count <= 25) {
+      return { fontSize: '12px', rotation: -30 }
+    } else if (count <= 50) {
+      return { fontSize: '10px', rotation: -45 }
+    } else if (count <= 80) {
+      return { fontSize: '9px', rotation: -60 }
+    } else {
+      return { fontSize: '8px', rotation: -90 }
+    }
+  }
+  
+  // Y-axis: Dynamic font size based on label count
+  // No rotation needed for Y-axis, just adjust size
+  const getYAxisConfig = (count) => {
+    if (count <= 15) {
+      return { fontSize: '14px' }
+    } else if (count <= 35) {
+      return { fontSize: '12px' }
+    } else if (count <= 60) {
+      return { fontSize: '10px' }
+    } else if (count <= 100) {
+      return { fontSize: '9px' }
+    } else {
+      return { fontSize: '8px' }
+    }
+  }
+  
+  const xConfig = getXAxisConfig(xCount)
+  const yConfig = getYAxisConfig(yCount)
+  
+  // Dynamic height: scale with Y-axis count, adjust spacing based on font size
+  const yFontSize = parseInt(yConfig.fontSize)
+  const rowHeight = Math.max(12, yFontSize + 4) // Minimum spacing per row
+  const dynamicHeight = Math.max(500, yCount * rowHeight + 250)
+  
   const chartOptions = {
     chart: {
       type: 'heatmap',
       backgroundColor: 'transparent',
-      height: 800
+      height: dynamicHeight
     },
     title: {
       text: `Residue Interaction Heatmap (${heatmapData.length} interactions)`,
@@ -130,10 +175,12 @@ const updateChart = () => {
         }
       },
       labels: {
-        rotation: -45,
+        rotation: xConfig.rotation,
+        step: 1,
+        overflow: 'allow',
         style: {
-          fontSize: '11px',
-          fontWeight: '500',
+          fontSize: xConfig.fontSize,
+          fontWeight: '700', // Bold
           color: '#1d1d1f'
         }
       }
@@ -149,9 +196,11 @@ const updateChart = () => {
         }
       },
       labels: {
+        step: 1,
+        overflow: 'allow',
         style: {
-          fontSize: '11px',
-          fontWeight: '500',
+          fontSize: yConfig.fontSize,
+          fontWeight: '700', // Bold
           color: '#1d1d1f'
         }
       },

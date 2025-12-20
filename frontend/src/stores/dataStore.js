@@ -19,7 +19,7 @@ export const useDataStore = defineStore('data', {
     
     // UI State
     currentChartType: 'chord',
-    currentThreshold: 0.6,
+    currentThreshold: 0.5,
     useLogScale: false,
     selectedInteractionTypes: new Set(INTERACTION_TYPES.map(t => t.id)), // Select all by default
     
