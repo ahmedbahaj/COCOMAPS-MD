@@ -1,6 +1,50 @@
 <template>
   <div class="chart-wrapper">
     <div class="chart-toolbar">
+      <!-- Pair Conservation Threshold (like FilteredHeatmap) -->
+      <div class="slider-group">
+        <label for="pair-conservation-slider" class="slider-label">
+          Pair Conservation Threshold
+        </label>
+        <div class="slider-container">
+          <div class="slider-control">
+            <input
+              id="pair-conservation-slider"
+              type="range"
+              min="0"
+              max="1.0"
+              step="0.1"
+              :value="pairConservationThreshold"
+              @input="updatePairThreshold"
+            />
+            <div class="slider-ticks">
+              <span
+                v-for="tick in pairConservationTicks"
+                :key="tick.value"
+                class="slider-tick"
+              >
+                <span class="slider-tick-label">{{ tick.label }}</span>
+              </span>
+            </div>
+          </div>
+          <div class="slider-value-input">
+            <input
+              type="number"
+              :value="Math.round(pairConservationThreshold * 100)"
+              @input="updatePairThresholdFromInput"
+              @blur="validatePairThresholdInput"
+              min="0"
+              max="100"
+              step="10"
+              class="value-input"
+            />
+            <span class="percent-symbol">%</span>
+          </div>
+        </div>
+        <p class="slider-description">Show pairs present in at least {{ Math.round(pairConservationThreshold * 100) }}% of frames</p>
+      </div>
+      
+      <!-- Type Conservation Threshold -->
       <div class="slider-group">
         <label for="conservation-slider" class="slider-label">
           Interaction Type Conservation Threshold
@@ -78,7 +122,7 @@
     <div v-if="statistics" class="statistics-section">
       <h3 class="statistics-title">Conservation Statistics</h3>
       <p class="statistics-description">
-        Statistics based on current filters: ≥50% pair conservation, ≥{{ Math.round(conservationThreshold * 100) }}% type conservation{{ dataStore.selectedInteractionTypes.size > 0 ? ', filtered interaction types' : '' }}
+        Statistics based on current filters: ≥{{ Math.round(pairConservationThreshold * 100) }}% pair conservation, ≥{{ Math.round(conservationThreshold * 100) }}% type conservation{{ dataStore.selectedInteractionTypes.size > 0 ? ', filtered interaction types' : '' }}
       </p>
       <div class="statistics-tables">
         <div class="statistics-table-wrapper">
@@ -92,7 +136,7 @@
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td>CR50</td>
+                <td>CR{{ Math.round(pairConservationThreshold * 100) }}</td>
                 <td>{{ statistics.residue.cr50 }} pairs</td>
               </tr>
               <tr>
@@ -378,7 +422,8 @@ const chartContainer = ref(null)
 let chart = null
 const distanceData = ref(null)
 const atomPairDataByPair = ref(new Map()) // Map<pairKey, atomPairData>
-const conservationThreshold = ref(0.5) // Default 50%
+const conservationThreshold = ref(0.5) // Default 50% for type conservation
+const pairConservationThreshold = ref(0.5) // Default 50% for pair conservation (like FilteredHeatmap)
 const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
   const statistics = ref(null)
@@ -410,8 +455,46 @@ const conservationTicks = computed(() => {
   return ticks
 })
 
+const pairConservationTicks = computed(() => {
+  const ticks = []
+  for (let value = 0; value <= 1.0 + 0.0001; value += 0.1) {
+    ticks.push({
+      value: parseFloat(value.toFixed(2)),
+      label: Math.round(value * 100)
+    })
+  }
+  return ticks
+})
+
 const updateThreshold = (event) => {
   conservationThreshold.value = parseFloat(event.target.value)
+  updateChart()
+}
+
+// Pair conservation threshold functions
+const updatePairThreshold = (event) => {
+  pairConservationThreshold.value = parseFloat(event.target.value)
+  updateChart()
+}
+
+const updatePairThresholdFromInput = (event) => {
+  const value = parseFloat(event.target.value)
+  if (!isNaN(value) && value >= 0 && value <= 100) {
+    pairConservationThreshold.value = value / 100
+    updateChart()
+  }
+}
+
+const validatePairThresholdInput = (event) => {
+  let value = parseFloat(event.target.value)
+  if (isNaN(value)) {
+    event.target.value = Math.round(pairConservationThreshold.value * 100)
+    return
+  }
+  // Clamp value between 0 and 100
+  value = Math.max(0, Math.min(100, value))
+  event.target.value = value
+  pairConservationThreshold.value = value / 100
   updateChart()
 }
 
@@ -513,8 +596,8 @@ const updateChart = async () => {
     return
   }
 
-  // LEVEL 1: Filter pairs by overall conservation (≥50%)
-  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= 0.50)
+  // LEVEL 1: Filter pairs by overall conservation (using pairConservationThreshold)
+  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= pairConservationThreshold.value)
 
   if (stablePairs.length === 0) {
     if (chart) {
@@ -522,7 +605,7 @@ const updateChart = async () => {
       chart = null
     }
     statistics.value = null
-    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No stable pairs found (≥50% conservation).</div>'
+    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No pairs found with ≥${Math.round(pairConservationThreshold.value * 100)}% conservation.</div>`
     return
   }
 
@@ -730,8 +813,8 @@ const updateChart = async () => {
   
   sortedPairs.forEach((pairData) => {
     pairData.interactions.forEach(interaction => {
-      // Residue level: pair consistency (only if ≥50%)
-      if (interaction.consistency !== undefined && interaction.consistency !== null && interaction.consistency >= 0.50) {
+      // Residue level: pair consistency (only if meets pair threshold)
+      if (interaction.consistency !== undefined && interaction.consistency !== null && interaction.consistency >= pairConservationThreshold.value) {
         residueScores.push(interaction.consistency)
         // Track unique pairs for CR50 count
         const pairKey = formatPairKey(interaction.id1, interaction.id2)
@@ -1205,7 +1288,7 @@ const updateChart = async () => {
       }
     },
     subtitle: {
-      text: `Stable pairs (≥50%) • Type conservation ≥${Math.round(conservationThreshold.value * 100)}% • Click any segment for detailed analysis`,
+      text: `Pair conservation ≥${Math.round(pairConservationThreshold.value * 100)}% • Type conservation ≥${Math.round(conservationThreshold.value * 100)}% • Click any segment for detailed analysis`,
       style: {
         fontSize: '15px',
         color: '#6e6e73'
@@ -1534,7 +1617,7 @@ const loadAtomPairDataForAllPairs = async () => {
   if (!dataStore.currentSystem) return
   
   const allInteractions = dataStore.filteredInteractions
-  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= 0.50)
+  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= pairConservationThreshold.value)
   
   if (stablePairs.length === 0) return
   
@@ -1730,7 +1813,8 @@ watch([
   () => dataStore.interactions.length,
   () => dataStore.totalFrames,
   () => dataStore.currentSystem?.id,
-  () => dataStore.selectedInteractionTypes.size
+  () => dataStore.selectedInteractionTypes.size,
+  () => pairConservationThreshold.value
 ], async () => {
   if (dataStore.currentChartType === 'interactionConservationMatrix') {
     if (dataStore.currentSystem?.id && !distanceData.value) {
@@ -1903,6 +1987,14 @@ input[type="range"]::-moz-range-thumb:hover {
   color: #1d1d1f;
 }
 
+.slider-description {
+  margin: 0;
+  font-size: 13px;
+  color: #6e6e73;
+  font-weight: 500;
+  font-style: italic;
+}
+
 .atom-change-selector {
   display: flex;
   flex-direction: column;
@@ -1957,8 +2049,7 @@ input[type="range"]::-moz-range-thumb:hover {
 
 .mode-select:focus {
   outline: none;
-  border-color: #FF9500;
-  box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.15);
+  border-color: #1d1d1f;
 }
 
 .select-arrow {
