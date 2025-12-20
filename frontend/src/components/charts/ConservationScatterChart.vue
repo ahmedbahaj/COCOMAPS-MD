@@ -78,7 +78,8 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionBaseColor, matchesSelectedTypes } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
@@ -422,7 +423,10 @@ const updateChart = () => {
   if (chart) {
     chart.destroy()
   }
-  chart = Highcharts.chart(chartContainer.value, chartOptions)
+
+  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const exportOptions = withExporting(chartOptions, `conservation-scatter-${systemName}`)
+  chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
 
 onMounted(() => {

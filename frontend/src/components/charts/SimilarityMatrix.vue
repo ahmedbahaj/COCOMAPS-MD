@@ -4,7 +4,8 @@
 
 <script setup>
 import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import HeatmapModule from 'highcharts/modules/heatmap'
 import { useDataStore } from '../../stores/dataStore'
 import api from '../../services/api'
@@ -65,7 +66,7 @@ const updateChart = async () => {
       chart.destroy()
     }
 
-    chart = Highcharts.chart(chartContainer.value, {
+    const chartOptions = {
       chart: {
         type: 'heatmap',
         backgroundColor: 'transparent',
@@ -206,7 +207,11 @@ const updateChart = async () => {
           `
         }
       }
-    })
+    }
+
+    const systemName = dataStore.currentSystem?.id || 'unknown'
+    const exportOptions = withExporting(chartOptions, `similarity-matrix-${systemName}`)
+    chart = Highcharts.chart(chartContainer.value, exportOptions)
   } catch (error) {
     console.error('Error loading similarity matrix:', error)
     if (chart) {

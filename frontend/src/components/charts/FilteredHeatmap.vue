@@ -15,7 +15,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import HeatmapModule from 'highcharts/modules/heatmap'
 import { useDataStore } from '../../stores/dataStore'
 import { matchesSelectedTypes } from '../../utils/chartHelpers'
@@ -94,7 +95,7 @@ const updateChart = () => {
     chart.destroy()
   }
 
-  chart = Highcharts.chart(chartContainer.value, {
+  const chartOptions = {
     chart: {
       type: 'heatmap',
       backgroundColor: 'transparent',
@@ -243,7 +244,11 @@ const updateChart = () => {
         `
       }
     }
-  })
+  }
+
+  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const exportOptions = withExporting(chartOptions, `filtered-heatmap-${systemName}`)
+  chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
 
 onMounted(() => {

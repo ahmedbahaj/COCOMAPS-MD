@@ -357,13 +357,16 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import HeatmapModule from 'highcharts/modules/heatmap'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionBaseColor, matchesSelectedTypes, formatResiduePairFromIds, formatPairKey, parseResidueId } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
 import api from '../../services/api'
 import InteractionTrajectoryModal from '../InteractionTrajectoryModal.vue'
+
+HeatmapModule(Highcharts)
 
 // Initialize heatmap module
 if (typeof Highcharts === 'object') {
@@ -1184,7 +1187,7 @@ const updateChart = async () => {
     chart.destroy()
   }
 
-  chart = Highcharts.chart(chartContainer.value, {
+  const chartOptions = {
     chart: {
       type: 'heatmap',
       backgroundColor: 'transparent',
@@ -1472,7 +1475,11 @@ const updateChart = async () => {
         `
       }
     }
-  })
+  }
+
+  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const exportOptions = withExporting(chartOptions, `interaction-conservation-matrix-${systemName}`)
+  chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
 
 const loadDistanceData = async () => {

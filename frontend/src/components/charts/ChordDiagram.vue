@@ -11,7 +11,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import DependencyWheelModule from 'highcharts/modules/dependency-wheel'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionColor } from '../../utils/chartHelpers'
@@ -133,7 +134,7 @@ const updateChart = () => {
     chart.destroy()
   }
 
-  chart = Highcharts.chart(chartContainer.value, {
+  const chartOptions = {
     chart: {
       type: 'dependencywheel',
       backgroundColor: 'transparent',
@@ -279,7 +280,11 @@ const updateChart = () => {
         return false
       }
     }
-  })
+  }
+
+  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const exportOptions = withExporting(chartOptions, `chord-diagram-${systemName}`)
+  chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
 
 onMounted(() => {

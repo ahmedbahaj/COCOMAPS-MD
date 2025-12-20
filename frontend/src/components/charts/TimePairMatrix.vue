@@ -4,7 +4,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionBaseColor, formatResiduePairFromIds, formatPairKey } from '../../utils/chartHelpers'
 import api from '../../services/api'
@@ -189,7 +190,7 @@ const updateChart = () => {
     chart.destroy()
   }
 
-  chart = Highcharts.chart(chartContainer.value, {
+  const chartOptions = {
     chart: {
       type: 'scatter',
       backgroundColor: 'transparent',
@@ -369,7 +370,11 @@ const updateChart = () => {
         `
       }
     }
-  })
+  }
+
+  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const exportOptions = withExporting(chartOptions, `time-pair-matrix-${systemName}`)
+  chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
 
 const loadDistanceData = async () => {

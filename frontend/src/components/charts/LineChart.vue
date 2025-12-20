@@ -4,7 +4,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import { useDataStore } from '../../stores/dataStore'
 import { INTERACTION_TYPES } from '../../utils/constants'
 import { getInteractionBaseColor } from '../../utils/chartHelpers'
@@ -87,7 +88,7 @@ const updateChart = () => {
     chart.destroy()
   }
 
-  chart = Highcharts.chart(chartContainer.value, {
+  const chartOptions = {
     chart: {
       type: 'line',
       backgroundColor: 'transparent',
@@ -210,7 +211,11 @@ const updateChart = () => {
         return html
       }
     }
-  })
+  }
+
+  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const exportOptions = withExporting(chartOptions, `interaction-trends-${systemName}`)
+  chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
 
 onMounted(() => {

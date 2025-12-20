@@ -11,7 +11,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import ArcDiagramModule from 'highcharts/modules/arc-diagram'
 import { useDataStore } from '../../stores/dataStore'
 import { getInteractionColor } from '../../utils/chartHelpers'
@@ -109,7 +110,7 @@ const updateChart = () => {
     chart.destroy()
   }
 
-  chart = Highcharts.chart(chartContainer.value, {
+  const chartOptions = {
     chart: {
       type: 'arcdiagram',
       backgroundColor: 'transparent',
@@ -274,7 +275,11 @@ const updateChart = () => {
         return false
       }
     }
-  })
+  }
+
+  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const exportOptions = withExporting(chartOptions, `arc-diagram-${systemName}`)
+  chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
 
 onMounted(() => {

@@ -22,7 +22,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import Highcharts from 'highcharts'
+import Highcharts from '../../utils/highchartsConfig'
+import { withExporting } from '../../utils/highchartsConfig'
 import HighchartsMore from 'highcharts/highcharts-more'
 import { useDataStore } from '../../stores/dataStore'
 
@@ -102,7 +103,7 @@ const updateChart = () => {
     }
   }
 
-  chart = Highcharts.chart(chartContainer.value, {
+  const chartOptions = {
     chart: {
       type: 'line',
       backgroundColor: 'transparent',
@@ -259,7 +260,11 @@ const updateChart = () => {
         return html
       }
     }
-  })
+  }
+
+  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const exportOptions = withExporting(chartOptions, `buried-surface-area-${systemName}`)
+  chart = Highcharts.chart(chartContainer.value, exportOptions)
   hasAnimated = true
 }
 
