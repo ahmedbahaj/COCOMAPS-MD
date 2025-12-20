@@ -129,11 +129,47 @@
               </tr>
               <tr class="info-row">
                 <td>Most Conserved Pair(s)</td>
-                <td>{{ statistics.residue.mostConserved }} ({{ formatPercent(statistics.residue.mostConservedValue) }})</td>
+                <td>
+                  <div class="conserved-list">
+                    <span v-if="statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 0">
+                      <template v-for="(pair, idx) in statistics.residue.mostConservedList.slice(0, 2)" :key="idx">
+                        <span v-if="idx > 0">, </span>{{ pair }}
+                      </template>
+                      <span v-if="statistics.residue.mostConservedList.length > 2" class="more-link" @click="expandedDetails.residueMostConserved = !expandedDetails.residueMostConserved">
+                        (+{{ statistics.residue.mostConservedList.length - 2 }} more)
+                      </span>
+                    </span>
+                    <span v-else>N/A</span>
+                    <span v-if="statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 0"> ({{ formatPercent(statistics.residue.mostConservedValue) }})</span>
+                    <div v-if="expandedDetails.residueMostConserved && statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 2" class="expanded-list">
+                      <div v-for="(pair, idx) in statistics.residue.mostConservedList.slice(2)" :key="idx" class="expanded-item">
+                        {{ pair }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
               </tr>
               <tr class="info-row">
                 <td>Least Conserved Pair(s)</td>
-                <td>{{ statistics.residue.leastConserved }} ({{ formatPercent(statistics.residue.leastConservedValue) }})</td>
+                <td>
+                  <div class="conserved-list">
+                    <span v-if="statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 0">
+                      <template v-for="(pair, idx) in statistics.residue.leastConservedList.slice(0, 2)" :key="idx">
+                        <span v-if="idx > 0">, </span>{{ pair }}
+                      </template>
+                      <span v-if="statistics.residue.leastConservedList.length > 2" class="more-link" @click="expandedDetails.residueLeastConserved = !expandedDetails.residueLeastConserved">
+                        (+{{ statistics.residue.leastConservedList.length - 2 }} more)
+                      </span>
+                    </span>
+                    <span v-else>N/A</span>
+                    <span v-if="statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 0"> ({{ formatPercent(statistics.residue.leastConservedValue) }})</span>
+                    <div v-if="expandedDetails.residueLeastConserved && statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 2" class="expanded-list">
+                      <div v-for="(pair, idx) in statistics.residue.leastConservedList.slice(2)" :key="idx" class="expanded-item">
+                        {{ pair }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
               </tr>
               <tr class="info-row">
                 <td>Longest Conserved Stretch</td>
@@ -191,15 +227,116 @@
               </tr>
               <tr class="info-row">
                 <td>Most Conserved Type(s)</td>
-                <td>{{ statistics.atomic.mostConserved }} ({{ formatPercent(statistics.atomic.mostConservedValue) }})</td>
+                <td>
+                  <div class="conserved-list">
+                    <div v-if="statistics.atomic.mostConservedList && statistics.atomic.mostConservedList.length > 0">
+                      <div class="type-header">
+                        <template v-for="(item, idx) in statistics.atomic.mostConservedList.slice(0, 2)" :key="idx">
+                          <span v-if="idx > 0">, </span>{{ item.type }}
+                        </template>
+                        <span v-if="statistics.atomic.mostConservedList.length > 2" class="more-link" @click="expandedDetails.atomicMostConserved = !expandedDetails.atomicMostConserved">
+                          (+{{ statistics.atomic.mostConservedList.length - 2 }} more)
+                        </span>
+                        <span> ({{ formatPercent(statistics.atomic.mostConservedValue) }})</span>
+                      </div>
+                      <div v-for="(item, idx) in statistics.atomic.mostConservedList.slice(0, 2)" :key="idx" class="type-with-pairs">
+                        <div v-if="item.pairs && item.pairs.length > 0" class="type-pairs">
+                          <span class="pairs-label">Pairs: </span>
+                          <span v-for="(pair, pairIdx) in item.pairs.slice(0, 3)" :key="pairIdx">
+                            <span v-if="pairIdx > 0">, </span>{{ pair }}
+                          </span>
+                          <span v-if="item.pairs.length > 3" class="pairs-more">, +{{ item.pairs.length - 3 }} more</span>
+                        </div>
+                        <div v-else class="type-pairs">
+                          <span class="pairs-label">Pairs: </span>
+                          <span class="pairs-more">No pairs found</span>
+                        </div>
+                      </div>
+                      <div v-if="expandedDetails.atomicMostConserved && statistics.atomic.mostConservedList.length > 2" class="expanded-list">
+                        <div v-for="(item, idx) in statistics.atomic.mostConservedList.slice(2)" :key="idx" class="expanded-item">
+                          <div class="expanded-type-name">{{ item.type }}</div>
+                          <div class="expanded-type-pairs">
+                            <span class="pairs-label">Pairs: </span>
+                            <span v-for="(pair, pairIdx) in item.pairs" :key="pairIdx">
+                              <span v-if="pairIdx > 0">, </span>{{ pair }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <span v-else>N/A</span>
+                  </div>
+                </td>
               </tr>
               <tr class="info-row">
                 <td>Least Conserved Type(s)</td>
-                <td>{{ statistics.atomic.leastConserved }} ({{ formatPercent(statistics.atomic.leastConservedValue) }})</td>
+                <td>
+                  <div class="conserved-list">
+                    <div v-if="statistics.atomic.leastConservedList && statistics.atomic.leastConservedList.length > 0">
+                      <div class="type-header">
+                        <template v-for="(item, idx) in statistics.atomic.leastConservedList.slice(0, 2)" :key="idx">
+                          <span v-if="idx > 0">, </span>{{ item.type }}
+                        </template>
+                        <span v-if="statistics.atomic.leastConservedList.length > 2" class="more-link" @click="expandedDetails.atomicLeastConserved = !expandedDetails.atomicLeastConserved">
+                          (+{{ statistics.atomic.leastConservedList.length - 2 }} more)
+                        </span>
+                        <span> ({{ formatPercent(statistics.atomic.leastConservedValue) }})</span>
+                      </div>
+                      <div v-for="(item, idx) in statistics.atomic.leastConservedList.slice(0, 2)" :key="idx" class="type-with-pairs">
+                        <div v-if="item.pairs && item.pairs.length > 0" class="type-pairs">
+                          <span class="pairs-label">Pairs: </span>
+                          <span v-for="(pair, pairIdx) in item.pairs.slice(0, 3)" :key="pairIdx">
+                            <span v-if="pairIdx > 0">, </span>{{ pair }}
+                          </span>
+                          <span v-if="item.pairs.length > 3" class="pairs-more">, +{{ item.pairs.length - 3 }} more</span>
+                        </div>
+                        <div v-else class="type-pairs">
+                          <span class="pairs-label">Pairs: </span>
+                          <span class="pairs-more">No pairs found</span>
+                        </div>
+                      </div>
+                      <div v-if="expandedDetails.atomicLeastConserved && statistics.atomic.leastConservedList.length > 2" class="expanded-list">
+                        <div v-for="(item, idx) in statistics.atomic.leastConservedList.slice(2)" :key="idx" class="expanded-item">
+                          <div class="expanded-type-name">{{ item.type }}</div>
+                          <div class="expanded-type-pairs">
+                            <span class="pairs-label">Pairs: </span>
+                            <span v-for="(pair, pairIdx) in item.pairs" :key="pairIdx">
+                              <span v-if="pairIdx > 0">, </span>{{ pair }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <span v-else>N/A</span>
+                  </div>
+                </td>
               </tr>
               <tr class="info-row">
                 <td>Longest Conserved Stretch</td>
-                <td>{{ statistics.atomic.longestStretchType }}: {{ statistics.atomic.longestStretchInfo }}</td>
+                <td>
+                  <div class="conserved-list">
+                    <div v-if="statistics.atomic.longestStretchType && statistics.atomic.longestStretchType !== 'N/A'">
+                      <div class="type-header">
+                        {{ statistics.atomic.longestStretchType }}: {{ statistics.atomic.longestStretchInfo }}
+                      </div>
+                      <div v-if="statistics.atomic.longestStretchPairs && statistics.atomic.longestStretchPairs.length > 0" class="type-pairs">
+                        <span class="pairs-label">{{ statistics.atomic.longestStretchPairs.length === 1 ? 'Pair' : 'Pairs' }}: </span>
+                        <span v-for="(pair, pairIdx) in statistics.atomic.longestStretchPairs.slice(0, 3)" :key="pairIdx">
+                          <span v-if="pairIdx > 0">, </span>{{ pair }}
+                        </span>
+                        <span v-if="statistics.atomic.longestStretchPairs.length > 3" class="more-link" @click="expandedDetails.atomicLongestStretch = !expandedDetails.atomicLongestStretch">
+                          (+{{ statistics.atomic.longestStretchPairs.length - 3 }} more)
+                        </span>
+                      </div>
+                      <div v-if="expandedDetails.atomicLongestStretch && statistics.atomic.longestStretchPairs.length > 3" class="expanded-list">
+                        <div v-for="(pair, idx) in statistics.atomic.longestStretchPairs.slice(3)" :key="idx" class="expanded-item">
+                          {{ pair }}
+                        </div>
+                      </div>
+                    </div>
+                    <span v-else>N/A</span>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -241,9 +378,16 @@ const atomPairDataByPair = ref(new Map()) // Map<pairKey, atomPairData>
 const conservationThreshold = ref(0.5) // Default 50%
 const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
-const statistics = ref(null)
-const hiddenTypes = ref(new Set()) // Track hidden interaction types from legend clicks
-const atomChangeMode = ref('previous') // 'previous' | 'dominant' | 'first'
+  const statistics = ref(null)
+  const hiddenTypes = ref(new Set()) // Track hidden interaction types from legend clicks
+  const atomChangeMode = ref('previous') // 'previous' | 'dominant' | 'first'
+  const expandedDetails = ref({
+    residueMostConserved: false,
+    residueLeastConserved: false,
+    atomicMostConserved: false,
+    atomicLeastConserved: false,
+    atomicLongestStretch: false
+  })
 
 // Atom change comparison mode options
 const atomChangeModeOptions = [
@@ -577,6 +721,9 @@ const updateChart = async () => {
   const typeFramesMap = new Map() // Track all frames by type for longest stretch calculation
   const pairConservationMap = new Map() // Track conservation by pair
   const pairFramesMap = new Map() // Track frames by pair
+  const typeToPairsMap = new Map() // Track which residue pairs each interaction type belongs to
+  const pairTypeFramesMap = new Map() // Track frames for each pair-type combination for longest stretch calculation
+  const typeToPairConservationMap = new Map() // Track pair conservation per type (type -> Map(pair -> conservation))
   
   sortedPairs.forEach((pairData) => {
     pairData.interactions.forEach(interaction => {
@@ -610,6 +757,7 @@ const updateChart = async () => {
       // Atomic level: type conservation (only if meets threshold and filter)
       const typePersistence = interaction.typePersistence || {}
       const typeFrames = interaction.typeFrames || {}
+      const pairLabel = formatResiduePairFromIds(interaction.id1, interaction.id2)
       
       interaction.typesArray.forEach((type) => {
         const typeConservation = typePersistence[type]
@@ -634,6 +782,18 @@ const updateChart = async () => {
         }
         typeConservationMap.get(type).push(typeConservation)
         
+        // Track which residue pairs this type belongs to
+        if (!typeToPairsMap.has(type)) {
+          typeToPairsMap.set(type, new Set())
+        }
+        typeToPairsMap.get(type).add(pairLabel)
+        
+        // Track pair conservation for this type (for finding pairs with specific conservation values)
+        if (!typeToPairConservationMap.has(type)) {
+          typeToPairConservationMap.set(type, new Map())
+        }
+        typeToPairConservationMap.get(type).set(pairLabel, typeConservation)
+        
         // Track frames for this type for longest stretch calculation
         const framesForType = typeFrames[type] || []
         if (framesForType.length > 0) {
@@ -641,6 +801,17 @@ const updateChart = async () => {
             typeFramesMap.set(type, [])
           }
           typeFramesMap.get(type).push(...framesForType)
+          
+          // Track frames for this specific pair-type combination
+          const pairTypeKey = `${pairLabel}_${type}`
+          if (!pairTypeFramesMap.has(pairTypeKey)) {
+            pairTypeFramesMap.set(pairTypeKey, {
+              pair: pairLabel,
+              type: type,
+              frames: []
+            })
+          }
+          pairTypeFramesMap.get(pairTypeKey).frames.push(...framesForType)
         }
       })
     })
@@ -736,13 +907,16 @@ const updateChart = async () => {
   })
   
   // Calculate longest conserved stretch (without breaking in frames)
+  // Track per pair-type combination to find which specific pairs have the longest stretch
   let longestStretch = 0
   let longestStretchType = ''
+  let longestStretchPairs = []
   let longestStretchInfo = ''
   
-  typeFramesMap.forEach((allFrames, type) => {
-    // Get unique sorted frames for this type
-    const uniqueFrames = [...new Set(allFrames)].sort((a, b) => a - b)
+  pairTypeFramesMap.forEach((pairTypeData) => {
+    const { pair, type, frames } = pairTypeData
+    // Get unique sorted frames for this pair-type combination
+    const uniqueFrames = [...new Set(frames)].sort((a, b) => a - b)
     
     if (uniqueFrames.length === 0) return
     
@@ -770,17 +944,26 @@ const updateChart = async () => {
     }
     
     if (maxStretch > longestStretch) {
+      // New longest stretch found - reset everything
       longestStretch = maxStretch
       longestStretchType = type
+      longestStretchPairs = [pair]
       longestStretchInfo = `${maxStretch} frames (${maxStretchStart}-${maxStretchEnd})`
+    } else if (maxStretch === longestStretch && type === longestStretchType) {
+      // Same longest stretch length for the same type - add this pair
+      if (!longestStretchPairs.includes(pair)) {
+        longestStretchPairs.push(pair)
+      }
     }
   })
   
   // Calculate statistics
   const residueStats = calculateStatistics(residueScores)
   residueStats.cr50 = uniquePairs.size // CR50: count of unique pairs with ≥50% conservation
+  residueStats.mostConservedList = mostConservedPairs // Store full list
   residueStats.mostConserved = mostConservedPairs.length > 0 ? (mostConservedPairs.length > 2 ? `${mostConservedPairs.slice(0, 2).join(', ')} (+${mostConservedPairs.length - 2} more)` : mostConservedPairs.join(', ')) : 'N/A'
   residueStats.mostConservedValue = maxPairConservation >= 0 ? maxPairConservation : 0
+  residueStats.leastConservedList = leastConservedPairs // Store full list
   residueStats.leastConserved = leastConservedPairs.length > 0 ? (leastConservedPairs.length > 2 ? `${leastConservedPairs.slice(0, 2).join(', ')} (+${leastConservedPairs.length - 2} more)` : leastConservedPairs.join(', ')) : 'N/A'
   residueStats.leastConservedValue = minPairConservation < 2 ? minPairConservation : 0
   residueStats.longestStretchPair = longestPairStretchLabel || 'N/A'
@@ -788,11 +971,68 @@ const updateChart = async () => {
   
   const atomicStats = calculateStatistics(atomicScores)
   atomicStats.ca = pairTypeCombinations.length // CA: count of pair-type combinations meeting threshold
+  
+  // Build most/least conserved types with their residue pairs
+  // Show only pairs that have the maximum/minimum conservation values for that specific type
+  const mostConservedTypesWithPairs = mostConservedTypes.map(type => {
+    const pairConservationMap = typeToPairConservationMap.get(type) || new Map()
+    
+    // Find the maximum conservation value for this type
+    let maxConservationForType = -1
+    pairConservationMap.forEach((conservation) => {
+      if (conservation > maxConservationForType) {
+        maxConservationForType = conservation
+      }
+    })
+    
+    // Get only pairs that have this maximum conservation value
+    const pairs = []
+    pairConservationMap.forEach((conservation, pair) => {
+      if (Math.abs(conservation - maxConservationForType) < 0.0001) {
+        pairs.push(pair)
+      }
+    })
+    
+    return {
+      type,
+      pairs: pairs.sort(),
+      maxConservation: maxConservationForType
+    }
+  })
+  const leastConservedTypesWithPairs = leastConservedTypes.map(type => {
+    const pairConservationMap = typeToPairConservationMap.get(type) || new Map()
+    
+    // Find the minimum conservation value for this type
+    let minConservationForType = 2
+    pairConservationMap.forEach((conservation) => {
+      if (conservation < minConservationForType) {
+        minConservationForType = conservation
+      }
+    })
+    
+    // Get only pairs that have this minimum conservation value
+    const pairs = []
+    pairConservationMap.forEach((conservation, pair) => {
+      if (Math.abs(conservation - minConservationForType) < 0.0001) {
+        pairs.push(pair)
+      }
+    })
+    
+    return {
+      type,
+      pairs: pairs.sort(),
+      minConservation: minConservationForType
+    }
+  })
+  
+  atomicStats.mostConservedList = mostConservedTypesWithPairs // Store full list with pairs
   atomicStats.mostConserved = mostConservedTypes.length > 0 ? mostConservedTypes.join(', ') : 'N/A'
   atomicStats.mostConservedValue = maxConservation >= 0 ? maxConservation : 0
+  atomicStats.leastConservedList = leastConservedTypesWithPairs // Store full list with pairs
   atomicStats.leastConserved = leastConservedTypes.length > 0 ? leastConservedTypes.join(', ') : 'N/A'
   atomicStats.leastConservedValue = minConservation < 2 ? minConservation : 0
   atomicStats.longestStretchType = longestStretchType || 'N/A'
+  atomicStats.longestStretchPairs = longestStretchPairs.length > 0 ? longestStretchPairs.sort() : []
   atomicStats.longestStretchInfo = longestStretchInfo || 'N/A'
   
   statistics.value = {
@@ -1854,7 +2094,7 @@ input[type="range"]::-moz-range-thumb:hover {
 }
 
 .statistics-table tbody tr.info-row td:last-child {
-  color: #3B6EF5;
+  color: #1d1d1f;
   font-weight: 500;
 }
 
@@ -1872,5 +2112,93 @@ input[type="range"]::-moz-range-thumb:hover {
   color: #6e6e73;
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.conserved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.more-link {
+  color: #3B6EF5;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.more-link:hover {
+  color: #2B5CE5;
+  text-decoration: underline;
+}
+
+.expanded-list {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f5f5f7;
+  border-radius: 6px;
+  border-left: 3px solid #d2d2d7;
+  text-align: left;
+}
+
+.expanded-item {
+  padding: 4px 0;
+  font-size: 13px;
+  color: #1d1d1f;
+  line-height: 1.5;
+}
+
+.type-header {
+  font-weight: 500;
+  color: #1d1d1f;
+  margin-bottom: 6px;
+}
+
+.type-with-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.type-pairs {
+  font-size: 12px;
+  color: #1d1d1f;
+  margin-left: 12px;
+  line-height: 1.4;
+}
+
+.pairs-label {
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.pairs-more {
+  color: #1d1d1f;
+  font-style: normal;
+}
+
+.expanded-type-name {
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 2px;
+}
+
+.expanded-type-pairs {
+  font-size: 12px;
+  color: #6e6e73;
+  margin-left: 12px;
+  line-height: 1.4;
+}
+
+.statistics-table tbody tr.info-row td:last-child {
+  text-align: left;
+  padding-right: 16px;
+}
+
+.statistics-table tbody tr.info-row:last-child {
+  border-bottom: none;
 }
 </style>

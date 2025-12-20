@@ -25,7 +25,7 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    print("Starting PDB Analysis API on http://localhost:5000")
+    print("Starting PDB Analysis API on http://localhost:5001")
     print("API endpoints available at /api/*")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
 

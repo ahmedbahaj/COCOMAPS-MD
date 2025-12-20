@@ -3,7 +3,7 @@
  */
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -23,7 +23,7 @@ api.interceptors.response.use(
       return Promise.reject(new Error(message || 'Server error'))
     } else if (error.request) {
       // Request made but no response
-      return Promise.reject(new Error('No response from server. Make sure the backend is running on port 5000.'))
+      return Promise.reject(new Error('No response from server. Make sure the backend is running on port 5001.'))
     } else {
       // Error setting up request
       return Promise.reject(new Error(error.message || 'Request failed'))

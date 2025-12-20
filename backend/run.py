@@ -15,7 +15,7 @@ if __name__ == '__main__':
     print("=" * 60)
     print("PDB Analysis API Server")
     print("=" * 60)
-    print("API available at: http://localhost:5000")
+    print("API available at: http://localhost:5001")
     print("Endpoints:")
     print("  GET  /api/systems")
     print("  GET  /api/systems/<id>/interactions")
@@ -24,5 +24,5 @@ if __name__ == '__main__':
     print("  POST /api/upload")
     print("  GET  /api/status/<id>")
     print("=" * 60)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
 
