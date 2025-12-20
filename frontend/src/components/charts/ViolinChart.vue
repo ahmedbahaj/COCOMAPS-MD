@@ -301,7 +301,8 @@ const updateChart = () => {
         font: {
           size: 14,
           family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-          color: '#1d1d1f'
+          color: '#1d1d1f',
+          weight: 'bold'
         }
       },
       tickangle: -45,
@@ -313,7 +314,8 @@ const updateChart = () => {
       ticktext: pairLabels,
       tickfont: {
         size: 11,
-        color: '#1d1d1f'
+        color: '#1d1d1f',
+        weight: 'bold'
       },
       showgrid: false
     },
@@ -323,7 +325,8 @@ const updateChart = () => {
         font: {
           size: 14,
           family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-          color: '#1d1d1f'
+          color: '#1d1d1f',
+          weight: 'bold'
         }
       },
       tickfont: {
