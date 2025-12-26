@@ -4,14 +4,14 @@ import re
 from pathlib import Path
 from distutils.util import strtobool
 
-HOST_ROOT_DIR = "C:/Users/Ahmed/Desktop/PDB-examples/5ak0dimer_JBT1CAB_100f"
+HOST_ROOT_DIR = "/Volumes/The Storage!/PDB-examples/5ak0_JB00_st0_c2_prod_50f_full"
 DOCKER_IMAGE_REDUCE = os.environ.get("COCOMAPS_IMAGE_REDUCE", "andrpet/cocomaps-backend:0.0.19")
 DOCKER_IMAGE_NO_REDUCE = os.environ.get(
     "COCOMAPS_IMAGE_NO_REDUCE", "sattamaltwaim/cocomaps-backend:no-reduce"
 )
 USE_REDUCE = bool(strtobool(os.environ.get("COCOMAPS_USE_REDUCE", "true")))
 DOCKER_IMAGE = DOCKER_IMAGE_REDUCE if USE_REDUCE else DOCKER_IMAGE_NO_REDUCE
-CONTAINER_EXECUTION = "python /app/coco2/begin.py"
+CONTAINER_EXECUTION = ""  # Docker image has entrypoint already set
 INPUT_FILE_NAME = "example_input.json"
 
 def get_frame_numbers(root_dir):
@@ -42,9 +42,8 @@ def run_frame_processing():
         container_input_path = f"/app/data/{INPUT_FILE_NAME}"
         docker_command = (
             f"docker run "
-            f"-v {HOST_ROOT_DIR}/{frame_folder}:/app/data " #mount
-            f"-it {DOCKER_IMAGE} "
-            f"{CONTAINER_EXECUTION} "
+            f'-v "{HOST_ROOT_DIR}/{frame_folder}":/app/data ' #mount
+            f"{DOCKER_IMAGE} "
             f"{container_input_path}"
         )
         print(f"processing: {docker_command}")
