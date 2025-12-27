@@ -107,7 +107,10 @@ def get_interactions(system_id):
         # Process each frame
         for frame_folder in frame_folders:
             frame_num = int(frame_folder.name.split('_')[1])
+            # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
             csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_final_file.csv"
+            if not csv_file.exists():
+                csv_file = frame_folder / f"{frame_folder.name}.pdb_A_B_final_file.csv"
             
             if not csv_file.exists():
                 continue
@@ -228,7 +231,10 @@ def get_area_data(system_id):
         # Process each frame
         for frame_folder in frame_folders:
             frame_num = int(frame_folder.name.split('_')[1])
+            # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
             csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_complex.pdb_Rsa_stats.csv"
+            if not csv_file.exists():
+                csv_file = frame_folder / f"{frame_folder.name}.pdb_A_B_complex.pdb_Rsa_stats.csv"
             
             if not csv_file.exists():
                 continue
@@ -347,7 +353,10 @@ def get_interaction_trends(system_id):
         
         # Process each frame
         for frame_folder in frame_folders:
+            # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
             csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_summary_table.csv"
+            if not csv_file.exists():
+                csv_file = frame_folder / f"{frame_folder.name}.pdb_A_B_summary_table.csv"
             
             if not csv_file.exists():
                 continue
@@ -489,7 +498,11 @@ def get_atom_pairs(system_id):
         # Check both orders since COCOMAPS may store pairs in either direction
         interaction_types = set()
         for frame_folder in frame_folders:
+            # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
             csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_final_file.csv"
+            if not csv_file.exists():
+                csv_file = frame_folder / f"{frame_folder.name}.pdb_A_B_final_file.csv"
+            
             if csv_file.exists():
                 with open(csv_file, 'r', encoding='utf-8') as f:
                     reader = csv.DictReader(f)
@@ -530,7 +543,11 @@ def get_atom_pairs(system_id):
                 if not csv_filename:
                     continue
                 
+                # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
                 csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_{csv_filename}.csv"
+                if not csv_file.exists():
+                    csv_file = frame_folder / f"{frame_folder.name}.pdb_A_B_{csv_filename}.csv"
+                
                 if not csv_file.exists():
                     continue
                 
@@ -892,7 +909,11 @@ def get_atom_pairs_batch(system_id):
         
         # First pass: collect interaction types for each pair from final_file.csv
         for frame_folder in frame_folders:
+            # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
             csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_final_file.csv"
+            if not csv_file.exists():
+                csv_file = frame_folder / f"{frame_folder.name}.pdb_A_B_final_file.csv"
+            
             if not csv_file.exists():
                 continue
             
@@ -935,7 +956,11 @@ def get_atom_pairs_batch(system_id):
                 if not csv_filename:
                     continue
                 
+                # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
                 csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_{csv_filename}.csv"
+                if not csv_file.exists():
+                    csv_file = frame_folder / f"{frame_folder.name}.pdb_A_B_{csv_filename}.csv"
+                
                 if not csv_file.exists():
                     continue
                 
@@ -1144,7 +1169,10 @@ def get_interaction_distances(system_id):
             frame_num = int(frame_folder.name.split('_')[1])
             
             for csv_filename in all_interaction_types:
+                # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
                 type_csv = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_{csv_filename}.csv"
+                if not type_csv.exists():
+                    type_csv = frame_folder / f"{frame_folder.name}.pdb_A_B_{csv_filename}.csv"
                 
                 if not type_csv.exists():
                     continue
@@ -1285,7 +1313,10 @@ def get_distance_distributions(system_id):
             frame_num = int(frame_folder.name.split('_')[1])
             
             for csv_filename, normalized_type in csv_files_to_scan:
+                # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
                 type_csv = frame_folder / f"{frame_folder.name}.pd_h.pdb_A_B_{csv_filename}.csv"
+                if not type_csv.exists():
+                    type_csv = frame_folder / f"{frame_folder.name}.pdb_A_B_{csv_filename}.csv"
                 
                 if not type_csv.exists():
                     continue
