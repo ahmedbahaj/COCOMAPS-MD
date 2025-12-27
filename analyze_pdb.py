@@ -15,22 +15,28 @@ from pathlib import Path
 from distutils.util import strtobool
 import MDAnalysis as mda
 from MDAnalysis.coordinates import PDB
+from dotenv import load_dotenv
+
+# Load .env file from the same directory as this script
+env_path = Path(__file__).parent / '.env'
+load_dotenv(env_path)
 
 # Import from truncate_waters
 from truncate_waters import truncate_waters
 
-# Docker configuration
+# Docker configuration (loaded from .env or defaults)
 DOCKER_IMAGE_REDUCE = os.environ.get("COCOMAPS_IMAGE_REDUCE", "andrpet/cocomaps-backend:0.0.19")
 DOCKER_IMAGE_NO_REDUCE = os.environ.get(
     "COCOMAPS_IMAGE_NO_REDUCE", "sattamaltwaim/cocomaps-backend:no-reduce"
 )
 USE_REDUCE = bool(strtobool(os.environ.get("COCOMAPS_USE_REDUCE", "false")))
-TRUNCATE_WATERS = bool(strtobool(os.environ.get("TRUNCATE_WATERS", "true")))
-INPUT_FILE_NAME = "example_input.json"
+TRUNCATE_WATERS = bool(strtobool(os.environ.get("TRUNCATE_WATERS", "false")))
+INPUT_FILE_NAME = os.environ.get("INPUT_FILE_NAME", "example_input.json")
 
-# Default parameters
-DEFAULT_WATER_DISTANCE = 5.0  # Angstroms
-DEFAULT_CHAINS = ['A', 'B']
+# Default parameters (loaded from .env or defaults)
+DEFAULT_WATER_DISTANCE = float(os.environ.get("DEFAULT_WATER_DISTANCE", "5.0"))
+_chains_env = os.environ.get("DEFAULT_CHAINS", "A,B")
+DEFAULT_CHAINS = [c.strip() for c in _chains_env.split(',')]
 
 
 def split_pdb(pdb_file, output_dir, copy_original=True):
