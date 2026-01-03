@@ -24,6 +24,9 @@ load_dotenv(env_path)
 # Import from truncate_waters
 from truncate_waters import truncate_waters
 
+# Import from interface_selector
+from interface_selector import select_interface
+
 # Docker configuration (loaded from .env or defaults)
 DOCKER_IMAGE_REDUCE = os.environ.get("COCOMAPS_IMAGE_REDUCE", "andrpet/cocomaps-backend:0.0.19")
 DOCKER_IMAGE_NO_REDUCE = os.environ.get(
@@ -35,14 +38,17 @@ INPUT_FILE_NAME = os.environ.get("INPUT_FILE_NAME", "example_input.json")
 
 # Default parameters (loaded from .env or defaults)
 DEFAULT_WATER_DISTANCE = float(os.environ.get("DEFAULT_WATER_DISTANCE", "5.0"))
+DEFAULT_INTERFACE_CUTOFF = float(os.environ.get("DEFAULT_INTERFACE_CUTOFF", "5.0"))
+SELECT_INTERFACE = bool(strtobool(os.environ.get("SELECT_INTERFACE", "false")))
 _chains_env = os.environ.get("DEFAULT_CHAINS", "A,B")
 DEFAULT_CHAINS = [c.strip() for c in _chains_env.split(',')]
 
 
-def split_pdb(pdb_file, output_dir, copy_original=True):
+def split_pdb(pdb_file, output_dir, copy_original=True, step_num=None):
     """Split PDB file into individual frames"""
+    step_label = f"STEP {step_num}: " if step_num else ""
     print(f"\n{'='*80}")
-    print("STEP 2: Splitting PDB into frames")
+    print(f"{step_label}Splitting PDB into frames")
     print(f"{'='*80}")
     
     start_time = time.time()
@@ -132,10 +138,11 @@ def create_input_jsons(output_dir, frame_count, chains=None):
     print(f"✓ Created {frame_count} input JSON files")
 
 
-def run_cocomaps_analysis(output_dir, use_reduce=False):
+def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None):
     """Run CoCoMaps Docker analysis on all frames"""
+    step_label = f"STEP {step_num}: " if step_num else ""
     print(f"\n{'='*80}")
-    print(f"STEP 3: Running CoCoMaps Analysis ({'WITH' if use_reduce else 'WITHOUT'} reduce)")
+    print(f"{step_label}Running CoCoMaps Analysis ({'WITH' if use_reduce else 'WITHOUT'} reduce)")
     print(f"{'='*80}")
     
     docker_image = DOCKER_IMAGE_REDUCE if use_reduce else DOCKER_IMAGE_NO_REDUCE
@@ -167,7 +174,7 @@ def run_cocomaps_analysis(output_dir, use_reduce=False):
             f'docker run '
             f'-v "{os.path.abspath(frame_path)}":/app/data '
             f'{docker_image} '
-            f'{container_input_path}'
+            f'python /app/coco2/begin.py {container_input_path}'
         )
         
         print(f"Processing frame {i}...", end=" ", flush=True)
@@ -203,11 +210,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Full pipeline (water truncation ON by default, reduce OFF by default)
+  # Full pipeline (all optional steps OFF by default)
   python analyze_pdb.py systems/my_protein.pdb
   
-  # Disable water truncation
-  python analyze_pdb.py systems/my_protein.pdb --no-truncate
+  # Enable water truncation
+  python analyze_pdb.py systems/my_protein.pdb --truncate
   
   # Enable reduce (adds hydrogens, slower)
   python analyze_pdb.py systems/my_protein.pdb --use-reduce
@@ -216,16 +223,27 @@ Examples:
   python analyze_pdb.py systems/my_protein.pdb -d 7.0
   
   # Use environment variables
-  TRUNCATE_WATERS=false COCOMAPS_USE_REDUCE=true python analyze_pdb.py systems/my_protein.pdb
+  TRUNCATE_WATERS=true COCOMAPS_USE_REDUCE=true python analyze_pdb.py systems/my_protein.pdb
   
   # Custom output directory
   python analyze_pdb.py systems/my_protein.pdb -o systems/my_output
+  
+  # Enable interface selection (keep only interface residues)
+  python analyze_pdb.py systems/my_protein.pdb --interface
+  
+  # Interface selection with custom cutoff (default: 5Å)
+  python analyze_pdb.py systems/my_protein.pdb --interface --interface-cutoff 7.0
+  
+  # Full pipeline with all options enabled
+  python analyze_pdb.py systems/my_protein.pdb --interface --truncate --use-reduce
 
 Environment Variables:
-  TRUNCATE_WATERS=true/false     - Enable/disable water truncation (default: true)
+  TRUNCATE_WATERS=true/false     - Enable/disable water truncation (default: false)
+  SELECT_INTERFACE=true/false    - Enable/disable interface selection (default: false)
   COCOMAPS_USE_REDUCE=true/false - Enable/disable reduce (default: false)
   COCOMAPS_IMAGE_REDUCE          - Docker image for reduce mode
   COCOMAPS_IMAGE_NO_REDUCE       - Docker image for no-reduce mode
+  DEFAULT_INTERFACE_CUTOFF       - Interface selection cutoff in Angstroms (default: 5.0)
         """
     )
     
@@ -244,8 +262,16 @@ Environment Variables:
     parser.add_argument('-c', '--chains', nargs='+', default=DEFAULT_CHAINS,
                        help='Chain IDs to analyze (default: A B)')
     
+    # Interface selection options
+    parser.add_argument('--interface', dest='select_interface', action='store_true',
+                       help='Enable interface selection - keep only residues at the interface (can also set SELECT_INTERFACE=true)')
+    parser.add_argument('--no-interface', dest='select_interface', action='store_false',
+                       help='Disable interface selection (can also set SELECT_INTERFACE=false)')
+    parser.add_argument('--interface-cutoff', type=float, default=DEFAULT_INTERFACE_CUTOFF,
+                       help=f'Interface selection cutoff in Angstroms (default: {DEFAULT_INTERFACE_CUTOFF})')
+    
     # Set defaults from environment variables
-    parser.set_defaults(truncate_waters=TRUNCATE_WATERS, use_reduce=USE_REDUCE)
+    parser.set_defaults(truncate_waters=TRUNCATE_WATERS, use_reduce=USE_REDUCE, select_interface=SELECT_INTERFACE)
     
     args = parser.parse_args()
     
@@ -270,6 +296,8 @@ Environment Variables:
     print(f"{'='*80}")
     print(f"Input PDB: {args.pdb_file}")
     print(f"Output Directory: {output_dir}")
+    print(f"Interface Selection: {'Yes' if args.select_interface else 'No'} " +
+          (f"({args.interface_cutoff}Å)" if args.select_interface else ""))
     print(f"Water Truncation: {'Yes' if args.truncate_waters else 'No'} " +
           (f"({args.water_distance}Å)" if args.truncate_waters else ""))
     print(f"Chains: {args.chains}")
@@ -279,34 +307,71 @@ Environment Variables:
     overall_start = time.time()
     
     try:
-        # STEP 1: Truncate waters (optional)
-        pdb_to_split = args.pdb_file
+        # Track the current PDB file through the pipeline
+        current_pdb = args.pdb_file
+        step_num = 1
+        
+        # STEP 1: Interface selection (optional)
+        if args.select_interface:
+            print(f"\n{'='*80}")
+            print(f"STEP {step_num}: Selecting interface residues")
+            print(f"{'='*80}")
+            
+            # Need exactly 2 chains for interface selection
+            if len(args.chains) < 2:
+                print("Warning: Interface selection requires 2 chains. Using A and B as defaults.")
+                chain_a, chain_b = 'A', 'B'
+            else:
+                chain_a, chain_b = args.chains[0], args.chains[1]
+            
+            interface_pdb = select_interface(
+                current_pdb,
+                output_pdb=None,  # Will auto-generate name
+                chain_a=chain_a,
+                chain_b=chain_b,
+                cutoff=args.interface_cutoff,
+                verbose=True
+            )
+            current_pdb = interface_pdb
+            step_num += 1
+        else:
+            print(f"\n{'='*80}")
+            print(f"STEP {step_num}: Skipped (interface selection disabled)")
+            print(f"{'='*80}")
+            step_num += 1
+        
+        # STEP 2: Truncate waters (optional)
         if args.truncate_waters:
             print(f"\n{'='*80}")
-            print("STEP 1: Truncating water molecules")
+            print(f"STEP {step_num}: Truncating water molecules")
             print(f"{'='*80}")
             
             truncated_pdb = truncate_waters(
-                args.pdb_file,
+                current_pdb,
                 output_pdb=None,  # Will auto-generate name
                 distance=args.water_distance,
                 chains=args.chains,
                 verbose=True
             )
-            pdb_to_split = truncated_pdb
+            current_pdb = truncated_pdb
+            step_num += 1
         else:
             print(f"\n{'='*80}")
-            print("STEP 1: Skipped (water truncation disabled)")
+            print(f"STEP {step_num}: Skipped (water truncation disabled)")
             print(f"{'='*80}")
+            step_num += 1
         
-        # STEP 2: Split PDB
-        output_dir, frame_count = split_pdb(pdb_to_split, output_dir, copy_original=True)
+        pdb_to_split = current_pdb
+        
+        # STEP: Split PDB
+        output_dir, frame_count = split_pdb(pdb_to_split, output_dir, copy_original=True, step_num=step_num)
+        step_num += 1
         
         # Create input JSON files
         create_input_jsons(output_dir, frame_count, args.chains)
         
-        # STEP 3: Run CoCoMaps
-        analysis_time, successful, failed = run_cocomaps_analysis(output_dir, args.use_reduce)
+        # STEP: Run CoCoMaps
+        analysis_time, successful, failed = run_cocomaps_analysis(output_dir, args.use_reduce, step_num=step_num)
         
         # Final summary
         total_time = time.time() - overall_start
