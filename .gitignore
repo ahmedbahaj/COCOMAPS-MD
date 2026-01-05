@@ -6,3 +6,6 @@ theAtomProblem.md
 
 # Systems folder contains large PDB files and analysis data
 systems/
+
+__pycache__/
+*.pyx
