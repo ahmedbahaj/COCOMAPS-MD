@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Complete PDB Analysis Pipeline
-1. (Optional) Truncate water molecules
+1. (Optional) Select interface residues and bridging waters
 2. Split PDB into frames
 3. Run CoCoMaps analysis on each frame
 """
@@ -21,9 +21,6 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent / '.env'
 load_dotenv(env_path)
 
-# Import from truncate_waters
-from truncate_waters import truncate_waters
-
 # Import from interface_selector
 from interface_selector import select_interface
 
@@ -33,12 +30,11 @@ DOCKER_IMAGE_NO_REDUCE = os.environ.get(
     "COCOMAPS_IMAGE_NO_REDUCE", "sattamaltwaim/cocomaps-backend:no-reduce"
 )
 USE_REDUCE = bool(strtobool(os.environ.get("COCOMAPS_USE_REDUCE", "false")))
-TRUNCATE_WATERS = bool(strtobool(os.environ.get("TRUNCATE_WATERS", "false")))
 INPUT_FILE_NAME = os.environ.get("INPUT_FILE_NAME", "example_input.json")
 
 # Default parameters (loaded from .env or defaults)
-DEFAULT_WATER_DISTANCE = float(os.environ.get("DEFAULT_WATER_DISTANCE", "5.0"))
 DEFAULT_INTERFACE_CUTOFF = float(os.environ.get("DEFAULT_INTERFACE_CUTOFF", "5.0"))
+DEFAULT_WATER_CUTOFF = float(os.environ.get("DEFAULT_WATER_CUTOFF", "5.0"))
 SELECT_INTERFACE = bool(strtobool(os.environ.get("SELECT_INTERFACE", "false")))
 _chains_env = os.environ.get("DEFAULT_CHAINS", "A,B")
 DEFAULT_CHAINS = [c.strip() for c in _chains_env.split(',')]
@@ -206,55 +202,43 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Complete PDB analysis pipeline with water truncation",
+        description="Complete PDB analysis pipeline with interface selection",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Full pipeline (all optional steps OFF by default)
+  # Full pipeline (interface selection OFF by default)
   python analyze_pdb.py systems/my_protein.pdb
   
-  # Enable water truncation
-  python analyze_pdb.py systems/my_protein.pdb --truncate
-  
-  # Enable reduce (adds hydrogens, slower)
-  python analyze_pdb.py systems/my_protein.pdb --use-reduce
-  
-  # Custom water distance threshold (7Å instead of default 5Å)
-  python analyze_pdb.py systems/my_protein.pdb -d 7.0
-  
-  # Use environment variables
-  TRUNCATE_WATERS=true COCOMAPS_USE_REDUCE=true python analyze_pdb.py systems/my_protein.pdb
-  
-  # Custom output directory
-  python analyze_pdb.py systems/my_protein.pdb -o systems/my_output
-  
-  # Enable interface selection (keep only interface residues)
+  # Enable interface selection (keeps interface residues + bridging waters)
   python analyze_pdb.py systems/my_protein.pdb --interface
   
   # Interface selection with custom cutoff (default: 5Å)
   python analyze_pdb.py systems/my_protein.pdb --interface --interface-cutoff 7.0
   
-  # Full pipeline with all options enabled
-  python analyze_pdb.py systems/my_protein.pdb --interface --truncate --use-reduce
+  # Separate cutoffs for protein interface and water bridges
+  python analyze_pdb.py systems/my_protein.pdb --interface --interface-cutoff 5.0 --water-cutoff 3.5
+  
+  # Enable reduce (adds hydrogens, slower)
+  python analyze_pdb.py systems/my_protein.pdb --use-reduce
+  
+  # Custom output directory
+  python analyze_pdb.py systems/my_protein.pdb -o systems/my_output
+  
+  # Use environment variables
+  SELECT_INTERFACE=true python analyze_pdb.py systems/my_protein.pdb
 
 Environment Variables:
-  TRUNCATE_WATERS=true/false     - Enable/disable water truncation (default: false)
   SELECT_INTERFACE=true/false    - Enable/disable interface selection (default: false)
   COCOMAPS_USE_REDUCE=true/false - Enable/disable reduce (default: false)
   COCOMAPS_IMAGE_REDUCE          - Docker image for reduce mode
   COCOMAPS_IMAGE_NO_REDUCE       - Docker image for no-reduce mode
   DEFAULT_INTERFACE_CUTOFF       - Interface selection cutoff in Angstroms (default: 5.0)
+  DEFAULT_WATER_CUTOFF           - Water bridge cutoff in Angstroms (default: 5.0)
         """
     )
     
     parser.add_argument('pdb_file', help='Input PDB file to analyze')
     parser.add_argument('-o', '--output', help='Output directory (default: systems/<pdb_name>)')
-    parser.add_argument('-d', '--water-distance', type=float, default=DEFAULT_WATER_DISTANCE,
-                       help=f'Water truncation distance in Angstroms (default: {DEFAULT_WATER_DISTANCE})')
-    parser.add_argument('--truncate', dest='truncate_waters', action='store_true',
-                       help='Enable water truncation (can also set TRUNCATE_WATERS=true)')
-    parser.add_argument('--no-truncate', dest='truncate_waters', action='store_false',
-                       help='Disable water truncation (can also set TRUNCATE_WATERS=false)')
     parser.add_argument('--use-reduce', dest='use_reduce', action='store_true',
                        help='Use reduce version of CoCoMaps (can also set COCOMAPS_USE_REDUCE=true)')
     parser.add_argument('--no-reduce', dest='use_reduce', action='store_false',
@@ -264,14 +248,16 @@ Environment Variables:
     
     # Interface selection options
     parser.add_argument('--interface', dest='select_interface', action='store_true',
-                       help='Enable interface selection - keep only residues at the interface (can also set SELECT_INTERFACE=true)')
+                       help='Enable interface selection - keep only interface residues and bridging waters')
     parser.add_argument('--no-interface', dest='select_interface', action='store_false',
-                       help='Disable interface selection (can also set SELECT_INTERFACE=false)')
+                       help='Disable interface selection')
     parser.add_argument('--interface-cutoff', type=float, default=DEFAULT_INTERFACE_CUTOFF,
                        help=f'Interface selection cutoff in Angstroms (default: {DEFAULT_INTERFACE_CUTOFF})')
+    parser.add_argument('--water-cutoff', type=float, default=None,
+                       help=f'Bridging water cutoff in Angstroms (default: same as interface-cutoff)')
     
     # Set defaults from environment variables
-    parser.set_defaults(truncate_waters=TRUNCATE_WATERS, use_reduce=USE_REDUCE, select_interface=SELECT_INTERFACE)
+    parser.set_defaults(use_reduce=USE_REDUCE, select_interface=SELECT_INTERFACE)
     
     args = parser.parse_args()
     
@@ -279,6 +265,9 @@ Environment Variables:
     if not os.path.exists(args.pdb_file):
         print(f"Error: PDB file not found: {args.pdb_file}")
         return 1
+    
+    # Use interface cutoff for water if not specified
+    water_cutoff = args.water_cutoff if args.water_cutoff is not None else args.interface_cutoff
     
     # Determine output directory
     if args.output:
@@ -297,9 +286,7 @@ Environment Variables:
     print(f"Input PDB: {args.pdb_file}")
     print(f"Output Directory: {output_dir}")
     print(f"Interface Selection: {'Yes' if args.select_interface else 'No'} " +
-          (f"({args.interface_cutoff}Å)" if args.select_interface else ""))
-    print(f"Water Truncation: {'Yes' if args.truncate_waters else 'No'} " +
-          (f"({args.water_distance}Å)" if args.truncate_waters else ""))
+          (f"(protein: {args.interface_cutoff}Å, water: {water_cutoff}Å)" if args.select_interface else ""))
     print(f"Chains: {args.chains}")
     print(f"CoCoMaps Mode: {'WITH reduce' if args.use_reduce else 'WITHOUT reduce'}")
     print(f"{'='*80}")
@@ -314,7 +301,7 @@ Environment Variables:
         # STEP 1: Interface selection (optional)
         if args.select_interface:
             print(f"\n{'='*80}")
-            print(f"STEP {step_num}: Selecting interface residues")
+            print(f"STEP {step_num}: Selecting interface residues and bridging waters")
             print(f"{'='*80}")
             
             # Need exactly 2 chains for interface selection
@@ -330,6 +317,7 @@ Environment Variables:
                 chain_a=chain_a,
                 chain_b=chain_b,
                 cutoff=args.interface_cutoff,
+                water_cutoff=water_cutoff,
                 verbose=True
             )
             current_pdb = interface_pdb
@@ -337,27 +325,6 @@ Environment Variables:
         else:
             print(f"\n{'='*80}")
             print(f"STEP {step_num}: Skipped (interface selection disabled)")
-            print(f"{'='*80}")
-            step_num += 1
-        
-        # STEP 2: Truncate waters (optional)
-        if args.truncate_waters:
-            print(f"\n{'='*80}")
-            print(f"STEP {step_num}: Truncating water molecules")
-            print(f"{'='*80}")
-            
-            truncated_pdb = truncate_waters(
-                current_pdb,
-                output_pdb=None,  # Will auto-generate name
-                distance=args.water_distance,
-                chains=args.chains,
-                verbose=True
-            )
-            current_pdb = truncated_pdb
-            step_num += 1
-        else:
-            print(f"\n{'='*80}")
-            print(f"STEP {step_num}: Skipped (water truncation disabled)")
             print(f"{'='*80}")
             step_num += 1
         
@@ -393,4 +360,3 @@ Environment Variables:
 
 if __name__ == "__main__":
     exit(main())
-
