@@ -1,31 +1,39 @@
 #!/usr/bin/env python3
 """
-Interface Selector with Bridging Waters
+Interface Selector with Bridging Waters (Per-Frame Mode)
+
 Selects interface residues between two protein chains AND water molecules
 that bridge both chains (within cutoff distance of heavy atoms from BOTH chains).
+
+Each frame is processed independently - only residues at the interface IN THAT FRAME
+are written to that frame's output PDB. This means atom counts may vary between frames.
 """
 
 import sys
 import os
 from datetime import datetime
+import time
 import numpy as np
 import MDAnalysis as mda
 from MDAnalysis.analysis.distances import distance_array
 
 
-def select_interface(input_pdb, output_pdb=None, chain_a='A', chain_b='B', 
-                     cutoff=5.0, water_cutoff=None, verbose=True):
+def select_interface_per_frame(input_pdb, output_dir, chain_a='A', chain_b='B',
+                                cutoff=5.0, water_cutoff=None, verbose=True):
     """
-    Select interface residues and bridging waters from a PDB file.
+    Select interface residues and bridging waters on a PER-FRAME basis.
     
-    This is the main entry point for programmatic use (e.g., from analyze_pdb.py).
+    Each frame gets its own keep_list - only residues at the interface IN THAT FRAME
+    are written to that frame's output PDB. This means atom counts may vary between frames.
+    
+    This function combines interface selection with frame splitting for efficiency.
     
     Parameters:
     -----------
     input_pdb : str
-        Path to input PDB file
-    output_pdb : str or None
-        Path to output PDB file. If None, auto-generates based on input name.
+        Path to input PDB file (can be multi-model/trajectory)
+    output_dir : str
+        Output directory. Creates frame_N/frame_N.pdb for each frame.
     chain_a : str
         Chain identifier for the first chain (default: 'A')
     chain_b : str
@@ -39,174 +47,37 @@ def select_interface(input_pdb, output_pdb=None, chain_a='A', chain_b='B',
     
     Returns:
     --------
-    str : Path to the output PDB file
+    tuple : (output_dir, frame_count)
     """
+    start_time = time.time()
+    
     # Use same cutoff for waters if not specified
     if water_cutoff is None:
         water_cutoff = cutoff
     
-    # Auto-generate output name if not provided
-    if output_pdb is None:
-        base = os.path.splitext(input_pdb)[0]
-        output_pdb = f"{base}_interface.pdb"
-    
     if verbose:
         print(f"Input PDB: {input_pdb}")
-        print(f"Output PDB: {output_pdb}")
+        print(f"Output Directory: {output_dir}")
         print(f"Chains: {chain_a}, {chain_b}")
         print(f"Interface cutoff: {cutoff} Å")
         print(f"Water cutoff: {water_cutoff} Å")
+        print(f"Mode: Per-frame interface selection")
+    
+    # Create output directory
+    os.makedirs(output_dir, exist_ok=True)
     
     # Load the structure/trajectory
     universe = mda.Universe(input_pdb)
-    
     num_frames = len(universe.trajectory)
+    
     if verbose:
         print(f"Loaded structure with {num_frames} frame(s)")
-        print(f"Scanning frames for interface residues...")
     
-    # Count total protein atoms in the chains being analyzed
-    total_protein_sel = universe.select_atoms(f"(segid {chain_a} or segid {chain_b}) and protein")
-    if len(total_protein_sel) == 0:
-        try:
-            all_protein = universe.select_atoms("protein")
-            total_protein_sel = all_protein[(all_protein.segids == chain_a) | (all_protein.segids == chain_b)]
-        except:
-            total_protein_sel = universe.select_atoms(f"segid {chain_a} or segid {chain_b}")
-    
-    total_protein_atoms = len(total_protein_sel)
-    
-    # Find interface residues across all frames
-    keep_list, chain_a_atoms_obj, chain_b_atoms_obj = find_global_interface(
-        universe, chain_a, chain_b, cutoff
-    )
-    chain_a_atoms_count = len(chain_a_atoms_obj)
-    chain_b_atoms_count = len(chain_b_atoms_obj)
-    
-    if verbose:
-        print(f"Total unique interface residues found: {len(keep_list)}")
-    
-    # Find bridging waters
-    if verbose:
-        print(f"Scanning for bridging water molecules...")
-    
-    bridging_water_resids, total_waters = find_bridging_waters(
-        universe, chain_a, chain_b, water_cutoff, verbose
-    )
-    
-    if verbose:
-        print(f"Bridging waters found: {len(bridging_water_resids)}/{total_waters}")
-    
-    # Create selection string for protein residues to keep
-    protein_selections = []
-    for chain_id, resnum in keep_list:
-        protein_selections.append(f"(segid {chain_id} and resid {resnum})")
-    
-    # Build output atom group
-    if not protein_selections and not bridging_water_resids:
-        if verbose:
-            print("Warning: No interface residues or bridging waters found. Output file will be empty.")
-        preserved_protein_atoms = 0
-        preserved_water_atoms = 0
-        deleted_protein_atoms = total_protein_atoms
-        deleted_water_atoms = total_waters * 3  # Approximate (O + 2H per water)
-        empty_sel = universe.select_atoms("none")
-        output_atoms = empty_sel
-    else:
-        # Select interface protein atoms
-        if protein_selections:
-            protein_selection_string = " or ".join(protein_selections)
-            interface_protein_atoms = universe.select_atoms(protein_selection_string)
-        else:
-            interface_protein_atoms = universe.select_atoms("none")
-        
-        preserved_protein_atoms = len(interface_protein_atoms)
-        deleted_protein_atoms = total_protein_atoms - preserved_protein_atoms
-        
-        # Select bridging water atoms (full residues, not just oxygen)
-        if bridging_water_resids:
-            water_resid_str = " ".join(map(str, bridging_water_resids))
-            water_selection = f"(resname HOH or resname WAT or resname TIP3 or resname SOL) and resid {water_resid_str}"
-            bridging_water_atoms = universe.select_atoms(water_selection)
-        else:
-            bridging_water_atoms = universe.select_atoms("none")
-        
-        preserved_water_atoms = len(bridging_water_atoms)
-        # Total water atoms in input
-        all_water_atoms = universe.select_atoms("resname HOH or resname WAT or resname TIP3 or resname SOL")
-        deleted_water_atoms = len(all_water_atoms) - preserved_water_atoms
-        
-        # Combine protein and water atoms
-        if len(interface_protein_atoms) > 0 and len(bridging_water_atoms) > 0:
-            output_atoms = interface_protein_atoms + bridging_water_atoms
-        elif len(interface_protein_atoms) > 0:
-            output_atoms = interface_protein_atoms
-        elif len(bridging_water_atoms) > 0:
-            output_atoms = bridging_water_atoms
-        else:
-            output_atoms = universe.select_atoms("none")
-    
-    # Write the output PDB
-    if len(output_atoms) > 0:
-        if len(universe.trajectory) > 1:
-            with mda.Writer(output_pdb, output_atoms.n_atoms) as writer:
-                for ts in universe.trajectory:
-                    writer.write(output_atoms)
-        else:
-            output_atoms.write(output_pdb)
-    else:
-        universe.select_atoms("none").write(output_pdb)
-    
-    # Generate and write log file
-    log_file = os.path.splitext(output_pdb)[0] + "_summary.txt"
-    write_summary_log(
-        input_pdb, output_pdb, log_file, chain_a, chain_b, cutoff, water_cutoff,
-        num_frames, chain_a_atoms_count, chain_b_atoms_count, keep_list,
-        total_protein_atoms, preserved_protein_atoms, deleted_protein_atoms,
-        total_waters, len(bridging_water_resids), preserved_water_atoms, deleted_water_atoms
-    )
-    
-    if verbose:
-        total_preserved = preserved_protein_atoms + preserved_water_atoms
-        total_original = total_protein_atoms + len(universe.select_atoms("resname HOH or resname WAT or resname TIP3 or resname SOL"))
-        print(f"\nProtein atoms: {preserved_protein_atoms}/{total_protein_atoms} preserved")
-        print(f"Water molecules: {len(bridging_water_resids)}/{total_waters} preserved (bridging)")
-        print(f"Total atoms preserved: {total_preserved}")
-        if total_original > 0:
-            print(f"Overall preservation rate: {(total_preserved / total_original) * 100:.1f}%")
-        print(f"Output saved to: {output_pdb}")
-        print(f"Summary log: {log_file}")
-    
-    return output_pdb
-
-
-def find_global_interface(universe, chain_a, chain_b, cutoff=5.0):
-    """
-    Scans all frames (models) to find residues that are EVER within 
-    the cutoff distance of the partner chain.
-    
-    Parameters:
-    -----------
-    universe : MDAnalysis.Universe
-        The loaded trajectory/structure
-    chain_a : str
-        Chain identifier for the first chain
-    chain_b : str
-        Chain identifier for the second chain
-    cutoff : float
-        Distance cutoff in Angstroms (default: 5.0)
-    
-    Returns:
-    --------
-    tuple : (set of (chain_id, residue_id) tuples to keep, chain_a_atoms, chain_b_atoms)
-    """
-    global_keep_list = set()
-    
-    # Select protein atoms from both chains
+    # Pre-select atom groups (reused across frames - positions auto-update)
     chain_a_atoms = universe.select_atoms(f"segid {chain_a} and protein")
     chain_b_atoms = universe.select_atoms(f"segid {chain_b} and protein")
     
-    # If that doesn't work, try alternative methods
+    # Fallback if segid doesn't work
     if len(chain_a_atoms) == 0 or len(chain_b_atoms) == 0:
         chain_a_atoms = universe.select_atoms(f"segid {chain_a}")
         chain_b_atoms = universe.select_atoms(f"segid {chain_b}")
@@ -220,74 +91,15 @@ def find_global_interface(universe, chain_a, chain_b, cutoff=5.0):
                 chain_a_atoms = universe.select_atoms(f"segid {chain_a}")
                 chain_b_atoms = universe.select_atoms(f"segid {chain_b}")
     
-    print(f"Chain {chain_a}: {len(chain_a_atoms)} atoms")
-    print(f"Chain {chain_b}: {len(chain_b_atoms)} atoms")
-    
-    # Iterate through all frames
-    for ts in universe.trajectory:
-        distances = distance_array(
-            chain_a_atoms.positions, 
-            chain_b_atoms.positions, 
-            box=universe.dimensions if hasattr(universe, 'dimensions') and universe.dimensions is not None else None
-        )
-        
-        # Find minimum distance for each chain A atom to any chain B atom
-        min_distances_a = np.min(distances, axis=1)
-        close_atoms_a = chain_a_atoms[min_distances_a <= cutoff]
-        
-        # Find minimum distance for each chain B atom to any chain A atom
-        min_distances_b = np.min(distances, axis=0)
-        close_atoms_b = chain_b_atoms[min_distances_b <= cutoff]
-        
-        # Add residues to keep list
-        for atom in close_atoms_a:
-            res = atom.residue
-            global_keep_list.add((chain_a, res.resnum))
-        
-        for atom in close_atoms_b:
-            res = atom.residue
-            global_keep_list.add((chain_b, res.resnum))
-    
-    return global_keep_list, chain_a_atoms, chain_b_atoms
-
-
-def find_bridging_waters(universe, chain_a, chain_b, cutoff=5.0, verbose=True):
-    """
-    Find water molecules that bridge both chains (within cutoff of BOTH chains).
-    Uses spatial grid hashing for efficient O(N+M) lookup.
-    
-    A bridging water is defined as a water molecule whose oxygen atom is within
-    the cutoff distance of at least one heavy atom from chain A AND at least
-    one heavy atom from chain B.
-    
-    Parameters:
-    -----------
-    universe : MDAnalysis.Universe
-        The loaded trajectory/structure
-    chain_a : str
-        Chain identifier for the first chain
-    chain_b : str
-        Chain identifier for the second chain
-    cutoff : float
-        Distance cutoff in Angstroms (default: 5.0)
-    verbose : bool
-        Whether to print progress messages
-    
-    Returns:
-    --------
-    tuple : (set of water residue IDs to keep, total water count)
-    """
-    # Select heavy atoms (not hydrogen) from each chain
-    # Heavy atoms = all atoms except hydrogen
+    # Heavy atoms for water bridging
     chain_a_heavy = universe.select_atoms(f"segid {chain_a} and protein and not name H*")
     chain_b_heavy = universe.select_atoms(f"segid {chain_b} and protein and not name H*")
     
-    # Fallback if segid doesn't work
     if len(chain_a_heavy) == 0 or len(chain_b_heavy) == 0:
         chain_a_heavy = universe.select_atoms(f"segid {chain_a} and not name H*")
         chain_b_heavy = universe.select_atoms(f"segid {chain_b} and not name H*")
     
-    # Select water oxygen atoms
+    # Water oxygens
     try:
         water_oxygens = universe.select_atoms(
             "(resname HOH and name O) or "
@@ -298,200 +110,312 @@ def find_bridging_waters(universe, chain_a, chain_b, cutoff=5.0, verbose=True):
     except:
         water_oxygens = universe.select_atoms("resname HOH or resname WAT or resname TIP3 or resname SOL")
     
-    total_waters = len(water_oxygens)
+    if verbose:
+        print(f"Chain {chain_a}: {len(chain_a_atoms)} protein atoms, {len(chain_a_heavy)} heavy atoms")
+        print(f"Chain {chain_b}: {len(chain_b_atoms)} protein atoms, {len(chain_b_heavy)} heavy atoms")
+        print(f"Total water molecules: {len(water_oxygens)}")
+        print(f"\nProcessing frames...")
+    
+    # Statistics tracking
+    total_protein_atoms_original = len(chain_a_atoms) + len(chain_b_atoms)
+    total_water_original = len(water_oxygens)
+    frame_stats = []
+    
+    # Process each frame
+    for frame_idx, ts in enumerate(universe.trajectory):
+        frame_num = frame_idx + 1
+        
+        # Find interface residues for THIS frame
+        keep_list = _find_interface_single_frame(
+            chain_a_atoms, chain_b_atoms, chain_a, chain_b, cutoff
+        )
+        
+        # Find bridging waters for THIS frame
+        bridging_water_resids = _find_bridging_waters_single_frame(
+            chain_a_heavy, chain_b_heavy, water_oxygens, water_cutoff
+        )
+        
+        # Build selection for interface protein atoms
+        if keep_list:
+            protein_selections = [f"(segid {c} and resid {r})" for c, r in keep_list]
+            protein_selection_string = " or ".join(protein_selections)
+            interface_protein_atoms = universe.select_atoms(protein_selection_string)
+        else:
+            interface_protein_atoms = universe.select_atoms("none")
+        
+        # Build selection for bridging water atoms
+        if bridging_water_resids:
+            water_resid_str = " ".join(map(str, bridging_water_resids))
+            water_selection = f"(resname HOH or resname WAT or resname TIP3 or resname SOL) and resid {water_resid_str}"
+            bridging_water_atoms = universe.select_atoms(water_selection)
+        else:
+            bridging_water_atoms = universe.select_atoms("none")
+        
+        # Combine protein and water atoms
+        if len(interface_protein_atoms) > 0 and len(bridging_water_atoms) > 0:
+            output_atoms = interface_protein_atoms + bridging_water_atoms
+        elif len(interface_protein_atoms) > 0:
+            output_atoms = interface_protein_atoms
+        elif len(bridging_water_atoms) > 0:
+            output_atoms = bridging_water_atoms
+        else:
+            output_atoms = universe.select_atoms("none")
+        
+        # Create frame directory and write PDB
+        frame_folder = os.path.join(output_dir, f"frame_{frame_num}")
+        os.makedirs(frame_folder, exist_ok=True)
+        frame_file = os.path.join(frame_folder, f"frame_{frame_num}.pdb")
+        
+        if len(output_atoms) > 0:
+            output_atoms.write(frame_file)
+        else:
+            universe.select_atoms("none").write(frame_file)
+        
+        # Track statistics
+        frame_stats.append({
+            'frame': frame_num,
+            'interface_residues': len(keep_list),
+            'protein_atoms': len(interface_protein_atoms),
+            'bridging_waters': len(bridging_water_resids),
+            'water_atoms': len(bridging_water_atoms),
+            'total_atoms': len(output_atoms)
+        })
+        
+        if verbose:
+            print(f"  Frame {frame_num}: {len(keep_list)} residues, "
+                  f"{len(interface_protein_atoms)} protein atoms, "
+                  f"{len(bridging_water_resids)} waters → {len(output_atoms)} total atoms")
+    
+    elapsed = time.time() - start_time
+    
+    # Write summary log
+    log_file = os.path.join(output_dir, "interface_selection_summary.txt")
+    _write_per_frame_summary_log(
+        input_pdb, output_dir, log_file, chain_a, chain_b, cutoff, water_cutoff,
+        num_frames, len(chain_a_atoms), len(chain_b_atoms),
+        total_protein_atoms_original, total_water_original, frame_stats
+    )
     
     if verbose:
-        print(f"Chain {chain_a} heavy atoms: {len(chain_a_heavy)}")
-        print(f"Chain {chain_b} heavy atoms: {len(chain_b_heavy)}")
-        print(f"Total water molecules: {total_waters}")
+        # Calculate averages
+        avg_residues = sum(s['interface_residues'] for s in frame_stats) / num_frames
+        avg_protein = sum(s['protein_atoms'] for s in frame_stats) / num_frames
+        avg_waters = sum(s['bridging_waters'] for s in frame_stats) / num_frames
+        avg_total = sum(s['total_atoms'] for s in frame_stats) / num_frames
+        
+        print(f"\n{'='*60}")
+        print(f"Per-Frame Interface Selection Complete")
+        print(f"{'='*60}")
+        print(f"Frames processed: {num_frames}")
+        print(f"Time elapsed: {elapsed:.2f} seconds")
+        print(f"\nAverages per frame:")
+        print(f"  Interface residues: {avg_residues:.1f}")
+        print(f"  Protein atoms: {avg_protein:.1f}")
+        print(f"  Bridging waters: {avg_waters:.1f}")
+        print(f"  Total atoms: {avg_total:.1f}")
+        print(f"\nOutput directory: {output_dir}")
+        print(f"Summary log: {log_file}")
     
-    if total_waters == 0:
-        return set(), 0
+    return output_dir, num_frames
+
+
+def _find_interface_single_frame(chain_a_atoms, chain_b_atoms, chain_a, chain_b, cutoff):
+    """
+    Find interface residues for the CURRENT frame only.
+    Atom positions are already set to current frame by MDAnalysis trajectory iteration.
     
-    if len(chain_a_heavy) == 0 or len(chain_b_heavy) == 0:
-        if verbose:
-            print("Warning: One or both chains have no heavy atoms. No bridging waters found.")
-        return set(), total_waters
+    Returns:
+    --------
+    set : Set of (chain_id, residue_number) tuples at interface in this frame
+    """
+    keep_list = set()
     
-    # Use spatial grid hashing for efficient lookup
-    # We need waters that are near BOTH chain A AND chain B
+    if len(chain_a_atoms) == 0 or len(chain_b_atoms) == 0:
+        return keep_list
+    
+    # Calculate all pairwise distances
+    distances = distance_array(
+        chain_a_atoms.positions,
+        chain_b_atoms.positions,
+        box=None  # Assuming no periodic boundary conditions for protein structures
+    )
+    
+    # Find chain A atoms close to any chain B atom
+    min_distances_a = np.min(distances, axis=1)
+    close_mask_a = min_distances_a <= cutoff
+    
+    # Find chain B atoms close to any chain A atom
+    min_distances_b = np.min(distances, axis=0)
+    close_mask_b = min_distances_b <= cutoff
+    
+    # Get residue info for close atoms in chain A
+    for atom in chain_a_atoms[close_mask_a]:
+        keep_list.add((chain_a, atom.residue.resnum))
+    
+    # Get residue info for close atoms in chain B
+    for atom in chain_b_atoms[close_mask_b]:
+        keep_list.add((chain_b, atom.residue.resnum))
+    
+    return keep_list
+
+
+def _find_bridging_waters_single_frame(chain_a_heavy, chain_b_heavy, water_oxygens, cutoff):
+    """
+    Find bridging water molecules for the CURRENT frame only.
+    Uses spatial grid hashing for efficient O(N+M) lookup.
+    
+    A bridging water must be within cutoff of BOTH chain A AND chain B heavy atoms.
+    
+    Returns:
+    --------
+    set : Set of water residue IDs that bridge both chains in this frame
+    """
+    if len(water_oxygens) == 0 or len(chain_a_heavy) == 0 or len(chain_b_heavy) == 0:
+        return set()
+    
     grid_size = cutoff
-    
     bridging_resids = set()
     
-    # Iterate through all frames to find waters that EVER bridge both chains
-    for ts in universe.trajectory:
-        # Build grid for chain A heavy atoms
-        grid_a = set()
-        for pos in chain_a_heavy.positions:
-            cell_x = int(np.floor(pos[0] / grid_size))
-            cell_y = int(np.floor(pos[1] / grid_size))
-            cell_z = int(np.floor(pos[2] / grid_size))
-            # Mark cell and all 26 neighbors
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    for dz in [-1, 0, 1]:
-                        grid_a.add((cell_x + dx, cell_y + dy, cell_z + dz))
-        
-        # Build grid for chain B heavy atoms
-        grid_b = set()
-        for pos in chain_b_heavy.positions:
-            cell_x = int(np.floor(pos[0] / grid_size))
-            cell_y = int(np.floor(pos[1] / grid_size))
-            cell_z = int(np.floor(pos[2] / grid_size))
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    for dz in [-1, 0, 1]:
-                        grid_b.add((cell_x + dx, cell_y + dy, cell_z + dz))
-        
-        # Check each water oxygen - must be in BOTH grids
-        for water_atom in water_oxygens:
-            pos = water_atom.position
-            w_cell = (
-                int(np.floor(pos[0] / grid_size)),
-                int(np.floor(pos[1] / grid_size)),
-                int(np.floor(pos[2] / grid_size))
-            )
-            
-            # Water must be near BOTH chain A AND chain B
-            if w_cell in grid_a and w_cell in grid_b:
-                bridging_resids.add(water_atom.resid)
+    # Build grid for chain A heavy atoms
+    grid_a = set()
+    for pos in chain_a_heavy.positions:
+        cell_x = int(np.floor(pos[0] / grid_size))
+        cell_y = int(np.floor(pos[1] / grid_size))
+        cell_z = int(np.floor(pos[2] / grid_size))
+        # Mark cell and all 26 neighbors
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                for dz in [-1, 0, 1]:
+                    grid_a.add((cell_x + dx, cell_y + dy, cell_z + dz))
     
-    return bridging_resids, total_waters
+    # Build grid for chain B heavy atoms
+    grid_b = set()
+    for pos in chain_b_heavy.positions:
+        cell_x = int(np.floor(pos[0] / grid_size))
+        cell_y = int(np.floor(pos[1] / grid_size))
+        cell_z = int(np.floor(pos[2] / grid_size))
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                for dz in [-1, 0, 1]:
+                    grid_b.add((cell_x + dx, cell_y + dy, cell_z + dz))
+    
+    # Check each water oxygen - must be in BOTH grids
+    for water_atom in water_oxygens:
+        pos = water_atom.position
+        w_cell = (
+            int(np.floor(pos[0] / grid_size)),
+            int(np.floor(pos[1] / grid_size)),
+            int(np.floor(pos[2] / grid_size))
+        )
+        
+        # Water must be near BOTH chain A AND chain B
+        if w_cell in grid_a and w_cell in grid_b:
+            bridging_resids.add(water_atom.resid)
+    
+    return bridging_resids
 
 
-def write_summary_log(input_pdb, output_pdb, log_file, chain_a, chain_b, 
-                      cutoff, water_cutoff, num_frames, 
-                      chain_a_atoms, chain_b_atoms, keep_list,
-                      total_protein_atoms, preserved_protein_atoms, deleted_protein_atoms,
-                      total_waters, bridging_waters, preserved_water_atoms, deleted_water_atoms):
+def _write_per_frame_summary_log(input_pdb, output_dir, log_file, chain_a, chain_b,
+                                  cutoff, water_cutoff, num_frames,
+                                  chain_a_atoms, chain_b_atoms,
+                                  total_protein_atoms, total_waters, frame_stats):
     """
-    Write a comprehensive summary log to a text file.
+    Write a summary log for per-frame interface selection.
     """
     with open(log_file, 'w') as f:
         f.write("=" * 80 + "\n")
-        f.write("INTERFACE SELECTION SUMMARY (WITH BRIDGING WATERS)\n")
+        f.write("PER-FRAME INTERFACE SELECTION SUMMARY\n")
         f.write("=" * 80 + "\n\n")
         
-        # Timestamp
         f.write(f"Date and Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
         
-        # File information
         f.write("FILE INFORMATION\n")
         f.write("-" * 80 + "\n")
-        f.write(f"Input PDB file:  {input_pdb}\n")
-        f.write(f"Output PDB file: {output_pdb}\n")
-        f.write(f"Log file:        {log_file}\n\n")
+        f.write(f"Input PDB file:    {input_pdb}\n")
+        f.write(f"Output directory:  {output_dir}\n")
+        f.write(f"Log file:          {log_file}\n\n")
         
-        # Parameters
         f.write("PARAMETERS\n")
         f.write("-" * 80 + "\n")
         f.write(f"Chain A:              {chain_a}\n")
         f.write(f"Chain B:              {chain_b}\n")
         f.write(f"Interface cutoff:     {cutoff} Å\n")
         f.write(f"Water bridge cutoff:  {water_cutoff} Å\n")
-        f.write(f"Number of frames:     {num_frames}\n\n")
+        f.write(f"Number of frames:     {num_frames}\n")
+        f.write(f"Selection mode:       Per-frame (dynamic)\n\n")
         
-        # Chain statistics
-        f.write("CHAIN STATISTICS\n")
+        f.write("CHAIN STATISTICS (Original)\n")
         f.write("-" * 80 + "\n")
         f.write(f"Chain {chain_a} atoms: {chain_a_atoms}\n")
         f.write(f"Chain {chain_b} atoms: {chain_b_atoms}\n")
-        f.write(f"Total protein atoms in chains {chain_a} and {chain_b}: {total_protein_atoms}\n\n")
+        f.write(f"Total protein atoms:  {total_protein_atoms}\n")
+        f.write(f"Total water molecules: {total_waters}\n\n")
         
-        # Interface residues
-        f.write("INTERFACE RESIDUES\n")
+        f.write("PER-FRAME STATISTICS\n")
         f.write("-" * 80 + "\n")
-        f.write(f"Total unique interface residues found: {len(keep_list)}\n\n")
-        
-        # Sort residues by chain and residue number
-        sorted_residues = sorted(keep_list, key=lambda x: (x[0], x[1]))
-        
-        chain_a_residues = [res for res in sorted_residues if res[0] == chain_a]
-        chain_b_residues = [res for res in sorted_residues if res[0] == chain_b]
-        
-        f.write(f"Chain {chain_a} interface residues ({len(chain_a_residues)}):\n")
-        if chain_a_residues:
-            res_nums = [str(res[1]) for res in chain_a_residues]
-            for i in range(0, len(res_nums), 20):
-                f.write(f"  {', '.join(res_nums[i:i+20])}\n")
-        else:
-            f.write("  None\n")
-        f.write("\n")
-        
-        f.write(f"Chain {chain_b} interface residues ({len(chain_b_residues)}):\n")
-        if chain_b_residues:
-            res_nums = [str(res[1]) for res in chain_b_residues]
-            for i in range(0, len(res_nums), 20):
-                f.write(f"  {', '.join(res_nums[i:i+20])}\n")
-        else:
-            f.write("  None\n")
-        f.write("\n")
-        
-        # Bridging waters section
-        f.write("BRIDGING WATERS\n")
+        f.write(f"{'Frame':<8} {'Residues':<10} {'Protein':<10} {'Waters':<10} {'Total':<10}\n")
         f.write("-" * 80 + "\n")
-        f.write(f"Total water molecules in input:  {total_waters}\n")
-        f.write(f"Bridging waters (near both chains): {bridging_waters}\n")
-        f.write(f"Waters discarded: {total_waters - bridging_waters}\n")
-        if total_waters > 0:
-            f.write(f"Bridging water percentage: {(bridging_waters / total_waters) * 100:.2f}%\n")
-        f.write("\n")
         
-        # Atom statistics
-        f.write("ATOM STATISTICS\n")
+        for s in frame_stats:
+            f.write(f"{s['frame']:<8} {s['interface_residues']:<10} "
+                    f"{s['protein_atoms']:<10} {s['bridging_waters']:<10} "
+                    f"{s['total_atoms']:<10}\n")
+        
         f.write("-" * 80 + "\n")
-        f.write(f"Protein atoms preserved: {preserved_protein_atoms}/{total_protein_atoms}\n")
-        f.write(f"Water atoms preserved:   {preserved_water_atoms}\n")
-        f.write(f"Total atoms preserved:   {preserved_protein_atoms + preserved_water_atoms}\n")
-        if total_protein_atoms > 0:
-            f.write(f"Protein preservation rate: {(preserved_protein_atoms / total_protein_atoms) * 100:.2f}%\n")
-        f.write("\n")
+        
+        # Averages
+        avg_residues = sum(s['interface_residues'] for s in frame_stats) / num_frames
+        avg_protein = sum(s['protein_atoms'] for s in frame_stats) / num_frames
+        avg_waters = sum(s['bridging_waters'] for s in frame_stats) / num_frames
+        avg_total = sum(s['total_atoms'] for s in frame_stats) / num_frames
+        
+        f.write(f"{'Average':<8} {avg_residues:<10.1f} {avg_protein:<10.1f} "
+                f"{avg_waters:<10.1f} {avg_total:<10.1f}\n\n")
+        
+        # Min/Max
+        min_atoms = min(s['total_atoms'] for s in frame_stats)
+        max_atoms = max(s['total_atoms'] for s in frame_stats)
+        f.write(f"Minimum atoms in a frame: {min_atoms}\n")
+        f.write(f"Maximum atoms in a frame: {max_atoms}\n\n")
         
         f.write("=" * 80 + "\n")
         f.write("END OF SUMMARY\n")
         f.write("=" * 80 + "\n")
 
 
-def main(input_pdb, output_pdb, chain_a, chain_b, cutoff=5.0, water_cutoff=None):
-    """
-    Main function to extract interface residues and bridging waters from a PDB file.
+if __name__ == "__main__":
+    # Command-line interface for per-frame interface selection
+    if len(sys.argv) < 3:
+        print("Usage: python interface_selector.py <input.pdb> <output_dir> [chain_a] [chain_b] [cutoff] [water_cutoff]")
+        print()
+        print("Arguments:")
+        print("  input.pdb     Input PDB file (can be multi-model)")
+        print("  output_dir    Output directory for frame folders")
+        print("  chain_a       First chain ID (default: A)")
+        print("  chain_b       Second chain ID (default: B)")
+        print("  cutoff        Interface cutoff in Angstroms (default: 5.0)")
+        print("  water_cutoff  Water bridge cutoff in Angstroms (default: same as cutoff)")
+        print()
+        print("Output:")
+        print("  Creates output_dir/frame_N/frame_N.pdb for each frame")
+        print("  Each frame contains only atoms at the interface IN THAT FRAME")
+        print()
+        print("Bridging waters: Water molecules within cutoff of heavy atoms from BOTH chains")
+        sys.exit(1)
     
-    Parameters:
-    -----------
-    input_pdb : str
-        Path to input PDB file
-    output_pdb : str
-        Path to output PDB file
-    chain_a : str
-        Chain identifier for the first chain
-    chain_b : str
-        Chain identifier for the second chain
-    cutoff : float
-        Distance cutoff in Angstroms (default: 5.0)
-    water_cutoff : float
-        Water bridge cutoff in Angstroms (default: same as cutoff)
-    """
-    select_interface(
+    input_pdb = sys.argv[1]
+    output_dir = sys.argv[2]
+    chain_a = sys.argv[3] if len(sys.argv) > 3 else 'A'
+    chain_b = sys.argv[4] if len(sys.argv) > 4 else 'B'
+    cutoff = float(sys.argv[5]) if len(sys.argv) > 5 else 5.0
+    water_cutoff = float(sys.argv[6]) if len(sys.argv) > 6 else None
+    
+    select_interface_per_frame(
         input_pdb, 
-        output_pdb, 
+        output_dir, 
         chain_a, 
         chain_b, 
         cutoff=cutoff, 
         water_cutoff=water_cutoff,
         verbose=True
     )
-
-
-if __name__ == "__main__":
-    # Usage: python interface_selector.py input.pdb output.pdb A B [cutoff] [water_cutoff]
-    if len(sys.argv) < 5:
-        print("Usage: python interface_selector.py <input.pdb> <output.pdb> <chain1> <chain2> [cutoff] [water_cutoff]")
-        print("  cutoff: distance cutoff in Angstroms (default: 5.0)")
-        print("  water_cutoff: water bridge cutoff in Angstroms (default: same as cutoff)")
-        print()
-        print("Bridging waters: Water molecules within cutoff of heavy atoms from BOTH chains")
-    else:
-        cutoff = float(sys.argv[5]) if len(sys.argv) > 5 else 5.0
-        water_cutoff = float(sys.argv[6]) if len(sys.argv) > 6 else None
-        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], cutoff, water_cutoff)
