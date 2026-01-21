@@ -118,276 +118,199 @@
     
     <div ref="chartContainer" class="chart-container"></div>
     
-    <!-- Statistics Table -->
+    <!-- Statistics Cards Section -->
     <div v-if="statistics" class="statistics-section">
-      <h3 class="statistics-title">Conservation Statistics</h3>
-      <p class="statistics-description">
-        Statistics based on current filters: ≥{{ Math.round(pairConservationThreshold * 100) }}% pair conservation, ≥{{ Math.round(conservationThreshold * 100) }}% type conservation{{ dataStore.selectedInteractionTypes.size > 0 ? ', filtered interaction types' : '' }}
-      </p>
-      <div class="statistics-tables">
-        <div class="statistics-table-wrapper">
-          <h4 class="table-subtitle">Residue Level (Pair Conservation)</h4>
-          <table class="statistics-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="highlight-row">
-                <td>CR{{ Math.round(pairConservationThreshold * 100) }}</td>
-                <td>{{ statistics.residue.cr50 }} pairs</td>
-              </tr>
-              <tr>
-                <td>Count</td>
-                <td>{{ statistics.residue.count }}</td>
-              </tr>
-              <tr>
-                <td>Mean</td>
-                <td>{{ formatPercent(statistics.residue.mean) }}</td>
-              </tr>
-              <tr>
-                <td>Median (Q2)</td>
-                <td>{{ formatPercent(statistics.residue.median) }}</td>
-              </tr>
-              <tr>
-                <td>Q1 (25th percentile)</td>
-                <td>{{ formatPercent(statistics.residue.q1) }}</td>
-              </tr>
-              <tr>
-                <td>Q3 (75th percentile)</td>
-                <td>{{ formatPercent(statistics.residue.q3) }}</td>
-              </tr>
-              <tr>
-                <td>Min</td>
-                <td>{{ formatPercent(statistics.residue.min) }}</td>
-              </tr>
-              <tr>
-                <td>Max</td>
-                <td>{{ formatPercent(statistics.residue.max) }}</td>
-              </tr>
-              <tr>
-                <td>Std Dev</td>
-                <td>{{ formatPercent(statistics.residue.stdDev) }}</td>
-              </tr>
-              <tr class="info-row">
-                <td>Most Conserved Pair(s)</td>
-                <td>
-                  <div class="conserved-list">
-                    <span v-if="statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 0">
-                      <template v-for="(pair, idx) in statistics.residue.mostConservedList.slice(0, 2)" :key="idx">
-                        <span v-if="idx > 0">, </span>{{ pair }}
-                      </template>
-                      <span v-if="statistics.residue.mostConservedList.length > 2" class="more-link" @click="expandedDetails.residueMostConserved = !expandedDetails.residueMostConserved">
-                        (+{{ statistics.residue.mostConservedList.length - 2 }} more)
-                      </span>
-                    </span>
-                    <span v-else>N/A</span>
-                    <span v-if="statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 0"> ({{ formatPercent(statistics.residue.mostConservedValue) }})</span>
-                    <div v-if="expandedDetails.residueMostConserved && statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 2" class="expanded-list">
-                      <div v-for="(pair, idx) in statistics.residue.mostConservedList.slice(2)" :key="idx" class="expanded-item">
-                        {{ pair }}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr class="info-row">
-                <td>Least Conserved Pair(s)</td>
-                <td>
-                  <div class="conserved-list">
-                    <span v-if="statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 0">
-                      <template v-for="(pair, idx) in statistics.residue.leastConservedList.slice(0, 2)" :key="idx">
-                        <span v-if="idx > 0">, </span>{{ pair }}
-                      </template>
-                      <span v-if="statistics.residue.leastConservedList.length > 2" class="more-link" @click="expandedDetails.residueLeastConserved = !expandedDetails.residueLeastConserved">
-                        (+{{ statistics.residue.leastConservedList.length - 2 }} more)
-                      </span>
-                    </span>
-                    <span v-else>N/A</span>
-                    <span v-if="statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 0"> ({{ formatPercent(statistics.residue.leastConservedValue) }})</span>
-                    <div v-if="expandedDetails.residueLeastConserved && statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 2" class="expanded-list">
-                      <div v-for="(pair, idx) in statistics.residue.leastConservedList.slice(2)" :key="idx" class="expanded-item">
-                        {{ pair }}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr class="info-row">
-                <td>Longest Conserved Stretch</td>
-                <td>{{ statistics.residue.longestStretchPair }}: {{ statistics.residue.longestStretchInfo }}</td>
-              </tr>
-            </tbody>
-          </table>
+      <h3 class="statistics-title">Conservation Analysis</h3>
+      
+      <!-- Key Metrics -->
+      <div class="key-metrics">
+        <div class="metric-card">
+          <div class="metric-value">{{ statistics.residue.cr50 }}</div>
+          <div class="metric-label">
+            CR<sub>{{ Math.round(pairConservationThreshold * 100) }}</sub>
+            <span class="info-icon" @mouseenter="showTooltip($event, `Conserved Residue pairs: Number of unique pairs present in ≥${Math.round(pairConservationThreshold * 100)}% of trajectory frames`)" @mouseleave="hideTooltip">ⓘ</span>
+          </div>
+          <div class="metric-desc">Conserved pairs</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">{{ statistics.atomic.ca }}</div>
+          <div class="metric-label">
+            CA<sub>{{ Math.round(conservationThreshold * 100) }}</sub>
+            <span class="info-icon" @mouseenter="showTooltip($event, `Conserved Atomic interactions: Pair-type combinations with ≥${Math.round(conservationThreshold * 100)}% type conservation`)" @mouseleave="hideTooltip">ⓘ</span>
+          </div>
+          <div class="metric-desc">Conserved interactions</div>
+        </div>
+      </div>
+      
+      <!-- Key Insights Grid -->
+      <div class="insights-grid">
+        <!-- Most Conserved Pairs -->
+        <div class="insight-card" v-if="statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 0">
+          <div class="insight-header">
+            <span class="insight-title">Most Conserved Pairs</span>
+            <span class="insight-badge">{{ formatPercent(statistics.residue.mostConservedValue) }}</span>
+            <span class="info-icon" @mouseenter="showTooltip($event, 'Residue pairs with the highest average conservation across all their interaction types')" @mouseleave="hideTooltip">ⓘ</span>
+          </div>
+          <div class="insight-pairs-list">
+            <div v-for="(item, idx) in statistics.residue.mostConservedList.slice(0, 3)" :key="idx" class="pair-with-types">
+              <span class="pair-name">{{ item.pair }}</span>
+              <div class="type-tags">
+                <span 
+                  v-for="(typeInfo, tIdx) in item.types.slice(0, 4)" 
+                  :key="tIdx" 
+                  class="type-tag"
+                  :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
+                  :title="`${typeInfo.type}: ${formatPercent(typeInfo.conservation)}`"
+                >{{ typeInfo.type }}</span>
+                <span v-if="item.types.length > 4" class="type-tag more-types">+{{ item.types.length - 4 }}</span>
+              </div>
+            </div>
+            <button 
+              v-if="statistics.residue.mostConservedList.length > 3" 
+              class="insight-more-btn"
+              @click="openPairListModal('Most Conserved Pairs', statistics.residue.mostConservedList, formatPercent(statistics.residue.mostConservedValue))"
+            >
+              +{{ statistics.residue.mostConservedList.length - 3 }} more pairs
+            </button>
+          </div>
         </div>
         
-        <div class="statistics-table-wrapper">
-          <h4 class="table-subtitle">Atomic Level (Type Conservation)</h4>
-          <table class="statistics-table">
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="highlight-row">
-                <td>CA{{ Math.round(conservationThreshold * 100) }}</td>
-                <td>{{ statistics.atomic.ca }} pair-type combinations</td>
-              </tr>
-              <tr>
-                <td>Count</td>
-                <td>{{ statistics.atomic.count }}</td>
-              </tr>
-              <tr>
-                <td>Mean</td>
-                <td>{{ formatPercent(statistics.atomic.mean) }}</td>
-              </tr>
-              <tr>
-                <td>Median (Q2)</td>
-                <td>{{ formatPercent(statistics.atomic.median) }}</td>
-              </tr>
-              <tr>
-                <td>Q1 (25th percentile)</td>
-                <td>{{ formatPercent(statistics.atomic.q1) }}</td>
-              </tr>
-              <tr>
-                <td>Q3 (75th percentile)</td>
-                <td>{{ formatPercent(statistics.atomic.q3) }}</td>
-              </tr>
-              <tr>
-                <td>Min</td>
-                <td>{{ formatPercent(statistics.atomic.min) }}</td>
-              </tr>
-              <tr>
-                <td>Max</td>
-                <td>{{ formatPercent(statistics.atomic.max) }}</td>
-              </tr>
-              <tr>
-                <td>Std Dev</td>
-                <td>{{ formatPercent(statistics.atomic.stdDev) }}</td>
-              </tr>
-              <tr class="info-row">
-                <td>Most Conserved Type(s)</td>
-                <td>
-                  <div class="conserved-list">
-                    <div v-if="statistics.atomic.mostConservedList && statistics.atomic.mostConservedList.length > 0">
-                      <div class="type-header">
-                        <template v-for="(item, idx) in statistics.atomic.mostConservedList.slice(0, 2)" :key="idx">
-                          <span v-if="idx > 0">, </span>{{ item.type }}
-                        </template>
-                        <span v-if="statistics.atomic.mostConservedList.length > 2" class="more-link" @click="expandedDetails.atomicMostConserved = !expandedDetails.atomicMostConserved">
-                          (+{{ statistics.atomic.mostConservedList.length - 2 }} more)
-                        </span>
-                        <span> ({{ formatPercent(statistics.atomic.mostConservedValue) }})</span>
-                      </div>
-                      <div v-for="(item, idx) in statistics.atomic.mostConservedList.slice(0, 2)" :key="idx" class="type-with-pairs">
-                        <div v-if="item.pairs && item.pairs.length > 0" class="type-pairs">
-                          <span class="pairs-label">Pairs: </span>
-                          <span v-for="(pair, pairIdx) in item.pairs.slice(0, 3)" :key="pairIdx">
-                            <span v-if="pairIdx > 0">, </span>{{ pair }}
-                          </span>
-                          <span v-if="item.pairs.length > 3" class="pairs-more">, +{{ item.pairs.length - 3 }} more</span>
-                        </div>
-                        <div v-else class="type-pairs">
-                          <span class="pairs-label">Pairs: </span>
-                          <span class="pairs-more">No pairs found</span>
-                        </div>
-                      </div>
-                      <div v-if="expandedDetails.atomicMostConserved && statistics.atomic.mostConservedList.length > 2" class="expanded-list">
-                        <div v-for="(item, idx) in statistics.atomic.mostConservedList.slice(2)" :key="idx" class="expanded-item">
-                          <div class="expanded-type-name">{{ item.type }}</div>
-                          <div class="expanded-type-pairs">
-                            <span class="pairs-label">Pairs: </span>
-                            <span v-for="(pair, pairIdx) in item.pairs" :key="pairIdx">
-                              <span v-if="pairIdx > 0">, </span>{{ pair }}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <span v-else>N/A</span>
-                  </div>
-                </td>
-              </tr>
-              <tr class="info-row">
-                <td>Least Conserved Type(s)</td>
-                <td>
-                  <div class="conserved-list">
-                    <div v-if="statistics.atomic.leastConservedList && statistics.atomic.leastConservedList.length > 0">
-                      <div class="type-header">
-                        <template v-for="(item, idx) in statistics.atomic.leastConservedList.slice(0, 2)" :key="idx">
-                          <span v-if="idx > 0">, </span>{{ item.type }}
-                        </template>
-                        <span v-if="statistics.atomic.leastConservedList.length > 2" class="more-link" @click="expandedDetails.atomicLeastConserved = !expandedDetails.atomicLeastConserved">
-                          (+{{ statistics.atomic.leastConservedList.length - 2 }} more)
-                        </span>
-                        <span> ({{ formatPercent(statistics.atomic.leastConservedValue) }})</span>
-                      </div>
-                      <div v-for="(item, idx) in statistics.atomic.leastConservedList.slice(0, 2)" :key="idx" class="type-with-pairs">
-                        <div v-if="item.pairs && item.pairs.length > 0" class="type-pairs">
-                          <span class="pairs-label">Pairs: </span>
-                          <span v-for="(pair, pairIdx) in item.pairs.slice(0, 3)" :key="pairIdx">
-                            <span v-if="pairIdx > 0">, </span>{{ pair }}
-                          </span>
-                          <span v-if="item.pairs.length > 3" class="pairs-more">, +{{ item.pairs.length - 3 }} more</span>
-                        </div>
-                        <div v-else class="type-pairs">
-                          <span class="pairs-label">Pairs: </span>
-                          <span class="pairs-more">No pairs found</span>
-                        </div>
-                      </div>
-                      <div v-if="expandedDetails.atomicLeastConserved && statistics.atomic.leastConservedList.length > 2" class="expanded-list">
-                        <div v-for="(item, idx) in statistics.atomic.leastConservedList.slice(2)" :key="idx" class="expanded-item">
-                          <div class="expanded-type-name">{{ item.type }}</div>
-                          <div class="expanded-type-pairs">
-                            <span class="pairs-label">Pairs: </span>
-                            <span v-for="(pair, pairIdx) in item.pairs" :key="pairIdx">
-                              <span v-if="pairIdx > 0">, </span>{{ pair }}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <span v-else>N/A</span>
-                  </div>
-                </td>
-              </tr>
-              <tr class="info-row">
-                <td>Longest Conserved Stretch</td>
-                <td>
-                  <div class="conserved-list">
-                    <div v-if="statistics.atomic.longestStretchType && statistics.atomic.longestStretchType !== 'N/A'">
-                      <div class="type-header">
-                        {{ statistics.atomic.longestStretchType }}: {{ statistics.atomic.longestStretchInfo }}
-                      </div>
-                      <div v-if="statistics.atomic.longestStretchPairs && statistics.atomic.longestStretchPairs.length > 0" class="type-pairs">
-                        <span class="pairs-label">{{ statistics.atomic.longestStretchPairs.length === 1 ? 'Pair' : 'Pairs' }}: </span>
-                        <span v-for="(pair, pairIdx) in statistics.atomic.longestStretchPairs.slice(0, 3)" :key="pairIdx">
-                          <span v-if="pairIdx > 0">, </span>{{ pair }}
-                        </span>
-                        <span v-if="statistics.atomic.longestStretchPairs.length > 3" class="more-link" @click="expandedDetails.atomicLongestStretch = !expandedDetails.atomicLongestStretch">
-                          (+{{ statistics.atomic.longestStretchPairs.length - 3 }} more)
-                        </span>
-                      </div>
-                      <div v-if="expandedDetails.atomicLongestStretch && statistics.atomic.longestStretchPairs.length > 3" class="expanded-list">
-                        <div v-for="(pair, idx) in statistics.atomic.longestStretchPairs.slice(3)" :key="idx" class="expanded-item">
-                          {{ pair }}
-                        </div>
-                      </div>
-                    </div>
-                    <span v-else>N/A</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Least Conserved Pairs -->
+        <div class="insight-card" v-if="statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 0">
+          <div class="insight-header">
+            <span class="insight-title">Least Conserved Pairs</span>
+            <span class="insight-badge secondary">{{ formatPercent(statistics.residue.leastConservedValue) }}</span>
+            <span class="info-icon" @mouseenter="showTooltip($event, 'Pairs with the lowest conservation among those meeting the threshold')" @mouseleave="hideTooltip">ⓘ</span>
+          </div>
+          <div class="insight-pairs-list">
+            <div v-for="(item, idx) in statistics.residue.leastConservedList.slice(0, 3)" :key="idx" class="pair-with-types">
+              <span class="pair-name">{{ item.pair }}</span>
+              <div class="type-tags">
+                <span 
+                  v-for="(typeInfo, tIdx) in item.types.slice(0, 4)" 
+                  :key="tIdx" 
+                  class="type-tag"
+                  :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
+                  :title="`${typeInfo.type}: ${formatPercent(typeInfo.conservation)}`"
+                >{{ typeInfo.type }}</span>
+                <span v-if="item.types.length > 4" class="type-tag more-types">+{{ item.types.length - 4 }}</span>
+              </div>
+            </div>
+            <button 
+              v-if="statistics.residue.leastConservedList.length > 3" 
+              class="insight-more-btn"
+              @click="openPairListModal('Least Conserved Pairs', statistics.residue.leastConservedList, formatPercent(statistics.residue.leastConservedValue))"
+            >
+              +{{ statistics.residue.leastConservedList.length - 3 }} more pairs
+            </button>
+          </div>
         </div>
         
+        <!-- Longest Conserved Stretch -->
+        <div class="insight-card" v-if="statistics.residue.longestStretchPair && statistics.residue.longestStretchPair !== 'N/A'">
+          <div class="insight-header">
+            <span class="insight-title">Longest Conserved Stretch</span>
+            <span class="info-icon" @mouseenter="showTooltip($event, 'Maximum consecutive frames where the pair maintains any interaction type')" @mouseleave="hideTooltip">ⓘ</span>
+          </div>
+          <div class="insight-pairs-list">
+            <div class="pair-with-types">
+              <span class="pair-name">{{ statistics.residue.longestStretchPair }}</span>
+              <span class="stretch-info">{{ statistics.residue.longestStretchInfo }}</span>
+              <div v-if="statistics.residue.longestStretchTypes && statistics.residue.longestStretchTypes.length > 0" class="type-tags">
+                <span 
+                  v-for="(typeInfo, tIdx) in statistics.residue.longestStretchTypes.slice(0, 4)" 
+                  :key="tIdx" 
+                  class="type-tag"
+                  :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
+                  :title="`${typeInfo.type}: ${formatPercent(typeInfo.conservation)}`"
+                >{{ typeInfo.type }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Most Conserved Types -->
+        <div class="insight-card" v-if="statistics.atomic.mostConservedList && statistics.atomic.mostConservedList.length > 0">
+          <div class="insight-header">
+            <span class="insight-title">Most Conserved Types</span>
+            <span class="insight-badge">{{ formatPercent(statistics.atomic.mostConservedValue) }}</span>
+            <span class="info-icon" @mouseenter="showTooltip($event, 'Interaction types with highest average conservation across all pairs')" @mouseleave="hideTooltip">ⓘ</span>
+          </div>
+          <div class="insight-content">
+            <template v-for="(item, idx) in statistics.atomic.mostConservedList.slice(0, 4)" :key="idx">
+              <span 
+                class="type-tag large"
+                :style="{ backgroundColor: getInteractionBaseColor(item.type), color: getTextColorForBg(item.type) }"
+              >{{ item.type }}</span>
+            </template>
+            <button 
+              v-if="statistics.atomic.mostConservedList.length > 4" 
+              class="insight-more-btn"
+              @click="openTypeListModal('Most Conserved Types', statistics.atomic.mostConservedList, formatPercent(statistics.atomic.mostConservedValue))"
+            >
+              +{{ statistics.atomic.mostConservedList.length - 4 }} more
+            </button>
+          </div>
+        </div>
       </div>
     </div>
+    
+    <!-- Global Tooltip -->
+    <Teleport to="body">
+      <div 
+        v-if="activeTooltip.visible" 
+        class="global-tooltip"
+        :style="{ top: activeTooltip.y + 'px', left: activeTooltip.x + 'px' }"
+      >
+        {{ activeTooltip.text }}
+      </div>
+    </Teleport>
+    
+    <!-- List Modal for expanded items -->
+    <Teleport to="body">
+      <div v-if="listModal.visible" class="list-modal-overlay" @click.self="closeListModal">
+        <div class="list-modal-panel">
+          <div class="list-modal-header">
+            <h3>{{ listModal.title }}</h3>
+            <span v-if="listModal.badge" class="list-modal-badge">{{ listModal.badge }}</span>
+            <button class="list-modal-close" @click="closeListModal">×</button>
+          </div>
+          <div class="list-modal-content">
+            <!-- Type list (for Most Conserved Types) -->
+            <div v-if="listModal.isTypeList" class="list-modal-items">
+              <div v-for="(item, idx) in listModal.items" :key="idx" class="list-modal-type-item">
+                <span 
+                  class="type-tag large" 
+                  :style="{ backgroundColor: getInteractionBaseColor(item.type), color: getTextColorForBg(item.type) }"
+                >{{ item.type }}</span>
+                <div v-if="item.pairs && item.pairs.length > 0" class="type-pairs-list">
+                  <span v-for="(pair, pairIdx) in item.pairs" :key="pairIdx" class="pair-tag">{{ pair }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- Pair list with types (for Most/Least Conserved Pairs) -->
+            <div v-else-if="listModal.isPairList" class="list-modal-items pair-list">
+              <div v-for="(item, idx) in listModal.items" :key="idx" class="list-modal-pair-item">
+                <span class="pair-name">{{ item.pair }}</span>
+                <div class="type-tags">
+                  <span 
+                    v-for="(typeInfo, tIdx) in item.types" 
+                    :key="tIdx" 
+                    class="type-tag"
+                    :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
+                    :title="`${formatPercent(typeInfo.conservation)}`"
+                  >{{ typeInfo.type }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- Simple list (fallback) -->
+            <div v-else class="list-modal-items">
+              <span v-for="(item, idx) in listModal.items" :key="idx" class="list-modal-item">{{ item }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
     
     <!-- Interaction Trajectory Modal -->
     <InteractionTrajectoryModal
@@ -436,6 +359,126 @@ const selectedInteraction = ref(null)
     atomicLeastConserved: false,
     atomicLongestStretch: false
   })
+
+// List modal state for expanded items
+const listModal = ref({
+  visible: false,
+  title: '',
+  items: [],
+  badge: '',
+  isTypeList: false,
+  isPairList: false
+})
+
+const openListModal = (title, items, badge = '') => {
+  listModal.value = {
+    visible: true,
+    title,
+    items,
+    badge,
+    isTypeList: false
+  }
+}
+
+const openTypeListModal = (title, items, badge = '') => {
+  listModal.value = {
+    visible: true,
+    title,
+    items,
+    badge,
+    isTypeList: true,
+    isPairList: false
+  }
+}
+
+const openPairListModal = (title, items, badge = '') => {
+  listModal.value = {
+    visible: true,
+    title,
+    items,
+    badge,
+    isTypeList: false,
+    isPairList: true
+  }
+}
+
+const closeListModal = () => {
+  listModal.value.visible = false
+}
+
+// Helper function to get readable text color based on background color
+const getTextColorForBg = (typeLabel) => {
+  // Get the RGB color for this type
+  const colorStr = getInteractionBaseColor(typeLabel)
+  const match = colorStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+  if (!match) return '#ffffff'
+  
+  const r = parseInt(match[1])
+  const g = parseInt(match[2])
+  const b = parseInt(match[3])
+  
+  // Calculate relative luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  
+  // Return white for dark backgrounds, dark for light backgrounds
+  return luminance > 0.5 ? '#1d1d1f' : '#ffffff'
+}
+
+// Global tooltip state
+const activeTooltip = ref({
+  visible: false,
+  text: '',
+  x: 0,
+  y: 0
+})
+
+// Show tooltip at cursor position
+const showTooltip = (event, text) => {
+  const x = event.clientX + 12
+  const y = event.clientY - 8
+  activeTooltip.value = {
+    visible: true,
+    text: text,
+    x: Math.min(x, window.innerWidth - 340),
+    y: y
+  }
+}
+
+// Hide tooltip
+const hideTooltip = () => {
+  activeTooltip.value.visible = false
+}
+
+// Tooltip descriptions for each metric
+const residueTooltips = computed(() => ({
+  cr: `Count of unique residue pairs present in ≥${Math.round(pairConservationThreshold.value * 100)}% of trajectory frames`,
+  count: 'Total number of conservation score samples from all qualifying pairs',
+  mean: 'Average pair conservation across all interactions meeting the threshold',
+  median: 'Middle value of sorted conservation scores; half above, half below',
+  q1: '25% of pairs have conservation below this value',
+  q3: '75% of pairs have conservation below this value',
+  min: 'Lowest conservation value among pairs meeting the threshold',
+  max: 'Highest conservation value among pairs meeting the threshold',
+  stdDev: 'Spread of values around the mean; higher means more variability',
+  mostConserved: 'Pair(s) with highest average conservation across all interaction types',
+  leastConserved: 'Pair(s) with lowest average conservation among qualifying pairs',
+  longestStretch: 'Maximum consecutive frames where the pair maintains any interaction'
+}))
+
+const atomicTooltips = computed(() => ({
+  ca: `Count of pair-type combinations (residue pair + interaction type) with ≥${Math.round(conservationThreshold.value * 100)}% type conservation`,
+  count: 'Total number of type conservation score samples meeting the threshold',
+  mean: 'Average type conservation across all qualifying pair-type combinations',
+  median: 'Middle value of sorted type conservation scores',
+  q1: '25% of interaction types have conservation below this value',
+  q3: '75% of interaction types have conservation below this value',
+  min: 'Lowest type conservation among qualifying pair-type combinations',
+  max: 'Highest type conservation among qualifying pair-type combinations',
+  stdDev: 'Spread of type conservation values; higher means more variability',
+  mostConserved: 'Interaction type(s) with highest average conservation, with their specific pairs',
+  leastConserved: 'Interaction type(s) with lowest conservation among those meeting threshold',
+  longestStretch: 'Maximum consecutive frames where a specific interaction type persists'
+}))
 
 // Atom change comparison mode options
 const atomChangeModeOptions = [
@@ -808,6 +851,7 @@ const updateChart = async () => {
   const pairConservationMap = new Map() // Track conservation by pair
   const pairFramesMap = new Map() // Track frames by pair
   const typeToPairsMap = new Map() // Track which residue pairs each interaction type belongs to
+  const pairToTypesMap = new Map() // Track which interaction types each pair has
   const pairTypeFramesMap = new Map() // Track frames for each pair-type combination for longest stretch calculation
   const typeToPairConservationMap = new Map() // Track pair conservation per type (type -> Map(pair -> conservation))
   
@@ -873,6 +917,12 @@ const updateChart = async () => {
           typeToPairsMap.set(type, new Set())
         }
         typeToPairsMap.get(type).add(pairLabel)
+        
+        // Track which types this pair has (reverse mapping)
+        if (!pairToTypesMap.has(pairLabel)) {
+          pairToTypesMap.set(pairLabel, new Map())
+        }
+        pairToTypesMap.get(pairLabel).set(type, typeConservation)
         
         // Track pair conservation for this type (for finding pairs with specific conservation values)
         if (!typeToPairConservationMap.has(type)) {
@@ -1046,14 +1096,41 @@ const updateChart = async () => {
   // Calculate statistics
   const residueStats = calculateStatistics(residueScores)
   residueStats.cr50 = uniquePairs.size // CR50: count of unique pairs with ≥50% conservation
-  residueStats.mostConservedList = mostConservedPairs // Store full list
+  
+  // Convert pair lists to objects with types - for scientific detail
+  const mostConservedPairsWithTypes = mostConservedPairs.map(pairLabel => {
+    const typesMap = pairToTypesMap.get(pairLabel) || new Map()
+    return {
+      pair: pairLabel,
+      types: Array.from(typesMap.entries()).map(([type, conservation]) => ({ type, conservation }))
+        .sort((a, b) => b.conservation - a.conservation)
+    }
+  })
+  
+  const leastConservedPairsWithTypes = leastConservedPairs.map(pairLabel => {
+    const typesMap = pairToTypesMap.get(pairLabel) || new Map()
+    return {
+      pair: pairLabel,
+      types: Array.from(typesMap.entries()).map(([type, conservation]) => ({ type, conservation }))
+        .sort((a, b) => b.conservation - a.conservation)
+    }
+  })
+  
+  // Get types for longest stretch pair
+  const longestStretchPairTypes = pairToTypesMap.get(longestPairStretchLabel) || new Map()
+  const longestStretchTypesArray = Array.from(longestStretchPairTypes.entries())
+    .map(([type, conservation]) => ({ type, conservation }))
+    .sort((a, b) => b.conservation - a.conservation)
+  
+  residueStats.mostConservedList = mostConservedPairsWithTypes // Store full list with types
   residueStats.mostConserved = mostConservedPairs.length > 0 ? (mostConservedPairs.length > 2 ? `${mostConservedPairs.slice(0, 2).join(', ')} (+${mostConservedPairs.length - 2} more)` : mostConservedPairs.join(', ')) : 'N/A'
   residueStats.mostConservedValue = maxPairConservation >= 0 ? maxPairConservation : 0
-  residueStats.leastConservedList = leastConservedPairs // Store full list
+  residueStats.leastConservedList = leastConservedPairsWithTypes // Store full list with types
   residueStats.leastConserved = leastConservedPairs.length > 0 ? (leastConservedPairs.length > 2 ? `${leastConservedPairs.slice(0, 2).join(', ')} (+${leastConservedPairs.length - 2} more)` : leastConservedPairs.join(', ')) : 'N/A'
   residueStats.leastConservedValue = minPairConservation < 2 ? minPairConservation : 0
   residueStats.longestStretchPair = longestPairStretchLabel || 'N/A'
   residueStats.longestStretchInfo = longestPairStretchInfo || 'N/A'
+  residueStats.longestStretchTypes = longestStretchTypesArray
   
   const atomicStats = calculateStatistics(atomicScores)
   atomicStats.ca = pairTypeCombinations.length // CA: count of pair-type combinations meeting threshold
@@ -2093,7 +2170,7 @@ input[type="range"]::-moz-range-thumb:hover {
   margin-bottom: 32px;
   padding: 24px;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e8e8ed;
 }
 
@@ -2108,201 +2185,496 @@ input[type="range"]::-moz-range-thumb:hover {
 .statistics-description {
   font-size: 14px;
   color: #6e6e73;
-  margin: 0 0 20px 0;
+  margin: 0 0 24px 0;
   font-weight: 500;
 }
 
-.statistics-tables {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+/* Key Metrics - CR and CA cards */
+.key-metrics {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
-.statistics-table-wrapper {
-  background: #f5f5f7;
-  border-radius: 8px;
-  padding: 16px;
+.metric-card {
+  flex: 1;
+  background: linear-gradient(135deg, #f5f5f7 0%, #ebebf0 100%);
+  border-radius: 12px;
+  padding: 16px 20px;
+  border: 1px solid #e8e8ed;
+  text-align: center;
 }
 
-.table-subtitle {
+.metric-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.metric-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-size: 15px;
   font-weight: 600;
-  color: #1d1d1f;
-  margin: 0 0 12px 0;
-  letter-spacing: -0.022em;
+  color: #3B6EF5;
 }
 
-.statistics-table {
-  width: 100%;
-  border-collapse: collapse;
+.metric-label sub {
+  font-size: 11px;
+  vertical-align: baseline;
+  margin-left: -2px;
+}
+
+.metric-label .info-icon {
+  font-size: 12px;
+  color: #8e8e93;
+  cursor: pointer;
+}
+
+.metric-label .info-icon:hover {
+  color: #3B6EF5;
+}
+
+.metric-desc {
+  font-size: 12px;
+  color: #6e6e73;
+  margin-top: 4px;
+}
+
+/* Stats Grid - Summary Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: #f5f5f7;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  background: #ebebf0;
+  transform: translateY(-2px);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #1d1d1f;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.stat-sublabel {
+  font-size: 11px;
+  color: #6e6e73;
+  line-height: 1.3;
+}
+
+/* Insights Grid */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.insight-card {
+  background: #f9f9fb;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e8e8ed;
+  transition: all 0.2s ease;
+}
+
+.insight-card:hover {
+  border-color: #d2d2d7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.insight-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.insight-indicator.high {
+  background: #34c759;
+}
+
+.insight-indicator.low {
+  background: #ff9500;
+}
+
+.insight-indicator.neutral {
+  background: #3B6EF5;
+}
+
+.insight-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  flex: 1;
+}
+
+.insight-badge {
+  background: linear-gradient(135deg, #34c759 0%, #30b350 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.insight-badge.secondary {
+  background: linear-gradient(135deg, #ff9500 0%, #ff8000 100%);
+}
+
+.insight-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.insight-item {
+  display: inline-block;
   background: #ffffff;
+  border: 1px solid #e8e8ed;
+  padding: 6px 12px;
   border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.statistics-table thead {
-  background: #1d1d1f;
-}
-
-.statistics-table thead th {
-  padding: 12px 16px;
-  text-align: left;
   font-size: 13px;
-  font-weight: 600;
-  color: #ffffff;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 500;
+  color: #1d1d1f;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
 }
 
-.statistics-table tbody tr {
-  border-bottom: 1px solid #e8e8ed;
-  transition: background-color 0.15s ease;
-}
-
-.statistics-table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.statistics-table tbody tr:hover {
-  background-color: #f9f9fb;
-}
-
-.statistics-table tbody tr.highlight-row {
-  background-color: #e3f2ff;
-  font-weight: 700;
-}
-
-.statistics-table tbody tr.highlight-row:hover {
-  background-color: #d1e8ff;
-}
-
-.statistics-table tbody tr.highlight-row td {
+.insight-item.type-item {
+  background: #e3f2ff;
+  border-color: #b8daff;
   color: #0066cc;
-  font-weight: 700;
+  font-family: inherit;
 }
 
-.statistics-table tbody tr.info-row {
-  background-color: #f9f9fb;
-  border-top: 2px solid #d2d2d7;
-}
-
-.statistics-table tbody tr.info-row:hover {
-  background-color: #f0f0f5;
-}
-
-.statistics-table tbody tr.info-row td:first-child {
-  font-weight: 600;
-  color: #1d1d1f;
-  font-style: italic;
-}
-
-.statistics-table tbody tr.info-row td:last-child {
-  color: #1d1d1f;
+.insight-detail {
+  font-size: 13px;
+  color: #6e6e73;
   font-weight: 500;
 }
 
-.statistics-table tbody td {
-  padding: 10px 16px;
-  font-size: 14px;
+.insight-more-btn {
+  background: none;
+  border: 1px dashed #3B6EF5;
+  color: #3B6EF5;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.statistics-table tbody td:first-child {
-  font-weight: 600;
-  color: #1d1d1f;
+.insight-more-btn:hover {
+  background: #3B6EF5;
+  color: white;
+  border-style: solid;
 }
 
-.statistics-table tbody td:last-child {
-  color: #6e6e73;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.conserved-list {
+/* Pair with types layout */
+.insight-pairs-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  text-align: right;
+  gap: 10px;
 }
 
-.more-link {
-  color: #3B6EF5;
-  cursor: pointer;
-  text-decoration: underline;
+.pair-with-types {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f9f9fb;
+  border-radius: 8px;
+  border: 1px solid #e8e8ed;
+}
+
+.pair-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+  min-width: 120px;
+}
+
+.stretch-info {
+  font-size: 12px;
+  color: #6e6e73;
   font-weight: 500;
+  margin-left: 8px;
+}
+
+.type-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.type-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.type-tag.large {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.type-tag.more-types {
+  background: #e8e8ed;
+  color: #6e6e73;
+}
+
+/* Info icon in insight header */
+.insight-header .info-icon {
+  margin-left: auto;
+  font-size: 14px;
+  color: #8e8e93;
+  cursor: pointer;
   transition: color 0.15s ease;
 }
 
-.more-link:hover {
-  color: #2B5CE5;
-  text-decoration: underline;
+.insight-header .info-icon:hover {
+  color: #3B6EF5;
 }
 
-.expanded-list {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #f5f5f7;
-  border-radius: 6px;
-  border-left: 3px solid #d2d2d7;
-  text-align: left;
+/* Modal pair item */
+.list-modal-pair-item {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #f9f9fb;
+  border-radius: 8px;
+  border: 1px solid #e8e8ed;
 }
 
-.expanded-item {
-  padding: 4px 0;
-  font-size: 13px;
-  color: #1d1d1f;
-  line-height: 1.5;
+.list-modal-pair-item .pair-name {
+  min-width: 140px;
+  flex-shrink: 0;
 }
 
-.type-header {
-  font-weight: 500;
-  color: #1d1d1f;
-  margin-bottom: 6px;
+.list-modal-items.pair-list {
+  flex-direction: column;
 }
 
-.type-with-pairs {
+/* List Modal */
+.list-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.list-modal-panel {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  max-height: 80vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 6px;
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
 }
 
-.type-pairs {
-  font-size: 12px;
-  color: #1d1d1f;
-  margin-left: 12px;
-  line-height: 1.4;
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.pairs-label {
+.list-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e8e8ed;
+}
+
+.list-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
   font-weight: 600;
   color: #1d1d1f;
+  flex: 1;
 }
 
-.pairs-more {
-  color: #1d1d1f;
-  font-style: normal;
-}
-
-.expanded-type-name {
+.list-modal-badge {
+  background: linear-gradient(135deg, #3B6EF5 0%, #2B5CE5 100%);
+  color: white;
+  font-size: 13px;
   font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 14px;
+}
+
+.list-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #6e6e73;
+  cursor: pointer;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.list-modal-close:hover {
+  background-color: #f5f5f7;
   color: #1d1d1f;
+}
+
+.list-modal-content {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.list-modal-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.list-modal-item {
+  display: inline-block;
+  background: #f5f5f7;
+  border: 1px solid #e8e8ed;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+  transition: all 0.15s ease;
+}
+
+.list-modal-item:hover {
+  background: #ebebf0;
+  border-color: #d2d2d7;
+}
+
+.list-modal-type-item {
+  width: 100%;
+  background: #f9f9fb;
+  border: 1px solid #e8e8ed;
+  border-radius: 10px;
+  padding: 14px 16px;
   margin-bottom: 2px;
 }
 
-.expanded-type-pairs {
+.list-modal-type-item .type-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0066cc;
+  margin-bottom: 8px;
+}
+
+.type-pairs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pair-tag {
+  display: inline-block;
+  background: #ffffff;
+  border: 1px solid #d2d2d7;
+  padding: 4px 10px;
+  border-radius: 6px;
   font-size: 12px;
-  color: #6e6e73;
-  margin-left: 12px;
-  line-height: 1.4;
+  font-weight: 500;
+  color: #1d1d1f;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
 }
 
-.statistics-table tbody tr.info-row td:last-child {
+/* Global tooltip - teleported to body to avoid clipping */
+.global-tooltip {
+  position: fixed;
+  padding: 10px 14px;
+  background: #1d1d1f;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: normal;
+  max-width: 320px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 100000;
+  pointer-events: none;
   text-align: left;
-  padding-right: 16px;
+  animation: tooltipFadeIn 0.15s ease;
 }
 
-.statistics-table tbody tr.info-row:last-child {
-  border-bottom: none;
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
+
