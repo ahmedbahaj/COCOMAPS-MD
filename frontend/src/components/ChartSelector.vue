@@ -25,6 +25,7 @@ const dataStore = useDataStore()
 
 const charts = [
   { id: 'chord', label: 'Chord Diagram' },
+  { id: 'sankey', label: 'Sankey Diagram' },
   { id: 'filteredHeatmap', label: 'Filtered Heatmap' },
   { id: 'area', label: 'Area Chart' },
   { id: 'line', label: 'Interaction Trends' },

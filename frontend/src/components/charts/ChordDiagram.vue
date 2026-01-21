@@ -20,6 +20,51 @@ import AtomPairExplorer from '../AtomPairExplorer.vue'
 
 DependencyWheelModule(Highcharts)
 
+// Function to reorder nodes in a dependency wheel series after chart load
+const reorderDependencyWheelNodes = (chart) => {
+  if (chart._reorderingInProgress) return
+  
+  const series = chart.series.find(s => s.type === 'dependencywheel')
+  if (!series?.nodes?.length) return
+  
+  // Check if nodes have custom order
+  const hasCustomOrder = series.nodes.some(n => n.options?.order !== undefined)
+  if (!hasCustomOrder) return
+  
+  console.log('Reordering dependency wheel nodes...')
+  console.log('Before sort:', series.nodes.map(n => n.id).slice(0, 10))
+  
+  // Sort nodes by our custom order
+  series.nodes.sort((a, b) => (a.options?.order ?? 999) - (b.options?.order ?? 999))
+  
+  console.log('After sort:', series.nodes.map(n => n.id).slice(0, 10))
+  
+  // Recalculate angular positions based on new order
+  const startAngle = (series.options.startAngle || 0) * Math.PI / 180
+  const total = series.nodes.reduce((sum, n) => sum + (n.sum || 0), 0)
+  const nodePadding = (series.options.nodePadding || 0) * Math.PI / 180
+  const availableAngle = 2 * Math.PI - series.nodes.length * nodePadding
+  
+  let cumulative = startAngle
+  
+  series.nodes.forEach((node, i) => {
+    node.index = i
+    const nodeAngle = total > 0 ? (node.sum / total) * availableAngle : 0
+    
+    if (node.shapeArgs) {
+      node.shapeArgs.start = cumulative
+      node.shapeArgs.end = cumulative + nodeAngle
+    }
+    
+    cumulative += nodeAngle + nodePadding
+  })
+  
+  // Redraw to apply changes - prevent infinite loop
+  chart._reorderingInProgress = true
+  chart.redraw(false)
+  chart._reorderingInProgress = false
+}
+
 const showAtomExplorer = ref(false)
 const selectedResiduePair = ref(null)
 
@@ -60,53 +105,98 @@ const updateChart = () => {
     return
   }
 
+  // Helper to check if a residue ID belongs to Chain A (format: RES123_A)
+  const isChainA = (id) => id && id.endsWith('_A')
+  
+  // Sort numerically by residue number
+  const sortNumeric = (a, b) => {
+    const numA = parseInt(a.match(/\d+/)?.[0] || '0')
+    const numB = parseInt(b.match(/\d+/)?.[0] || '0')
+    return numA - numB
+  }
+  
+  // First: collect all unique node IDs and separate by chain
+  const chainAIds = new Set()
+  const chainBIds = new Set()
+  
+  filteredData.forEach(interaction => {
+    if (isChainA(interaction.id1)) chainAIds.add(interaction.id1)
+    else chainBIds.add(interaction.id1)
+    if (isChainA(interaction.id2)) chainAIds.add(interaction.id2)
+    else chainBIds.add(interaction.id2)
+  })
+  
+  const chainA = Array.from(chainAIds).sort(sortNumeric)
+  const chainB = Array.from(chainBIds).sort(sortNumeric)
+  
+  // Create TRUE interleaved order: A, B, A, B, A, B...
+  // If lengths differ, distribute extras evenly
+  const createInterleavedOrder = () => {
+    if (chainA.length === 0) return [...chainB]
+    if (chainB.length === 0) return [...chainA]
+    
+    const result = []
+    const total = chainA.length + chainB.length
+    let aIdx = 0, bIdx = 0
+    
+    for (let i = 0; i < total; i++) {
+      // Calculate ideal ratio position for each chain
+      const aIdeal = (chainA.length / total) * (i + 1)
+      const bIdeal = (chainB.length / total) * (i + 1)
+      
+      // Pick from whichever chain is more "behind" its ideal position
+      const aBehind = aIdx < aIdeal && aIdx < chainA.length
+      const bBehind = bIdx < bIdeal && bIdx < chainB.length
+      
+      if (aBehind && (!bBehind || (aIdeal - aIdx) >= (bIdeal - bIdx))) {
+        result.push(chainA[aIdx++])
+      } else if (bIdx < chainB.length) {
+        result.push(chainB[bIdx++])
+      } else if (aIdx < chainA.length) {
+        result.push(chainA[aIdx++])
+      }
+    }
+    return result
+  }
+  
+  const interleavedOrder = createInterleavedOrder()
+  
+  // Create a map for quick position lookup
+  const nodePositionMap = new Map(interleavedOrder.map((id, idx) => [id, idx]))
+  
+  // Build nodes in interleaved order with explicit order property
+  // The order property is crucial - Highcharts will use it to position nodes
   const nodes = new Map()
-  const links = filteredData.map(interaction => {
+  interleavedOrder.forEach((id, index) => {
+    const color = isChainA(id) ? '#3B6EF5' : '#FF8A4C'
+    nodes.set(id, {
+      id: id,
+      name: id,
+      color: color,
+      order: index, // Explicit order for Highcharts positioning
+      marker: {
+        radius: 8,
+        symbol: 'circle',
+        fillColor: color,
+        lineWidth: 2,
+        lineColor: '#ffffff',
+        states: {
+          hover: {
+            radius: 10,
+            lineWidth: 3
+          }
+        }
+      }
+    })
+  })
+  
+  // Build links from filtered data, sorted to introduce nodes in our desired order
+  // Highcharts creates nodes as it encounters them in links - order matters!
+  const rawLinks = filteredData.map(interaction => {
     const frames = Array.isArray(interaction.frames) ? interaction.frames : []
     const typePersistence = interaction.typePersistence || {}
     const typesArray = interaction.typesArray || []
     const dominantType = getDominantType(typesArray, typePersistence, interaction.consistency)
-
-    if (!nodes.has(interaction.id1)) {
-      nodes.set(interaction.id1, {
-        id: interaction.id1,
-        name: interaction.id1,
-        color: '#3B6EF5',
-        marker: {
-          radius: 8,
-          symbol: 'circle',
-          fillColor: '#3B6EF5',
-          lineWidth: 2,
-          lineColor: '#ffffff',
-          states: {
-            hover: {
-              radius: 10,
-              lineWidth: 3
-            }
-          }
-        }
-      })
-    }
-    if (!nodes.has(interaction.id2)) {
-      nodes.set(interaction.id2, {
-        id: interaction.id2,
-        name: interaction.id2,
-        color: '#FF8A4C',
-        marker: {
-          radius: 8,
-          symbol: 'circle',
-          fillColor: '#FF8A4C',
-          lineWidth: 2,
-          lineColor: '#ffffff',
-          states: {
-            hover: {
-              radius: 10,
-              lineWidth: 3
-            }
-          }
-        }
-      })
-    }
 
     return {
       from: interaction.id1,
@@ -121,14 +211,52 @@ const updateChart = () => {
       color: getInteractionColor(dominantType || interaction.typesArray.join('; '), interaction.consistency)
     }
   })
+  
+  // Sort links so that nodes are "discovered" in our interleaved order
+  // Priority: links that introduce nodes earlier in our order should come first
+  const discoveredNodes = new Set()
+  const sortedLinks = []
+  const remainingLinks = [...rawLinks]
+  
+  // Process links in order of which introduces the earliest undiscovered node
+  while (remainingLinks.length > 0) {
+    let bestIndex = 0
+    let bestScore = Infinity
+    
+    for (let i = 0; i < remainingLinks.length; i++) {
+      const link = remainingLinks[i]
+      const fromPos = nodePositionMap.get(link.from) ?? Infinity
+      const toPos = nodePositionMap.get(link.to) ?? Infinity
+      
+      // Score based on the earliest undiscovered node this link would introduce
+      let score = Infinity
+      if (!discoveredNodes.has(link.from)) score = Math.min(score, fromPos)
+      if (!discoveredNodes.has(link.to)) score = Math.min(score, toPos)
+      
+      // If this link introduces an earlier node, prefer it
+      if (score < bestScore) {
+        bestScore = score
+        bestIndex = i
+      }
+    }
+    
+    const selectedLink = remainingLinks.splice(bestIndex, 1)[0]
+    sortedLinks.push(selectedLink)
+    discoveredNodes.add(selectedLink.from)
+    discoveredNodes.add(selectedLink.to)
+  }
+  
+  const links = sortedLinks
 
-  const nodesArray = Array.from(nodes.values()).sort((a, b) => {
-    if (a.id.startsWith('A-') && !b.id.startsWith('A-')) return -1
-    if (!a.id.startsWith('A-') && b.id.startsWith('A-')) return 1
-    const numA = parseInt(a.id.match(/\d+/)?.[0] || '0')
-    const numB = parseInt(b.id.match(/\d+/)?.[0] || '0')
-    return numA - numB
-  })
+  // nodesArray is already in interleaved order since we built it that way
+  const nodesArray = interleavedOrder.map(id => nodes.get(id))
+  
+  // Debug: log the node order to verify interleaving
+  console.log('=== CHORD DIAGRAM DEBUG ===')
+  console.log('Chain A count:', chainA.length, 'Chain B count:', chainB.length)
+  console.log('Interleaved order (first 10):', interleavedOrder.slice(0, 10))
+  console.log('First 5 links introduce nodes:', links.slice(0, 5).map(l => `${l.from} -> ${l.to}`))
+  console.log('Node order passed to Highcharts:', nodesArray.map(n => `${n.id}(order:${n.order})`).slice(0, 10))
 
   if (chart) {
     chart.destroy()
@@ -139,7 +267,13 @@ const updateChart = () => {
       type: 'dependencywheel',
       backgroundColor: 'transparent',
       height: 850,
-      marginTop: 80
+      marginTop: 80,
+      events: {
+        load: function() {
+          // Reorder nodes after chart is fully loaded
+          setTimeout(() => reorderDependencyWheelNodes(this), 100)
+        }
+      }
     },
     title: {
       text: `Residue Interaction Chord (${filteredData.length} interactions)`,
