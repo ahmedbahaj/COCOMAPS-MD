@@ -136,43 +136,43 @@
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td>CR{{ Math.round(pairConservationThreshold * 100) }}</td>
+                <td><span class="metric-with-info">CR{{ Math.round(pairConservationThreshold * 100) }}<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.cr)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ statistics.residue.cr50 }} pairs</td>
               </tr>
               <tr>
-                <td>Count</td>
+                <td><span class="metric-with-info">Count<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.count)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ statistics.residue.count }}</td>
               </tr>
               <tr>
-                <td>Mean</td>
+                <td><span class="metric-with-info">Mean<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.mean)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.residue.mean) }}</td>
               </tr>
               <tr>
-                <td>Median (Q2)</td>
+                <td><span class="metric-with-info">Median (Q2)<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.median)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.residue.median) }}</td>
               </tr>
               <tr>
-                <td>Q1 (25th percentile)</td>
+                <td><span class="metric-with-info">Q1 (25th percentile)<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.q1)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.residue.q1) }}</td>
               </tr>
               <tr>
-                <td>Q3 (75th percentile)</td>
+                <td><span class="metric-with-info">Q3 (75th percentile)<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.q3)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.residue.q3) }}</td>
               </tr>
               <tr>
-                <td>Min</td>
+                <td><span class="metric-with-info">Min<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.min)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.residue.min) }}</td>
               </tr>
               <tr>
-                <td>Max</td>
+                <td><span class="metric-with-info">Max<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.max)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.residue.max) }}</td>
               </tr>
               <tr>
-                <td>Std Dev</td>
+                <td><span class="metric-with-info">Std Dev<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.stdDev)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.residue.stdDev) }}</td>
               </tr>
               <tr class="info-row">
-                <td>Most Conserved Pair(s)</td>
+                <td><span class="metric-with-info">Most Conserved Pair(s)<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.mostConserved)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>
                   <div class="conserved-list">
                     <span v-if="statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 0">
@@ -194,7 +194,7 @@
                 </td>
               </tr>
               <tr class="info-row">
-                <td>Least Conserved Pair(s)</td>
+                <td><span class="metric-with-info">Least Conserved Pair(s)<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.leastConserved)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>
                   <div class="conserved-list">
                     <span v-if="statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 0">
@@ -216,7 +216,7 @@
                 </td>
               </tr>
               <tr class="info-row">
-                <td>Longest Conserved Stretch</td>
+                <td><span class="metric-with-info">Longest Conserved Stretch<span class="info-icon" @mouseenter="showTooltip($event, residueTooltips.longestStretch)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ statistics.residue.longestStretchPair }}: {{ statistics.residue.longestStretchInfo }}</td>
               </tr>
             </tbody>
@@ -234,43 +234,43 @@
             </thead>
             <tbody>
               <tr class="highlight-row">
-                <td>CA{{ Math.round(conservationThreshold * 100) }}</td>
+                <td><span class="metric-with-info">CA{{ Math.round(conservationThreshold * 100) }}<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.ca)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ statistics.atomic.ca }} pair-type combinations</td>
               </tr>
               <tr>
-                <td>Count</td>
+                <td><span class="metric-with-info">Count<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.count)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ statistics.atomic.count }}</td>
               </tr>
               <tr>
-                <td>Mean</td>
+                <td><span class="metric-with-info">Mean<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.mean)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.atomic.mean) }}</td>
               </tr>
               <tr>
-                <td>Median (Q2)</td>
+                <td><span class="metric-with-info">Median (Q2)<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.median)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.atomic.median) }}</td>
               </tr>
               <tr>
-                <td>Q1 (25th percentile)</td>
+                <td><span class="metric-with-info">Q1 (25th percentile)<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.q1)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.atomic.q1) }}</td>
               </tr>
               <tr>
-                <td>Q3 (75th percentile)</td>
+                <td><span class="metric-with-info">Q3 (75th percentile)<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.q3)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.atomic.q3) }}</td>
               </tr>
               <tr>
-                <td>Min</td>
+                <td><span class="metric-with-info">Min<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.min)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.atomic.min) }}</td>
               </tr>
               <tr>
-                <td>Max</td>
+                <td><span class="metric-with-info">Max<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.max)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.atomic.max) }}</td>
               </tr>
               <tr>
-                <td>Std Dev</td>
+                <td><span class="metric-with-info">Std Dev<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.stdDev)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>{{ formatPercent(statistics.atomic.stdDev) }}</td>
               </tr>
               <tr class="info-row">
-                <td>Most Conserved Type(s)</td>
+                <td><span class="metric-with-info">Most Conserved Type(s)<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.mostConserved)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>
                   <div class="conserved-list">
                     <div v-if="statistics.atomic.mostConservedList && statistics.atomic.mostConservedList.length > 0">
@@ -313,7 +313,7 @@
                 </td>
               </tr>
               <tr class="info-row">
-                <td>Least Conserved Type(s)</td>
+                <td><span class="metric-with-info">Least Conserved Type(s)<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.leastConserved)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>
                   <div class="conserved-list">
                     <div v-if="statistics.atomic.leastConservedList && statistics.atomic.leastConservedList.length > 0">
@@ -356,7 +356,7 @@
                 </td>
               </tr>
               <tr class="info-row">
-                <td>Longest Conserved Stretch</td>
+                <td><span class="metric-with-info">Longest Conserved Stretch<span class="info-icon" @mouseenter="showTooltip($event, atomicTooltips.longestStretch)" @mouseleave="hideTooltip">ⓘ</span></span></td>
                 <td>
                   <div class="conserved-list">
                     <div v-if="statistics.atomic.longestStretchType && statistics.atomic.longestStretchType !== 'N/A'">
@@ -388,6 +388,17 @@
         
       </div>
     </div>
+    
+    <!-- Global Tooltip -->
+    <Teleport to="body">
+      <div 
+        v-if="activeTooltip.visible" 
+        class="global-tooltip"
+        :style="{ top: activeTooltip.y + 'px', left: activeTooltip.x + 'px' }"
+      >
+        {{ activeTooltip.text }}
+      </div>
+    </Teleport>
     
     <!-- Interaction Trajectory Modal -->
     <InteractionTrajectoryModal
@@ -436,6 +447,62 @@ const selectedInteraction = ref(null)
     atomicLeastConserved: false,
     atomicLongestStretch: false
   })
+
+// Global tooltip state
+const activeTooltip = ref({
+  visible: false,
+  text: '',
+  x: 0,
+  y: 0
+})
+
+// Show tooltip at cursor position
+const showTooltip = (event, text) => {
+  const x = event.clientX + 12
+  const y = event.clientY - 8
+  activeTooltip.value = {
+    visible: true,
+    text: text,
+    x: Math.min(x, window.innerWidth - 340),
+    y: y
+  }
+}
+
+// Hide tooltip
+const hideTooltip = () => {
+  activeTooltip.value.visible = false
+}
+
+// Tooltip descriptions for each metric
+const residueTooltips = computed(() => ({
+  cr: `Count of unique residue pairs present in ≥${Math.round(pairConservationThreshold.value * 100)}% of trajectory frames`,
+  count: 'Total number of conservation score samples from all qualifying pairs',
+  mean: 'Average pair conservation across all interactions meeting the threshold',
+  median: 'Middle value of sorted conservation scores; half above, half below',
+  q1: '25% of pairs have conservation below this value',
+  q3: '75% of pairs have conservation below this value',
+  min: 'Lowest conservation value among pairs meeting the threshold',
+  max: 'Highest conservation value among pairs meeting the threshold',
+  stdDev: 'Spread of values around the mean; higher means more variability',
+  mostConserved: 'Pair(s) with highest average conservation across all interaction types',
+  leastConserved: 'Pair(s) with lowest average conservation among qualifying pairs',
+  longestStretch: 'Maximum consecutive frames where the pair maintains any interaction'
+}))
+
+const atomicTooltips = computed(() => ({
+  ca: `Count of pair-type combinations (residue pair + interaction type) with ≥${Math.round(conservationThreshold.value * 100)}% type conservation`,
+  count: 'Total number of type conservation score samples meeting the threshold',
+  mean: 'Average type conservation across all qualifying pair-type combinations',
+  median: 'Middle value of sorted type conservation scores',
+  q1: '25% of interaction types have conservation below this value',
+  q3: '75% of interaction types have conservation below this value',
+  min: 'Lowest type conservation among qualifying pair-type combinations',
+  max: 'Highest type conservation among qualifying pair-type combinations',
+  stdDev: 'Spread of type conservation values; higher means more variability',
+  mostConserved: 'Interaction type(s) with highest average conservation, with their specific pairs',
+  leastConserved: 'Interaction type(s) with lowest conservation among those meeting threshold',
+  longestStretch: 'Maximum consecutive frames where a specific interaction type persists'
+}))
 
 // Atom change comparison mode options
 const atomChangeModeOptions = [
@@ -2137,7 +2204,6 @@ input[type="range"]::-moz-range-thumb:hover {
   border-collapse: collapse;
   background: #ffffff;
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -2305,4 +2371,59 @@ input[type="range"]::-moz-range-thumb:hover {
 .statistics-table tbody tr.info-row:last-child {
   border-bottom: none;
 }
+
+.metric-with-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  color: #8e8e93;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.info-icon:hover {
+  color: #3B6EF5;
+}
+
+/* Global tooltip - teleported to body to avoid clipping */
+.global-tooltip {
+  position: fixed;
+  padding: 10px 14px;
+  background: #1d1d1f;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: normal;
+  max-width: 320px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 100000;
+  pointer-events: none;
+  text-align: left;
+  animation: tooltipFadeIn 0.15s ease;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 </style>
+
