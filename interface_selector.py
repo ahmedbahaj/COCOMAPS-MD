@@ -74,26 +74,23 @@ def select_interface_per_frame(input_pdb, output_dir, chain_a='A', chain_b='B',
         print(f"Loaded structure with {num_frames} frame(s)")
     
     # Pre-select atom groups (reused across frames - positions auto-update)
-    chain_a_atoms = universe.select_atoms(f"segid {chain_a} and protein")
-    chain_b_atoms = universe.select_atoms(f"segid {chain_b} and protein")
+    # Select ALL atoms in each chain (not filtered by 'protein' keyword)
+    # This ensures modified residues like PTR, TPO, SEP are included
+    water_resnames = "HOH WAT TIP3 SOL"
+    ion_resnames = "NA CL K MG CA ZN FE CU"
+    exclude_selection = f"not resname {water_resnames} {ion_resnames}"
     
-    # Fallback if segid doesn't work
+    chain_a_atoms = universe.select_atoms(f"segid {chain_a} and {exclude_selection}")
+    chain_b_atoms = universe.select_atoms(f"segid {chain_b} and {exclude_selection}")
+    
+    # Fallback if segid doesn't work - try without exclusions
     if len(chain_a_atoms) == 0 or len(chain_b_atoms) == 0:
         chain_a_atoms = universe.select_atoms(f"segid {chain_a}")
         chain_b_atoms = universe.select_atoms(f"segid {chain_b}")
-        
-        if len(chain_a_atoms) == 0 or len(chain_b_atoms) == 0:
-            all_protein = universe.select_atoms("protein")
-            try:
-                chain_a_atoms = all_protein[all_protein.segids == chain_a]
-                chain_b_atoms = all_protein[all_protein.segids == chain_b]
-            except:
-                chain_a_atoms = universe.select_atoms(f"segid {chain_a}")
-                chain_b_atoms = universe.select_atoms(f"segid {chain_b}")
     
-    # Heavy atoms for water bridging
-    chain_a_heavy = universe.select_atoms(f"segid {chain_a} and protein and not name H*")
-    chain_b_heavy = universe.select_atoms(f"segid {chain_b} and protein and not name H*")
+    # Heavy atoms for water bridging (all chain atoms except hydrogens)
+    chain_a_heavy = universe.select_atoms(f"segid {chain_a} and {exclude_selection} and not name H*")
+    chain_b_heavy = universe.select_atoms(f"segid {chain_b} and {exclude_selection} and not name H*")
     
     if len(chain_a_heavy) == 0 or len(chain_b_heavy) == 0:
         chain_a_heavy = universe.select_atoms(f"segid {chain_a} and not name H*")
