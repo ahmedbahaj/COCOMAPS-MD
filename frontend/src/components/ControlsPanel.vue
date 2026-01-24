@@ -159,7 +159,7 @@ const SLIDER_MAX = 1
 const SLIDER_STEP = 0.1
 
 const showSlider = computed(() => {
-  return ['chord', 'filteredHeatmap'].includes(dataStore.currentChartType)
+  return ['filteredHeatmap'].includes(dataStore.currentChartType)
 })
 
 const showLogScale = computed(() => {
@@ -167,7 +167,7 @@ const showLogScale = computed(() => {
 })
 
 const showInteractionFilter = computed(() => {
-  return ['chord', 'filteredHeatmap', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
+  return ['filteredHeatmap', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
 })
 
 const thresholdPercent = computed(() => {

@@ -21,8 +21,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useDataStore } from '../stores/dataStore'
-import ChordDiagram from './charts/ChordDiagram.vue'
-import SankeyChart from './charts/SankeyChart.vue'
 import FilteredHeatmap from './charts/FilteredHeatmap.vue'
 import AreaChart from './charts/AreaChart.vue'
 import LineChart from './charts/LineChart.vue'
@@ -50,8 +48,6 @@ const hasData = computed(() => {
 })
 
 const chartComponents = {
-  chord: ChordDiagram,
-  sankey: SankeyChart,
   filteredHeatmap: FilteredHeatmap,
   area: AreaChart,
   line: LineChart,
@@ -60,7 +56,7 @@ const chartComponents = {
 }
 
 const currentChartComponent = computed(() => {
-  return chartComponents[dataStore.currentChartType] || ChordDiagram
+  return chartComponents[dataStore.currentChartType] || FilteredHeatmap
 })
 
 // Force re-render when chart type or data changes

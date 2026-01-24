@@ -26,12 +26,11 @@ frontend/
 ├── src/
 │   ├── components/
 │   │   ├── charts/              # Chart components
-│   │   │   ├── ArcDiagram.vue
-│   │   │   ├── ChordDiagram.vue
-│   │   │   ├── Heatmap.vue
 │   │   │   ├── FilteredHeatmap.vue
 │   │   │   ├── AreaChart.vue
-│   │   │   └── LineChart.vue
+│   │   │   ├── LineChart.vue
+│   │   │   ├── InteractionConservationMatrix.vue
+│   │   │   └── ViolinChart.vue
 │   │   ├── Sidebar.vue
 │   │   ├── ChartSelector.vue
 │   │   ├── ControlsPanel.vue
@@ -73,12 +72,11 @@ frontend/
 - Loading states
 
 ✅ **Chart Components**
-- Arc Diagram
-- Chord Diagram
-- Heatmap
 - Filtered Heatmap
 - Area Chart
 - Line Chart (Interaction Trends)
+- Interaction Conservation Matrix
+- Violin Chart (Distance Distribution)
 
 ✅ **UI Components**
 - Sidebar with system selection

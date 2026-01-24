@@ -89,10 +89,8 @@ PDB-examples/
 ## 🎯 Features
 
 ### Data Visualizations
-- **Arc Diagram**: Network visualization of residue interactions
-- **Chord Diagram**: Circular dependency wheel of interactions
-- **Heatmap**: 2D matrix of interaction consistency
 - **Filtered Heatmap**: Dynamic heatmap with consistency threshold
+- **Heatmap**: 2D matrix of interaction consistency
 - **Area Chart**: Buried surface area across frames (Total, Polar, Non-Polar)
 - **Interaction Trends**: Line chart showing interaction type counts over time
 
