@@ -19,7 +19,7 @@ from MDAnalysis.analysis.distances import distance_array
 
 
 def select_interface_per_frame(input_pdb, output_dir, chain_a='A', chain_b='B',
-                                cutoff=5.0, water_cutoff=None, verbose=True):
+                                cutoff=5.0, water_cutoff=5.0, verbose=True):
     """
     Select interface residues and bridging waters on a PER-FRAME basis.
     
@@ -262,7 +262,7 @@ def _find_interface_single_frame(chain_a_atoms, chain_b_atoms, chain_a, chain_b,
 def _find_bridging_waters_single_frame(chain_a_heavy, chain_b_heavy, water_oxygens, cutoff):
     """
     Find bridging water molecules for the CURRENT frame only.
-    Uses spatial grid hashing for efficient O(N+M) lookup.
+    Uses distance_array for accurate distance calculations.
     
     A bridging water must be within cutoff of BOTH chain A AND chain B heavy atoms.
     
@@ -273,43 +273,32 @@ def _find_bridging_waters_single_frame(chain_a_heavy, chain_b_heavy, water_oxyge
     if len(water_oxygens) == 0 or len(chain_a_heavy) == 0 or len(chain_b_heavy) == 0:
         return set()
     
-    grid_size = cutoff
     bridging_resids = set()
+    cutoff_sq = cutoff * cutoff  # Use squared distance for efficiency
     
-    # Build grid for chain A heavy atoms
-    grid_a = set()
-    for pos in chain_a_heavy.positions:
-        cell_x = int(np.floor(pos[0] / grid_size))
-        cell_y = int(np.floor(pos[1] / grid_size))
-        cell_z = int(np.floor(pos[2] / grid_size))
-        # Mark cell and all 26 neighbors
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                for dz in [-1, 0, 1]:
-                    grid_a.add((cell_x + dx, cell_y + dy, cell_z + dz))
+    # Get positions as numpy arrays
+    water_positions = water_oxygens.positions
+    chain_a_positions = chain_a_heavy.positions
+    chain_b_positions = chain_b_heavy.positions
     
-    # Build grid for chain B heavy atoms
-    grid_b = set()
-    for pos in chain_b_heavy.positions:
-        cell_x = int(np.floor(pos[0] / grid_size))
-        cell_y = int(np.floor(pos[1] / grid_size))
-        cell_z = int(np.floor(pos[2] / grid_size))
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                for dz in [-1, 0, 1]:
-                    grid_b.add((cell_x + dx, cell_y + dy, cell_z + dz))
+    # Calculate distances from each water to all chain A heavy atoms
+    # Returns shape (n_waters, n_chain_a_atoms)
+    dist_to_a = distance_array(water_positions, chain_a_positions, box=None)
     
-    # Check each water oxygen - must be in BOTH grids
-    for water_atom in water_oxygens:
-        pos = water_atom.position
-        w_cell = (
-            int(np.floor(pos[0] / grid_size)),
-            int(np.floor(pos[1] / grid_size)),
-            int(np.floor(pos[2] / grid_size))
-        )
-        
-        # Water must be near BOTH chain A AND chain B
-        if w_cell in grid_a and w_cell in grid_b:
+    # Calculate distances from each water to all chain B heavy atoms
+    # Returns shape (n_waters, n_chain_b_atoms)
+    dist_to_b = distance_array(water_positions, chain_b_positions, box=None)
+    
+    # For each water, find minimum distance to each chain
+    min_dist_to_a = np.min(dist_to_a, axis=1)  # Shape: (n_waters,)
+    min_dist_to_b = np.min(dist_to_b, axis=1)  # Shape: (n_waters,)
+    
+    # Water must be within cutoff of BOTH chains
+    bridging_mask = (min_dist_to_a <= cutoff) & (min_dist_to_b <= cutoff)
+    
+    # Get residue IDs of bridging waters
+    for i, water_atom in enumerate(water_oxygens):
+        if bridging_mask[i]:
             bridging_resids.add(water_atom.resid)
     
     return bridging_resids
