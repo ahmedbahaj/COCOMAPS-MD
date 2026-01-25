@@ -1823,7 +1823,20 @@ const getFirstFrameAtomPairs = (atomPairData, type) => {
   return []
 }
 
-// Compare two sorted atom pair arrays
+// Check if two atom pair sets have ANY overlap (at least one common pair)
+// Uses Set for O(n) performance instead of O(n*m)
+const hasOverlap = (set1, set2) => {
+  // Use smaller set for lookup creation (optimization)
+  const [smaller, larger] = set1.length <= set2.length ? [set1, set2] : [set2, set1]
+  const lookupSet = new Set(smaller)
+  
+  for (const pair of larger) {
+    if (lookupSet.has(pair)) return true
+  }
+  return false
+}
+
+// Check if two sorted atom pair arrays are exactly equal
 const atomPairSetsEqual = (set1, set2) => {
   if (set1.length !== set2.length) return false
   for (let i = 0; i < set1.length; i++) {
@@ -1833,7 +1846,9 @@ const atomPairSetsEqual = (set1, set2) => {
 }
 
 // Check if atoms changed based on selected comparison mode
-// Returns true if atom pairs for the given interaction type differ from the reference
+// Returns true ONLY for TRUE CHANGES: when ALL atom pairs were replaced (no overlap)
+// Does NOT flag additions (new pairs added) or deletions (pairs removed but others remain)
+// Rationale: Additions/deletions are rare and don't provide biological insight
 const hasAtomChange = (pairKey, frame, type) => {
   // pairKey format: "A-LYS8_B-ASP45" (from loadAtomPairDataForPair)
   const atomPairData = atomPairDataByPair.value.get(pairKey)
@@ -1842,7 +1857,7 @@ const hasAtomChange = (pairKey, frame, type) => {
   // Get current frame's atom pairs
   const currentPairs = getAtomPairsForFrameAndType(atomPairData, frame, type)
   
-  // If current frame has no atoms for this type, no change to show
+  // If current frame has no atoms for this type, not a change (it's a deletion)
   if (currentPairs.length === 0) return false
   
   let referencePairs = []
@@ -1852,7 +1867,7 @@ const hasAtomChange = (pairKey, frame, type) => {
       // Compare with previous frame
       if (frame <= 1) return false // No previous frame
       referencePairs = getAtomPairsForFrameAndType(atomPairData, frame - 1, type)
-      // If previous frame had no atoms, this is a new appearance, not a change
+      // If previous frame had no atoms, this is a new appearance (addition), not a change
       if (referencePairs.length === 0) return false
       break
       
@@ -1866,18 +1881,20 @@ const hasAtomChange = (pairKey, frame, type) => {
     case 'first':
       // Compare with first frame where this type appears
       referencePairs = getFirstFrameAtomPairs(atomPairData, type)
-      // If this IS the first frame, no change
-      if (atomPairSetsEqual(currentPairs, referencePairs)) return false
       // If no first frame found, no comparison possible
       if (referencePairs.length === 0) return false
+      // If this IS the first frame (identical), no change
+      if (atomPairSetsEqual(currentPairs, referencePairs)) return false
       break
       
     default:
       return false
   }
   
-  // Compare current with reference
-  return !atomPairSetsEqual(currentPairs, referencePairs)
+  // TRUE CHANGE detection: only flag if there is NO overlap between reference and current
+  // - If ANY reference pair still exists in current → not a true change (could be addition/partial deletion)
+  // - Only if ALL reference pairs were replaced with completely different pairs → true change
+  return !hasOverlap(referencePairs, currentPairs)
 }
 
 onMounted(async () => {
