@@ -1241,21 +1241,38 @@ def get_interaction_distances(system_id):
                                                                   'Res. Name 2', 'Res. Number 2', 'Chain 2']):
                                 continue
                             
-                            # Check if distance column exists
-                            if 'Distance (Å)' not in type_row:
-                                continue
-                            
                             res_id1 = _format_residue_id(type_row['Res. Name 1'], type_row['Res. Number 1'], type_row['Chain 1'])
                             res_id2 = _format_residue_id(type_row['Res. Name 2'], type_row['Res. Number 2'], type_row['Chain 2'])
                             pair_key = _format_pair_key(res_id1, res_id2)
                             
-                            # Get distance
-                            distance_str = type_row.get('Distance (Å)', '').strip()
-                            if distance_str:
-                                # Remove asterisks and extract number
-                                distance_str = distance_str.replace('*', '').strip()
+                            # Get distance - handle different CSV formats
+                            distance = None
+                            
+                            # Standard format: single Distance (Å) column
+                            if 'Distance (Å)' in type_row:
+                                distance_str = type_row.get('Distance (Å)', '').strip()
+                                if distance_str:
+                                    distance_str = distance_str.replace('*', '').strip()
+                                    try:
+                                        distance = float(distance_str)
+                                    except ValueError:
+                                        pass
+                            
+                            # Water-mediated format: has Distance from Res 1 and Distance from Res 2
+                            # Sum both distances (total path through water)
+                            elif 'Distance from Res 1' in type_row and 'Distance from Res 2' in type_row:
                                 try:
-                                    distance = float(distance_str)
+                                    dist1_str = type_row.get('Distance from Res 1', '').strip()
+                                    dist2_str = type_row.get('Distance from Res 2', '').strip()
+                                    if dist1_str and dist2_str:
+                                        dist1 = float(dist1_str.replace('*', '').strip())
+                                        dist2 = float(dist2_str.replace('*', '').strip())
+                                        distance = dist1 + dist2  # Total path through water
+                                except ValueError:
+                                    pass
+                            
+                            if distance is not None:
+                                try:
                                     
                                     if pair_key not in distance_map:
                                         distance_map[pair_key] = {}

@@ -13,12 +13,12 @@ export const INTERACTION_TYPES = [
   { id: 'h-bond', label: 'H-bonds', keywords: ['h-bond', 'h-bond*', 'hydrogen bond'], trendLabel: 'H-bonds' },
   { id: 'halogen', label: 'Halogen bonds', keywords: ['halogen'], trendLabel: 'Halogen bonds' },
   { id: 'lone-pair-pi', label: 'lp-π interactions', keywords: ['lone_pair_pi', 'lone pair', 'lp-pi', 'lp-π'], trendLabel: 'Lone pair-π interactions' },
-  { id: 'metal', label: 'Metal-mediated contacts', keywords: ['metal mediated', 'metal_mediated'], trendLabel: 'Metal mediated' },
+  { id: 'metal', label: 'Metal-mediated contacts', keywords: ['metal mediated', 'metal_mediated', 'metal-mediated'], trendLabel: 'Metal mediated' },
   { id: 'ons-oh-pi', label: 'O/N/SH-π interactions', keywords: ['n-s-o-h', 'n-s-o-h_pi', 'o/n/sh'], trendLabel: 'O/N/SH-π interactions' },
   { id: 'polar-vdw', label: 'Polar vdW contacts', keywords: ['polar vdw', 'polar_vdw'], trendLabel: 'Polar vdW contacts' },
   { id: 'proximal', label: 'Proximal contacts', keywords: ['proximal'], trendLabel: 'Proximal contacts' },
   { id: 'salt-bridge', label: 'Salt-bridges', keywords: ['salt-bridge', 'salt bridge'], trendLabel: 'Salt-bridges' },
   { id: 'ss-bond', label: 'S-S bonds', keywords: ['ss bond', 's-s bond', 'ss_bond'], trendLabel: 'S-S bonds' },
-  { id: 'water', label: 'Water-mediated contacts', keywords: ['water mediated', 'water_mediated'], trendLabel: 'Water mediated' }
+  { id: 'water', label: 'Water-mediated contacts', keywords: ['water mediated', 'water_mediated', 'water-mediated'], trendLabel: 'Water mediated' }
 ]
 

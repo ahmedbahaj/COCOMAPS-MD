@@ -15,13 +15,13 @@ const INTERACTION_COLOR_RULES = [
   { color: [75, 0, 130], keywords: ['h-bond*', 'h-bond', 'hydrogen bond'] }, // H-bond
   { color: [85, 107, 47], keywords: ['halogen'] }, // Halogen bond
   { color: [70, 130, 180], keywords: ['lp-π', 'lp-pi', 'lone pair', 'lone_pair_pi'] }, // lp-π interaction
-  { color: [139, 69, 19], keywords: ['metal mediated', 'metal_mediated'] }, // Metal mediated contact
+  { color: [139, 69, 19], keywords: ['metal mediated', 'metal_mediated', 'metal-mediated'] }, // Metal mediated contact
   { color: [90, 75, 170], keywords: ['n-s-o-h', 'n-s-o-h_pi', 'o/n/sh'] }, // O/N/SH-π interaction
   { color: [255, 0, 127], keywords: ['polar vdw', 'polar_vdw'] }, // Polar vdW contact
   { color: [54, 69, 79], keywords: ['proximal'] }, // Proximal contact
   { color: [128, 0, 128], keywords: ['salt-bridge', 'salt bridge'] }, // Salt-bridge
   { color: [255, 103, 0], keywords: ['s-bond', 'ss bond', 's-s bond', 'ss_bond', 's-s'] }, // S / S-S bond
-  { color: [72, 61, 139], keywords: ['water', 'water mediated', 'water_mediated'] } // Water mediated contact
+  { color: [72, 61, 139], keywords: ['water', 'water mediated', 'water_mediated', 'water-mediated'] } // Water mediated contact
 ]
 
 function findInteractionColor(typeString) {
