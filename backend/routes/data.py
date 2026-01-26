@@ -368,7 +368,13 @@ def get_interaction_trends(system_id):
             'Apolar vdW contacts': [],
             'Polar vdW contacts': [],
             'Proximal contacts': [],
-            'Clashes': []
+            'Clashes': [],
+            'Water mediated': [],
+            'Metal mediated': [],
+            'S-S bonds': [],
+            'Amino-π interactions': [],
+            'Lone pair-π interactions': [],
+            'O/N/SH-π interactions': []
         }
         
         # Process each frame
@@ -418,6 +424,18 @@ def get_interaction_trends(system_id):
                         interaction_types['Proximal contacts'][-1] = value
                     elif 'Clashes' in property_name:
                         interaction_types['Clashes'][-1] = value
+                    elif 'Water mediated' in property_name:
+                        interaction_types['Water mediated'][-1] = value
+                    elif 'Metal mediated' in property_name:
+                        interaction_types['Metal mediated'][-1] = value
+                    elif 'S-S' in property_name or 'SS' in property_name:
+                        interaction_types['S-S bonds'][-1] = value
+                    elif 'Amino-π' in property_name:
+                        interaction_types['Amino-π interactions'][-1] = value
+                    elif 'lp-π' in property_name or 'Lone' in property_name:
+                        interaction_types['Lone pair-π interactions'][-1] = value
+                    elif 'O/N/SH-π' in property_name:
+                        interaction_types['O/N/SH-π interactions'][-1] = value
         
         return jsonify({
             'system': system_id,
