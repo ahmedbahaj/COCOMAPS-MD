@@ -96,15 +96,17 @@ def select_interface_per_frame(input_pdb, output_dir, chain_a='A', chain_b='B',
         chain_a_heavy = universe.select_atoms(f"segid {chain_a} and not name H*")
         chain_b_heavy = universe.select_atoms(f"segid {chain_b} and not name H*")
     
-    # Water oxygens
+    # Water oxygens - try multiple naming conventions
+    # HOH can have O, OW, or OH2 as oxygen name depending on the source
     try:
         water_oxygens = universe.select_atoms(
-            "(resname HOH and name O) or "
-            "(resname WAT and name O) or "
-            "(resname TIP3 and name OH2) or "
-            "(resname SOL and name OW)"
+            "(resname HOH and (name O or name OW or name OH2)) or "
+            "(resname WAT and (name O or name OW or name OH2)) or "
+            "(resname TIP3 and (name O or name OW or name OH2)) or "
+            "(resname SOL and (name O or name OW or name OH2))"
         )
     except:
+        # Fallback: select all atoms in water residues (will include H atoms)
         water_oxygens = universe.select_atoms("resname HOH or resname WAT or resname TIP3 or resname SOL")
     
     if verbose:
@@ -138,7 +140,7 @@ def select_interface_per_frame(input_pdb, output_dir, chain_a='A', chain_b='B',
             protein_selection_string = " or ".join(protein_selections)
             interface_protein_atoms = universe.select_atoms(protein_selection_string)
         else:
-            interface_protein_atoms = universe.select_atoms("none")
+            interface_protein_atoms = universe.atoms[:0]  # Empty AtomGroup
         
         # Build selection for bridging water atoms
         if bridging_water_resids:
@@ -146,7 +148,7 @@ def select_interface_per_frame(input_pdb, output_dir, chain_a='A', chain_b='B',
             water_selection = f"(resname HOH or resname WAT or resname TIP3 or resname SOL) and resid {water_resid_str}"
             bridging_water_atoms = universe.select_atoms(water_selection)
         else:
-            bridging_water_atoms = universe.select_atoms("none")
+            bridging_water_atoms = universe.atoms[:0]  # Empty AtomGroup
         
         # Combine protein and water atoms
         if len(interface_protein_atoms) > 0 and len(bridging_water_atoms) > 0:
@@ -156,7 +158,7 @@ def select_interface_per_frame(input_pdb, output_dir, chain_a='A', chain_b='B',
         elif len(bridging_water_atoms) > 0:
             output_atoms = bridging_water_atoms
         else:
-            output_atoms = universe.select_atoms("none")
+            output_atoms = universe.atoms[:0]  # Empty AtomGroup
         
         # Create frame directory and write PDB
         frame_folder = os.path.join(output_dir, f"frame_{frame_num}")
@@ -166,7 +168,9 @@ def select_interface_per_frame(input_pdb, output_dir, chain_a='A', chain_b='B',
         if len(output_atoms) > 0:
             output_atoms.write(frame_file)
         else:
-            universe.select_atoms("none").write(frame_file)
+            # Write empty PDB file header only
+            with open(frame_file, 'w') as f:
+                f.write("REMARK   Empty frame - no interface atoms found\nEND\n")
         
         # Track statistics
         frame_stats.append({
