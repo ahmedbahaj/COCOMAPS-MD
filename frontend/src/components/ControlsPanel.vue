@@ -163,7 +163,7 @@ const showSlider = computed(() => {
 })
 
 const showLogScale = computed(() => {
-  return ['area', 'line'].includes(dataStore.currentChartType)
+  return ['line'].includes(dataStore.currentChartType)
 })
 
 const showInteractionFilter = computed(() => {
