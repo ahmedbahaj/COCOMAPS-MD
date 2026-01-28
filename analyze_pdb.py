@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
 Complete PDB Analysis Pipeline
-1. (Optional) Per-frame interface selection + splitting (or just splitting)
+1. Process frames (with optional interface selection)
 2. Run CoCoMaps analysis on each frame
 
-When interface selection is enabled:
-- Each frame keeps ONLY residues at the interface IN THAT SPECIFIC FRAME
-- Atom counts may vary between frames (dynamic interface)
-- This is more optimized than keeping all interface residues across all frames
+All file I/O is centralized in this module.
+Interface selection logic is delegated to interface_selector.py.
 """
 
 import subprocess
@@ -17,6 +15,7 @@ import argparse
 import json
 import shutil
 from pathlib import Path
+from datetime import datetime
 from distutils.util import strtobool
 import MDAnalysis as mda
 from MDAnalysis.coordinates import PDB
@@ -26,8 +25,12 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent / '.env'
 load_dotenv(env_path)
 
-# Import from interface_selector
-from interface_selector import select_interface_per_frame
+# Import pure selection functions from interface_selector
+from interface_selector import (
+    get_atom_selections,
+    select_interface_atoms,
+    get_selection_summary
+)
 
 # Docker configuration (loaded from .env or defaults)
 DOCKER_IMAGE_REDUCE = os.environ.get("COCOMAPS_IMAGE_REDUCE", "andrpet/cocomaps-backend:0.0.19")
@@ -44,44 +47,257 @@ _chains_env = os.environ.get("DEFAULT_CHAINS", "A,B")
 DEFAULT_CHAINS = [c.strip() for c in _chains_env.split(',')]
 
 
-def split_pdb(pdb_file, output_dir, copy_original=True, step_num=None):
-    """Split PDB file into individual frames"""
+def rename_waters_to_hoh(atoms):
+    """
+    Rename all water residues (SOL, WAT, TIP3) to HOH for CoCoMaps compatibility.
+    
+    CoCoMaps only recognizes HOH as water residues. This function converts
+    other common water naming conventions to HOH.
+    
+    Parameters:
+    -----------
+    atoms : MDAnalysis.AtomGroup or Universe
+        The atoms to process (modifies residue names in-place)
+    """
+    water_resnames_to_convert = ['SOL', 'WAT', 'TIP3', 'TIP4', 'SPC', 'SPCE']
+    
+    for residue in atoms.residues:
+        if residue.resname in water_resnames_to_convert:
+            residue.resname = 'HOH'
+
+
+def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
+                   select_interface=False, cutoff=5.0, water_cutoff=5.0,
+                   verbose=True, step_num=None):
+    """
+    Process PDB file: split into frames with optional interface selection.
+    
+    This is the unified frame processing function that handles all file I/O.
+    
+    Parameters:
+    -----------
+    pdb_file : str
+        Path to input PDB file (can be multi-model/trajectory)
+    output_dir : str
+        Output directory. Creates frame_N/frame_N.pdb for each frame.
+    chain_a : str
+        Chain identifier for the first chain
+    chain_b : str
+        Chain identifier for the second chain
+    select_interface : bool
+        If True, keep only interface residues and bridging waters.
+        If False, keep all atoms.
+    cutoff : float
+        Distance cutoff for interface residues in Angstroms
+    water_cutoff : float
+        Distance cutoff for bridging waters in Angstroms
+    verbose : bool
+        Whether to print progress messages
+    step_num : int or None
+        Step number for display (e.g., "STEP 1:")
+    
+    Returns:
+    --------
+    tuple : (output_dir, frame_count, frame_stats)
+    """
     step_label = f"STEP {step_num}: " if step_num else ""
-    print(f"\n{'='*80}")
-    print(f"{step_label}Splitting PDB into frames")
-    print(f"{'='*80}")
+    
+    if verbose:
+        print(f"\n{'='*80}")
+        if select_interface:
+            print(f"{step_label}Processing frames with interface selection")
+        else:
+            print(f"{step_label}Splitting PDB into frames")
+        print(f"{'='*80}")
+        print(f"Input PDB: {pdb_file}")
+        print(f"Output Directory: {output_dir}")
+        if select_interface:
+            print(f"Chains: {chain_a}, {chain_b}")
+            print(f"Interface cutoff: {cutoff} Å")
+            print(f"Water cutoff: {water_cutoff} Å")
+            print(f"Mode: Per-frame interface selection")
+        else:
+            print(f"Mode: Full structure (all atoms)")
     
     start_time = time.time()
-    
-    u = mda.Universe(pdb_file)
     
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
     # Copy original PDB to output directory
-    if copy_original:
-        original_name = Path(pdb_file).name
-        dest_path = os.path.join(output_dir, original_name)
-        if not os.path.exists(dest_path):
-            shutil.copy(pdb_file, dest_path)
+    original_name = Path(pdb_file).name
+    dest_path = os.path.join(output_dir, original_name)
+    if not os.path.exists(dest_path):
+        shutil.copy(pdb_file, dest_path)
+        if verbose:
             print(f"Copied original PDB to: {dest_path}")
     
-    # Split into frames
-    frame_count = 0
-    for i, ts in enumerate(u.trajectory):
-        frame_folder = os.path.join(output_dir, f"frame_{i+1}")
-        os.makedirs(frame_folder, exist_ok=True)
+    # Load the structure/trajectory
+    universe = mda.Universe(pdb_file)
+    num_frames = len(universe.trajectory)
+    
+    if verbose:
+        print(f"Loaded structure with {num_frames} frame(s)")
+    
+    # Pre-compute atom selections if doing interface selection
+    selections = None
+    if select_interface:
+        selections = get_atom_selections(universe, chain_a, chain_b)
+        summary = get_selection_summary(selections)
+        if verbose:
+            print(f"Chain {chain_a}: {summary['chain_a_atoms']} atoms, {summary['chain_a_heavy']} heavy atoms")
+            print(f"Chain {chain_b}: {summary['chain_b_atoms']} atoms, {summary['chain_b_heavy']} heavy atoms")
+            print(f"Total water molecules: {summary['water_molecules']}")
+    
+    if verbose:
+        print(f"\nProcessing frames...")
+    
+    # Track statistics
+    frame_stats = []
+    
+    # Process each frame
+    for frame_idx, ts in enumerate(universe.trajectory):
+        frame_num = frame_idx + 1
         
-        frame_file = os.path.join(frame_folder, f"frame_{i+1}.pdb")
-        with PDB.PDBWriter(frame_file) as W:
-            W.write(u.atoms)
-        frame_count += 1
+        if select_interface:
+            # Get interface atoms for this frame
+            result = select_interface_atoms(
+                universe, selections, chain_a, chain_b, cutoff, water_cutoff
+            )
+            output_atoms = result['atoms']
+            stats = result['stats']
+        else:
+            # Keep all atoms
+            output_atoms = universe.atoms
+            stats = {
+                'interface_residues': len(universe.residues),
+                'protein_atoms': len(universe.atoms),
+                'bridging_waters': 0,
+                'water_atoms': 0,
+                'total_atoms': len(universe.atoms)
+            }
+        
+        # === CENTRALIZED WRITE POINT ===
+        # All PDB writing happens here - perfect place for transformations
+        
+        # Rename waters to HOH for CoCoMaps compatibility
+        rename_waters_to_hoh(output_atoms)
+        
+        # Create frame directory and write PDB
+        frame_folder = os.path.join(output_dir, f"frame_{frame_num}")
+        os.makedirs(frame_folder, exist_ok=True)
+        frame_file = os.path.join(frame_folder, f"frame_{frame_num}.pdb")
+        
+        if len(output_atoms) > 0:
+            output_atoms.write(frame_file)
+        else:
+            # Write empty PDB file header only
+            with open(frame_file, 'w') as f:
+                f.write("REMARK   Empty frame - no interface atoms found\nEND\n")
+        
+        # Track statistics
+        stats['frame'] = frame_num
+        frame_stats.append(stats)
+        
+        if verbose:
+            if select_interface:
+                print(f"  Frame {frame_num}: {stats['interface_residues']} residues, "
+                      f"{stats['protein_atoms']} protein atoms, "
+                      f"{stats['bridging_waters']} waters → {stats['total_atoms']} total atoms")
+            else:
+                print(f"  Frame {frame_num}: {stats['total_atoms']} atoms")
     
     elapsed = time.time() - start_time
-    print(f"✓ Split {frame_count} frames in {elapsed:.2f} seconds")
-    print(f"  Output directory: {output_dir}")
     
-    return output_dir, frame_count
+    # Write summary log if interface selection was used
+    if select_interface:
+        log_file = os.path.join(output_dir, "interface_selection_summary.txt")
+        _write_summary_log(
+            pdb_file, output_dir, log_file, chain_a, chain_b, cutoff, water_cutoff,
+            num_frames, selections, frame_stats
+        )
+        if verbose:
+            print(f"\nSummary log: {log_file}")
+    
+    if verbose:
+        print(f"\n{'='*60}")
+        print(f"Frame Processing Complete")
+        print(f"{'='*60}")
+        print(f"Frames processed: {num_frames}")
+        print(f"Time elapsed: {elapsed:.2f} seconds")
+        if select_interface:
+            avg_residues = sum(s['interface_residues'] for s in frame_stats) / num_frames
+            avg_total = sum(s['total_atoms'] for s in frame_stats) / num_frames
+            print(f"Average interface residues: {avg_residues:.1f}")
+            print(f"Average total atoms: {avg_total:.1f}")
+        print(f"Output directory: {output_dir}")
+    
+    return output_dir, num_frames, frame_stats
+
+
+def _write_summary_log(input_pdb, output_dir, log_file, chain_a, chain_b,
+                       cutoff, water_cutoff, num_frames, selections, frame_stats):
+    """Write a summary log for interface selection."""
+    summary = get_selection_summary(selections)
+    
+    with open(log_file, 'w') as f:
+        f.write("=" * 80 + "\n")
+        f.write("PER-FRAME INTERFACE SELECTION SUMMARY\n")
+        f.write("=" * 80 + "\n\n")
+        
+        f.write(f"Date and Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        
+        f.write("FILE INFORMATION\n")
+        f.write("-" * 80 + "\n")
+        f.write(f"Input PDB file:    {input_pdb}\n")
+        f.write(f"Output directory:  {output_dir}\n")
+        f.write(f"Log file:          {log_file}\n\n")
+        
+        f.write("PARAMETERS\n")
+        f.write("-" * 80 + "\n")
+        f.write(f"Chain A:              {chain_a}\n")
+        f.write(f"Chain B:              {chain_b}\n")
+        f.write(f"Interface cutoff:     {cutoff} Å\n")
+        f.write(f"Water bridge cutoff:  {water_cutoff} Å\n")
+        f.write(f"Number of frames:     {num_frames}\n")
+        f.write(f"Selection mode:       Per-frame (dynamic)\n\n")
+        
+        f.write("CHAIN STATISTICS (Original)\n")
+        f.write("-" * 80 + "\n")
+        f.write(f"Chain {chain_a} atoms: {summary['chain_a_atoms']}\n")
+        f.write(f"Chain {chain_b} atoms: {summary['chain_b_atoms']}\n")
+        f.write(f"Total water molecules: {summary['water_molecules']}\n\n")
+        
+        f.write("PER-FRAME STATISTICS\n")
+        f.write("-" * 80 + "\n")
+        f.write(f"{'Frame':<8} {'Residues':<10} {'Protein':<10} {'Waters':<10} {'Total':<10}\n")
+        f.write("-" * 80 + "\n")
+        
+        for s in frame_stats:
+            f.write(f"{s['frame']:<8} {s['interface_residues']:<10} "
+                    f"{s['protein_atoms']:<10} {s['bridging_waters']:<10} "
+                    f"{s['total_atoms']:<10}\n")
+        
+        f.write("-" * 80 + "\n")
+        
+        # Averages
+        avg_residues = sum(s['interface_residues'] for s in frame_stats) / num_frames
+        avg_protein = sum(s['protein_atoms'] for s in frame_stats) / num_frames
+        avg_waters = sum(s['bridging_waters'] for s in frame_stats) / num_frames
+        avg_total = sum(s['total_atoms'] for s in frame_stats) / num_frames
+        
+        f.write(f"{'Average':<8} {avg_residues:<10.1f} {avg_protein:<10.1f} "
+                f"{avg_waters:<10.1f} {avg_total:<10.1f}\n\n")
+        
+        # Min/Max
+        min_atoms = min(s['total_atoms'] for s in frame_stats)
+        max_atoms = max(s['total_atoms'] for s in frame_stats)
+        f.write(f"Minimum atoms in a frame: {min_atoms}\n")
+        f.write(f"Maximum atoms in a frame: {max_atoms}\n\n")
+        
+        f.write("=" * 80 + "\n")
+        f.write("END OF SUMMARY\n")
+        f.write("=" * 80 + "\n")
 
 
 def create_input_jsons(output_dir, frame_count, chains=None):
@@ -210,7 +426,6 @@ Examples:
   python analyze_pdb.py systems/my_protein.pdb
   
   # Enable per-frame interface selection
-  # (each frame keeps only residues at interface in THAT frame)
   python analyze_pdb.py systems/my_protein.pdb --interface
   
   # Interface selection with custom cutoff (default: 5Å)
@@ -231,6 +446,9 @@ Interface Selection Mode:
   - Atom counts may vary between frames (dynamic interface)
   - Bridging waters (within cutoff of BOTH chains) are also kept per-frame
 
+Note: All water residues (SOL, WAT, TIP3, etc.) are automatically renamed to HOH
+for CoCoMaps compatibility.
+
 Environment Variables:
   SELECT_INTERFACE=true/false    - Enable/disable interface selection (default: false)
   COCOMAPS_USE_REDUCE=true/false - Enable/disable reduce (default: false)
@@ -243,15 +461,15 @@ Environment Variables:
     parser.add_argument('pdb_file', help='Input PDB file to analyze')
     parser.add_argument('-o', '--output', help='Output directory (default: systems/<pdb_name>)')
     parser.add_argument('--use-reduce', dest='use_reduce', action='store_true',
-                       help='Use reduce version of CoCoMaps (can also set COCOMAPS_USE_REDUCE=true)')
+                       help='Use reduce version of CoCoMaps')
     parser.add_argument('--no-reduce', dest='use_reduce', action='store_false',
-                       help='Use no-reduce version of CoCoMaps (can also set COCOMAPS_USE_REDUCE=false)')
+                       help='Use no-reduce version of CoCoMaps')
     parser.add_argument('-c', '--chains', nargs='+', default=DEFAULT_CHAINS,
                        help='Chain IDs to analyze (default: A B)')
     
     # Interface selection options
     parser.add_argument('--interface', dest='select_interface', action='store_true',
-                       help='Enable per-frame interface selection - each frame keeps only its own interface residues')
+                       help='Enable per-frame interface selection')
     parser.add_argument('--no-interface', dest='select_interface', action='store_false',
                        help='Disable interface selection (keep all atoms)')
     parser.add_argument('--interface-cutoff', type=float, default=DEFAULT_INTERFACE_CUTOFF,
@@ -292,11 +510,11 @@ Environment Variables:
         print(f"Interface Selection: Per-frame (dynamic)")
         print(f"  - Protein cutoff: {args.interface_cutoff}Å")
         print(f"  - Water cutoff: {water_cutoff}Å")
-        print(f"  - Each frame keeps only its own interface residues")
     else:
         print(f"Interface Selection: Disabled (all atoms kept)")
     print(f"Chains: {args.chains}")
     print(f"CoCoMaps Mode: {'WITH reduce' if args.use_reduce else 'WITHOUT reduce'}")
+    print(f"Water Renaming: All SOL/WAT/TIP3 → HOH (automatic)")
     print(f"{'='*80}")
     
     overall_start = time.time()
@@ -304,43 +522,33 @@ Environment Variables:
     try:
         step_num = 1
         
-        # STEP 1: Interface selection + splitting OR just splitting
-        if args.select_interface:
-            # Per-frame interface selection (combines interface selection and splitting)
-            print(f"\n{'='*80}")
-            print(f"STEP {step_num}: Per-frame interface selection + splitting")
-            print(f"{'='*80}")
-            print("Mode: Each frame keeps only residues at interface IN THAT FRAME")
-            print("      (atom counts may vary between frames)\n")
-            
-            # Need exactly 2 chains for interface selection
-            if len(args.chains) < 2:
-                print("Warning: Interface selection requires 2 chains. Using A and B as defaults.")
-                chain_a, chain_b = 'A', 'B'
-            else:
-                chain_a, chain_b = args.chains[0], args.chains[1]
-            
-            # This function does both interface selection AND frame splitting
-            output_dir, frame_count = select_interface_per_frame(
-                args.pdb_file,
-                output_dir=output_dir,
-                chain_a=chain_a,
-                chain_b=chain_b,
-                cutoff=args.interface_cutoff,
-                water_cutoff=water_cutoff,
-                verbose=True
-            )
-            step_num += 1
+        # STEP 1: Process frames (unified function handles both modes)
+        if len(args.chains) < 2:
+            print("Warning: Interface selection requires 2 chains. Using A and B as defaults.")
+            chain_a, chain_b = 'A', 'B'
         else:
-            # No interface selection - just split the PDB
-            output_dir, frame_count = split_pdb(args.pdb_file, output_dir, copy_original=True, step_num=step_num)
-            step_num += 1
+            chain_a, chain_b = args.chains[0], args.chains[1]
         
-        # Create input JSON files
+        output_dir, frame_count, frame_stats = process_frames(
+            args.pdb_file,
+            output_dir,
+            chain_a=chain_a,
+            chain_b=chain_b,
+            select_interface=args.select_interface,
+            cutoff=args.interface_cutoff,
+            water_cutoff=water_cutoff,
+            verbose=True,
+            step_num=step_num
+        )
+        step_num += 1
+        
+        # STEP 2: Create input JSON files
         create_input_jsons(output_dir, frame_count, args.chains)
         
-        # STEP: Run CoCoMaps
-        analysis_time, successful, failed = run_cocomaps_analysis(output_dir, args.use_reduce, step_num=step_num)
+        # STEP 3: Run CoCoMaps
+        analysis_time, successful, failed = run_cocomaps_analysis(
+            output_dir, args.use_reduce, step_num=step_num
+        )
         
         # Final summary
         total_time = time.time() - overall_start
