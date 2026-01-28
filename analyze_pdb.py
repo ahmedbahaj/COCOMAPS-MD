@@ -59,7 +59,7 @@ def rename_waters_to_hoh(atoms):
     atoms : MDAnalysis.AtomGroup or Universe
         The atoms to process (modifies residue names in-place)
     """
-    water_resnames_to_convert = ['SOL', 'WAT', 'TIP3', 'TIP4', 'SPC', 'SPCE']
+    water_resnames_to_convert = ['SOL', 'WAT', 'TIP3']
     
     for residue in atoms.residues:
         if residue.resname in water_resnames_to_convert:
