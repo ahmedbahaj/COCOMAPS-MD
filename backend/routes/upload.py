@@ -28,8 +28,18 @@ ALLOWED_EXTENSIONS = {'pdb'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def split_pdb(pdb_file, pdb_name):
-    """Split PDB file into frames"""
+def split_pdb(pdb_file, pdb_name, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1):
+    """Split PDB file into frames
+    
+    Args:
+        pdb_file: Path to PDB file
+        pdb_name: Name for the output system
+        chain1: First chain ID
+        chain2: Second chain ID
+        interface_cutoff: Cutoff distance for interface detection
+        start_frame: Starting frame index (0-based). Default 0.
+        end_frame: Ending frame index (0-based, exclusive). -1 means all frames.
+    """
     if not HAS_MDA:
         raise Exception("MDAnalysis not available")
     
@@ -43,33 +53,47 @@ def split_pdb(pdb_file, pdb_name):
         os.makedirs(systems_folder, exist_ok=True)
         os.makedirs(main_folder, exist_ok=True)
         
-        # Iterate through frames
+        # Determine frame range
+        total_frames = len(u.trajectory)
+        if end_frame == -1 or end_frame > total_frames:
+            end_frame = total_frames
+        if start_frame < 0:
+            start_frame = 0
+        
+        frames_to_process = range(start_frame, end_frame)
+        num_frames_to_process = len(frames_to_process)
+        
+        # Iterate through selected frames
         frame_count = 0
-        for i, ts in enumerate(u.trajectory):
-            frame_folder = os.path.join(main_folder, f"frame_{i+1}")
+        for idx, frame_idx in enumerate(frames_to_process):
+            u.trajectory[frame_idx]  # Seek to frame
+            
+            # Use sequential frame numbering (1, 2, 3, ...) for output
+            output_frame_num = idx + 1
+            frame_folder = os.path.join(main_folder, f"frame_{output_frame_num}")
             os.makedirs(frame_folder, exist_ok=True)
             
-            frame_file = os.path.join(frame_folder, f"frame_{i+1}.pdb")
+            frame_file = os.path.join(frame_folder, f"frame_{output_frame_num}.pdb")
             with PDB.PDBWriter(frame_file) as W:
                 W.write(u.atoms)
             
-            # Create example_input.json for each frame
-            create_example_input(frame_folder, f"frame_{i+1}.pdb")
+            # Create example_input.json for each frame with specified chains
+            create_example_input(frame_folder, f"frame_{output_frame_num}.pdb", chain1, chain2, interface_cutoff)
             
             frame_count += 1
             if pdb_name in processing_status:
-                processing_status[pdb_name]['progress'] = int((i + 1) / len(u.trajectory) * 30)
+                processing_status[pdb_name]['progress'] = int((idx + 1) / num_frames_to_process * 30)
         
         return frame_count
     except Exception as e:
         raise Exception(f"Error splitting PDB: {str(e)}")
 
-def create_example_input(frame_folder, pdb_filename):
-    """Create example_input.json for CoCoMaps"""
+def create_example_input(frame_folder, pdb_filename, chain1='A', chain2='B', interface_cutoff=5.0):
+    """Create example_input.json for CoCoMaps with specified chains"""
     input_data = {
         "pdb_file": f"/app/data/{pdb_filename}",
-        "chains_set_1": ["A"],
-        "chains_set_2": ["B"],
+        "chains_set_1": [chain1],
+        "chains_set_2": [chain2],
         "ranges_1": [[0, 100000]],
         "ranges_2": [[0, 100000], [0, 100000]],
         "HBOND_DIST": 3.9,
@@ -78,7 +102,7 @@ def create_example_input(frame_folder, pdb_filename):
         "WBRIDGE_DIST": 3.9,
         "CH_ON_DIST": 3.6,
         "CH_ON_ANGLE": 110,
-        "CUT_OFF": 5,
+        "CUT_OFF": interface_cutoff,
         "APOLAR_TOLERANCE": 0.5,
         "POLAR_TOLERANCE": 0.5,
         "PI_PI_DIST": 5.5,
@@ -152,15 +176,15 @@ def run_cocomaps_analysis(pdb_name, frame_count, use_reduce=True):
             processing_status[pdb_name]['status'] = 'failed'
             processing_status[pdb_name]['error'] = str(e)
 
-def process_pdb_async(app, pdb_file, pdb_name, use_reduce=True):
+def process_pdb_async(app, pdb_file, pdb_name, use_reduce=True, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1):
     """Process PDB file asynchronously"""
     with app.app_context():
         try:
             processing_status[pdb_name]['status'] = 'splitting'
             processing_status[pdb_name]['progress'] = 0
             
-            # Split PDB into frames
-            frame_count = split_pdb(pdb_file, pdb_name)
+            # Split PDB into frames with specified chains, cutoff, and frame range
+            frame_count = split_pdb(pdb_file, pdb_name, chain1, chain2, interface_cutoff, start_frame, end_frame)
             
             processing_status[pdb_name]['status'] = 'analyzing'
             processing_status[pdb_name]['frames'] = frame_count
@@ -193,14 +217,34 @@ def upload_file():
         upload_folder = current_app.config['UPLOAD_FOLDER']
         filepath = os.path.join(upload_folder, filename)
 
-        # optional flag to choose no-reduce image (defaults to True/with-reduce)
+        # Extract chain parameters (defaults to A and B)
+        chain1 = request.form.get('chain1', 'A')
+        chain2 = request.form.get('chain2', 'B')
+        
+        # Extract cutoff parameters
+        try:
+            interface_cutoff = float(request.form.get('interface_cutoff', 5.0))
+        except (ValueError, TypeError):
+            interface_cutoff = 5.0
+        
+        # Extract frame interval parameters (1-indexed from frontend, convert to 0-indexed)
+        try:
+            start_frame = int(request.form.get('start_frame', 1)) - 1  # Convert to 0-indexed
+            end_frame = int(request.form.get('end_frame', -1))
+            if end_frame != -1:
+                end_frame = end_frame  # Keep as 1-indexed, will be used as exclusive end (so frame N becomes [0, N))
+        except (ValueError, TypeError):
+            start_frame = 0
+            end_frame = -1
+        
+        # optional flag to choose no-reduce image (defaults to False for web interface)
         reduce_param = request.form.get('reduce', request.args.get('reduce'))
-        use_reduce = True
+        use_reduce = False  # Default OFF for web interface
         if reduce_param is not None:
             try:
                 use_reduce = bool(strtobool(str(reduce_param)))
             except ValueError:
-                use_reduce = True
+                use_reduce = False
         
         # Save file
         file.save(filepath)
@@ -210,14 +254,18 @@ def upload_file():
             'status': 'queued',
             'progress': 0,
             'frames': 0,
-            'reduce': use_reduce
+            'reduce': use_reduce,
+            'chain1': chain1,
+            'chain2': chain2,
+            'startFrame': start_frame + 1,  # Store as 1-indexed for display
+            'endFrame': end_frame if end_frame != -1 else 'all'
         }
         
         # Start processing in background thread
         app_instance = current_app._get_current_object()
         thread = threading.Thread(
             target=process_pdb_async,
-            args=(app_instance, filepath, pdb_name, use_reduce)
+            args=(app_instance, filepath, pdb_name, use_reduce, chain1, chain2, interface_cutoff, start_frame, end_frame)
         )
         thread.daemon = True
         thread.start()

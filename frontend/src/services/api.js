@@ -108,6 +108,48 @@ export default {
   async getStatus(pdbId) {
     const response = await api.get(`/status/${pdbId}`)
     return response.data
+  },
+
+  /**
+   * Upload file with full configuration options
+   * @param {File} file - The PDB file to upload
+   * @param {Object} options - Configuration options
+   * @param {string} options.chain1 - First chain ID
+   * @param {string} options.chain2 - Second chain ID
+   * @param {boolean} options.useReduce - Whether to use reduce preprocessing
+   * @param {number} options.interfaceCutoff - Interface cutoff distance
+   * @param {number} options.waterCutoff - Water cutoff distance
+   * @param {number} [options.startFrame] - Start frame (1-indexed, optional)
+   * @param {number} [options.endFrame] - End frame (1-indexed, optional)
+   * @param {Function} onProgress - Progress callback
+   */
+  async uploadFileWithOptions(file, options, onProgress) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('chain1', options.chain1)
+    formData.append('chain2', options.chain2)
+    formData.append('reduce', options.useReduce ? 'true' : 'false')
+    formData.append('interface_cutoff', options.interfaceCutoff)
+    formData.append('water_cutoff', options.waterCutoff)
+
+    // Add frame interval if specified
+    if (options.startFrame !== undefined && options.endFrame !== undefined) {
+      formData.append('start_frame', options.startFrame)
+      formData.append('end_frame', options.endFrame)
+    }
+
+    const response = await api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          onProgress(percentCompleted)
+        }
+      }
+    })
+    return response.data
   }
 }
 
