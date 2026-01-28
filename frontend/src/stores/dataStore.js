@@ -16,6 +16,7 @@ export const useDataStore = defineStore('data', {
     interactions: [],
     areaData: [],
     trends: {},
+    trendFrameNumbers: [],  // Actual frame numbers with data (e.g., [21, 22])
     
     // UI State
     currentChartType: 'filteredHeatmap',
@@ -127,6 +128,7 @@ export const useDataStore = defineStore('data', {
       try {
         const data = await api.getTrends(systemId)
         this.trends = data.trends || {}
+        this.trendFrameNumbers = data.frameNumbers || []  // Actual frame numbers with data
       } catch (error) {
         this.errors.trends = error.message
         console.error('Error loading trends:', error)

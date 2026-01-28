@@ -71,6 +71,8 @@ const buildSeries = (frameCount) => {
 const updateChart = () => {
   if (!chartContainer.value) return
 
+  // Use actual frame numbers from backend if available
+  const frameNumbers = dataStore.trendFrameNumbers || []
   const trendValues = Object.values(dataStore.trends || {})
   const maxTrendLength = trendValues.reduce((max, series) => {
     if (Array.isArray(series)) {
@@ -78,10 +80,21 @@ const updateChart = () => {
     }
     return max
   }, 0)
-  const frameCount = Math.max(dataStore.totalFrames || 0, maxTrendLength)
+  
+  // Determine frame count and categories
+  let frameCount, categories
+  if (frameNumbers.length > 0) {
+    // Use actual frame numbers from backend
+    frameCount = frameNumbers.length
+    categories = frameNumbers.map(n => `Frame ${n}`)
+  } else {
+    // Fallback to sequential numbering
+    frameCount = Math.max(dataStore.totalFrames || 0, maxTrendLength)
+    categories = Array.from({ length: frameCount }, (_, i) => `Frame ${i + 1}`)
+  }
+  
   if (frameCount === 0) return
 
-  const categories = Array.from({ length: frameCount }, (_, i) => `Frame ${i + 1}`)
   const series = buildSeries(frameCount)
 
   if (chart) {
@@ -226,7 +239,8 @@ watch([
   () => dataStore.currentChartType,
   () => dataStore.trends,
   () => dataStore.useLogScale,
-  () => dataStore.totalFrames
+  () => dataStore.totalFrames,
+  () => dataStore.trendFrameNumbers
 ], () => {
   if (dataStore.currentChartType === 'line') {
     updateChart()

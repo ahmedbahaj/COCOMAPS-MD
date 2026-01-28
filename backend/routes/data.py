@@ -341,6 +341,10 @@ def get_interaction_trends(system_id):
     """
     Get interaction type trends across frames
     Returns counts for each interaction type per frame
+    
+    Response includes:
+    - frameNumbers: array of actual frame numbers with data (e.g., [21, 22])
+    - trends: object with arrays matching frameNumbers indices
     """
     try:
         data_folder = current_app.config['DATA_FOLDER']
@@ -377,8 +381,17 @@ def get_interaction_trends(system_id):
             'O/N/SH-π interactions': []
         }
         
+        # Track actual frame numbers with data
+        frame_numbers_with_data = []
+        
         # Process each frame
         for frame_folder in frame_folders:
+            # Extract frame number from folder name (e.g., "frame_21" -> 21)
+            try:
+                frame_num = int(frame_folder.name.split('_')[1])
+            except (IndexError, ValueError):
+                continue
+            
             # Detect chain pattern dynamically (e.g., A_B, A_C, etc.)
             chain_pattern = _get_chain_pattern(frame_folder)
             # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
@@ -388,6 +401,9 @@ def get_interaction_trends(system_id):
             
             if not csv_file.exists():
                 continue
+            
+            # Track this frame number
+            frame_numbers_with_data.append(frame_num)
             
             # Initialize frame values
             for key in interaction_types:
@@ -439,6 +455,7 @@ def get_interaction_trends(system_id):
         
         return jsonify({
             'system': system_id,
+            'frameNumbers': frame_numbers_with_data,
             'trends': interaction_types
         })
     
