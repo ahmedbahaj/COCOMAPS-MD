@@ -81,7 +81,7 @@ const props = defineProps({
   modelValue: {
     type: Object,
     default: () => ({
-      interfaceCutoff: 5.0,
+      interfaceCutoff: 6.0,
       waterCutoff: 5.0,
       useReduce: false
     })
@@ -91,7 +91,7 @@ const props = defineProps({
 const isExpanded = ref(false)
 
 const settings = reactive({
-  interfaceCutoff: props.modelValue.interfaceCutoff ?? 5.0,
+  interfaceCutoff: props.modelValue.interfaceCutoff ?? 6.0,
   waterCutoff: props.modelValue.waterCutoff ?? 5.0,
   useReduce: props.modelValue.useReduce ?? false
 })
