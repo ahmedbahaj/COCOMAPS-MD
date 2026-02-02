@@ -13,6 +13,17 @@ import numpy as np
 from MDAnalysis.analysis.distances import distance_array
 
 
+# Metal residue names (found in HETATM records)
+METALS = set([
+    "3CO", "LI", "BE", "NA", "MG", "AL", "K", "CA", "SC", "TI", "V", "CR", "MN",
+    "FE", "CO", "NI", "CU", "ZN", "GA", "RB", "SR", "Y", "ZR", "NB", "MO", "TC",
+    "RU", "RH", "PD", "AG", "CD", "IN", "SN", "CS", "BA", "LA", "CE", "PR", "ND",
+    "PM", "SM", "EU", "GD", "TB", "DY", "HO", "ER", "TM", "YB", "LU", "HF", "TA",
+    "W", "RE", "OS", "IR", "PT", "AU", "HG", "TL", "PB", "BI", "PO", "FR", "RA",
+    "AC", "TH", "PA", "NP", "PU", "AM", "CM", "BK", "CF"
+])
+
+
 def get_atom_selections(universe, chain_a='A', chain_b='B'):
     """
     Pre-select atom groups for interface and water analysis.
@@ -30,16 +41,20 @@ def get_atom_selections(universe, chain_a='A', chain_b='B'):
     Returns:
     --------
     dict : Dictionary containing atom selections:
-        - chain_a_atoms: All non-water/ion atoms in chain A
-        - chain_b_atoms: All non-water/ion atoms in chain B
-        - chain_a_heavy: Heavy atoms in chain A (for water bridging)
-        - chain_b_heavy: Heavy atoms in chain B (for water bridging)
+        - chain_a_atoms: All non-water/ion/metal atoms in chain A
+        - chain_b_atoms: All non-water/ion/metal atoms in chain B
+        - chain_a_heavy: Heavy atoms in chain A (for water/metal bridging)
+        - chain_b_heavy: Heavy atoms in chain B (for water/metal bridging)
         - water_oxygens: Water oxygen atoms
+        - metal_atoms: Metal atoms (HETATM with metal residue names)
     """
-    # Exclude water and common ions from chain selections
+    # Exclude water and non-metal ions from chain selections
+    # Note: Metals are handled separately, only exclude non-metal ions like CL
     water_resnames = "HOH WAT TIP3 SOL"
-    ion_resnames = "NA CL K MG CA ZN FE CU"
-    exclude_selection = f"not resname {water_resnames} {ion_resnames}"
+    non_metal_ions = "CL"
+    # Build metal exclusion string from METALS set
+    metal_resnames = " ".join(METALS)
+    exclude_selection = f"not resname {water_resnames} {non_metal_ions} {metal_resnames}"
     
     # Select chain atoms
     chain_a_atoms = universe.select_atoms(f"segid {chain_a} and {exclude_selection}")
@@ -69,12 +84,21 @@ def get_atom_selections(universe, chain_a='A', chain_b='B'):
     except:
         water_oxygens = universe.select_atoms("resname HOH or resname WAT or resname TIP3 or resname SOL")
     
+    # Metal atoms - select atoms with resnames in METALS set
+    metal_selection_parts = [f"resname {m}" for m in METALS]
+    metal_selection_string = " or ".join(metal_selection_parts)
+    try:
+        metal_atoms = universe.select_atoms(metal_selection_string)
+    except:
+        metal_atoms = universe.atoms[:0]  # Empty AtomGroup if selection fails
+    
     return {
         'chain_a_atoms': chain_a_atoms,
         'chain_b_atoms': chain_b_atoms,
         'chain_a_heavy': chain_a_heavy,
         'chain_b_heavy': chain_b_heavy,
-        'water_oxygens': water_oxygens
+        'water_oxygens': water_oxygens,
+        'metal_atoms': metal_atoms
     }
 
 
@@ -104,7 +128,7 @@ def select_interface_atoms(universe, selections, chain_a='A', chain_b='B',
     Returns:
     --------
     dict : Dictionary containing:
-        - atoms: AtomGroup of selected interface atoms (protein + waters)
+        - atoms: AtomGroup of selected interface atoms (protein + waters + metals)
         - stats: Dictionary with selection statistics
     """
     chain_a_atoms = selections['chain_a_atoms']
@@ -112,6 +136,7 @@ def select_interface_atoms(universe, selections, chain_a='A', chain_b='B',
     chain_a_heavy = selections['chain_a_heavy']
     chain_b_heavy = selections['chain_b_heavy']
     water_oxygens = selections['water_oxygens']
+    metal_atoms = selections['metal_atoms']
     
     # Find interface residues
     keep_list = _find_interface_residues(
@@ -121,6 +146,11 @@ def select_interface_atoms(universe, selections, chain_a='A', chain_b='B',
     # Find bridging waters
     bridging_water_resids = _find_bridging_waters(
         chain_a_heavy, chain_b_heavy, water_oxygens, water_cutoff
+    )
+    
+    # Find interface metals (must be close to BOTH chains, like bridging waters)
+    interface_metal_resids = _find_interface_metals(
+        chain_a_heavy, chain_b_heavy, metal_atoms, water_cutoff
     )
     
     # Build selection for interface protein atoms
@@ -139,13 +169,25 @@ def select_interface_atoms(universe, selections, chain_a='A', chain_b='B',
     else:
         bridging_water_atoms = universe.atoms[:0]  # Empty AtomGroup
     
-    # Combine protein and water atoms
-    if len(interface_protein_atoms) > 0 and len(bridging_water_atoms) > 0:
-        output_atoms = interface_protein_atoms + bridging_water_atoms
-    elif len(interface_protein_atoms) > 0:
-        output_atoms = interface_protein_atoms
-    elif len(bridging_water_atoms) > 0:
-        output_atoms = bridging_water_atoms
+    # Build selection for interface metal atoms
+    if interface_metal_resids:
+        metal_resid_str = " ".join(map(str, interface_metal_resids))
+        # Build metal resname selection
+        metal_resname_parts = [f"resname {m}" for m in METALS]
+        metal_resname_selection = "(" + " or ".join(metal_resname_parts) + ")"
+        metal_selection = f"{metal_resname_selection} and resid {metal_resid_str}"
+        interface_metal_atoms = universe.select_atoms(metal_selection)
+    else:
+        interface_metal_atoms = universe.atoms[:0]  # Empty AtomGroup
+    
+    # Combine protein, water, and metal atoms
+    atom_groups = [interface_protein_atoms, bridging_water_atoms, interface_metal_atoms]
+    non_empty_groups = [g for g in atom_groups if len(g) > 0]
+    
+    if non_empty_groups:
+        output_atoms = non_empty_groups[0]
+        for group in non_empty_groups[1:]:
+            output_atoms = output_atoms + group
     else:
         output_atoms = universe.atoms[:0]  # Empty AtomGroup
     
@@ -157,6 +199,8 @@ def select_interface_atoms(universe, selections, chain_a='A', chain_b='B',
             'protein_atoms': len(interface_protein_atoms),
             'bridging_waters': len(bridging_water_resids),
             'water_atoms': len(bridging_water_atoms),
+            'interface_metals': len(interface_metal_resids),
+            'metal_atoms': len(interface_metal_atoms),
             'total_atoms': len(output_atoms)
         }
     }
@@ -233,6 +277,51 @@ def _find_bridging_waters(chain_a_heavy, chain_b_heavy, water_oxygens, cutoff):
     return bridging_resids
 
 
+def _find_interface_metals(chain_a_heavy, chain_b_heavy, metal_atoms, cutoff):
+    """
+    Find interface metal atoms for the CURRENT frame.
+    
+    A metal is considered at the interface if it is within cutoff of BOTH 
+    chain A AND chain B (same criteria as bridging waters).
+    
+    Parameters:
+    -----------
+    chain_a_heavy : AtomGroup
+        Heavy atoms in chain A
+    chain_b_heavy : AtomGroup
+        Heavy atoms in chain B
+    metal_atoms : AtomGroup
+        All metal atoms in the structure
+    cutoff : float
+        Distance cutoff in Angstroms
+    
+    Returns:
+    --------
+    set : Set of metal residue IDs that are at the interface (close to both chains)
+    """
+    if len(metal_atoms) == 0 or len(chain_a_heavy) == 0 or len(chain_b_heavy) == 0:
+        return set()
+    
+    # Calculate distances from metals to each chain
+    dist_to_a = distance_array(metal_atoms.positions, chain_a_heavy.positions, box=None)
+    dist_to_b = distance_array(metal_atoms.positions, chain_b_heavy.positions, box=None)
+    
+    # Find minimum distance to each chain
+    min_dist_to_a = np.min(dist_to_a, axis=1)
+    min_dist_to_b = np.min(dist_to_b, axis=1)
+    
+    # Metal must be within cutoff of BOTH chains (like bridging waters)
+    interface_mask = (min_dist_to_a <= cutoff) & (min_dist_to_b <= cutoff)
+    
+    # Get residue IDs
+    interface_metal_resids = set()
+    for i, metal_atom in enumerate(metal_atoms):
+        if interface_mask[i]:
+            interface_metal_resids.add(metal_atom.resid)
+    
+    return interface_metal_resids
+
+
 def get_selection_summary(selections):
     """
     Get a summary of the atom selections for logging.
@@ -251,5 +340,6 @@ def get_selection_summary(selections):
         'chain_b_atoms': len(selections['chain_b_atoms']),
         'chain_a_heavy': len(selections['chain_a_heavy']),
         'chain_b_heavy': len(selections['chain_b_heavy']),
-        'water_molecules': len(selections['water_oxygens'])
+        'water_molecules': len(selections['water_oxygens']),
+        'metal_atoms': len(selections['metal_atoms'])
     }

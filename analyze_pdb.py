@@ -148,6 +148,7 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
             print(f"Chain {chain_a}: {summary['chain_a_atoms']} atoms, {summary['chain_a_heavy']} heavy atoms")
             print(f"Chain {chain_b}: {summary['chain_b_atoms']} atoms, {summary['chain_b_heavy']} heavy atoms")
             print(f"Total water molecules: {summary['water_molecules']}")
+            print(f"Total metal atoms: {summary['metal_atoms']}")
     
     if verbose:
         print(f"\nProcessing frames...")
@@ -174,6 +175,8 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
                 'protein_atoms': len(universe.atoms),
                 'bridging_waters': 0,
                 'water_atoms': 0,
+                'interface_metals': 0,
+                'metal_atoms': 0,
                 'total_atoms': len(universe.atoms)
             }
         
@@ -203,7 +206,8 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
             if select_interface:
                 print(f"  Frame {frame_num}: {stats['interface_residues']} residues, "
                       f"{stats['protein_atoms']} protein atoms, "
-                      f"{stats['bridging_waters']} waters → {stats['total_atoms']} total atoms")
+                      f"{stats['bridging_waters']} waters, "
+                      f"{stats['interface_metals']} metals → {stats['total_atoms']} total atoms")
             else:
                 print(f"  Frame {frame_num}: {stats['total_atoms']} atoms")
     
@@ -266,17 +270,18 @@ def _write_summary_log(input_pdb, output_dir, log_file, chain_a, chain_b,
         f.write("-" * 80 + "\n")
         f.write(f"Chain {chain_a} atoms: {summary['chain_a_atoms']}\n")
         f.write(f"Chain {chain_b} atoms: {summary['chain_b_atoms']}\n")
-        f.write(f"Total water molecules: {summary['water_molecules']}\n\n")
+        f.write(f"Total water molecules: {summary['water_molecules']}\n")
+        f.write(f"Total metal atoms: {summary['metal_atoms']}\n\n")
         
         f.write("PER-FRAME STATISTICS\n")
         f.write("-" * 80 + "\n")
-        f.write(f"{'Frame':<8} {'Residues':<10} {'Protein':<10} {'Waters':<10} {'Total':<10}\n")
+        f.write(f"{'Frame':<8} {'Residues':<10} {'Protein':<10} {'Waters':<10} {'Metals':<10} {'Total':<10}\n")
         f.write("-" * 80 + "\n")
         
         for s in frame_stats:
             f.write(f"{s['frame']:<8} {s['interface_residues']:<10} "
                     f"{s['protein_atoms']:<10} {s['bridging_waters']:<10} "
-                    f"{s['total_atoms']:<10}\n")
+                    f"{s['interface_metals']:<10} {s['total_atoms']:<10}\n")
         
         f.write("-" * 80 + "\n")
         
@@ -284,10 +289,11 @@ def _write_summary_log(input_pdb, output_dir, log_file, chain_a, chain_b,
         avg_residues = sum(s['interface_residues'] for s in frame_stats) / num_frames
         avg_protein = sum(s['protein_atoms'] for s in frame_stats) / num_frames
         avg_waters = sum(s['bridging_waters'] for s in frame_stats) / num_frames
+        avg_metals = sum(s['interface_metals'] for s in frame_stats) / num_frames
         avg_total = sum(s['total_atoms'] for s in frame_stats) / num_frames
         
         f.write(f"{'Average':<8} {avg_residues:<10.1f} {avg_protein:<10.1f} "
-                f"{avg_waters:<10.1f} {avg_total:<10.1f}\n\n")
+                f"{avg_waters:<10.1f} {avg_metals:<10.1f} {avg_total:<10.1f}\n\n")
         
         # Min/Max
         min_atoms = min(s['total_atoms'] for s in frame_stats)
