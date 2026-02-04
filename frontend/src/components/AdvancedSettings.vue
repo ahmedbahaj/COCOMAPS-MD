@@ -11,44 +11,6 @@
     
     <Transition name="slide">
       <div v-if="isExpanded" class="settings-panel">
-        <!-- CoCoMaps Cutoff -->
-        <div class="setting-row">
-          <div class="setting-label">
-            <span>Interface Cutoff</span>
-            <TooltipIcon text="Distance cutoff in Ångströms for detecting interface residues between the two chains. Residues within this distance are considered part of the interface." />
-          </div>
-          <div class="setting-control">
-            <input 
-              type="number" 
-              v-model.number="settings.interfaceCutoff"
-              min="1" 
-              max="20" 
-              step="0.5"
-              class="number-input"
-            />
-            <span class="unit">Å</span>
-          </div>
-        </div>
-        
-        <!-- Water Cutoff -->
-        <div class="setting-row">
-          <div class="setting-label">
-            <span>Water Cutoff</span>
-            <TooltipIcon text="Distance cutoff in Ångströms for detecting bridging water molecules. Waters within this distance of BOTH chains are included in the analysis." />
-          </div>
-          <div class="setting-control">
-            <input 
-              type="number" 
-              v-model.number="settings.waterCutoff"
-              min="1" 
-              max="20" 
-              step="0.5"
-              class="number-input"
-            />
-            <span class="unit">Å</span>
-          </div>
-        </div>
-        
         <!-- Use Reduce Toggle -->
         <div class="setting-row">
           <div class="setting-label">
@@ -249,7 +211,8 @@ watch(settings, (newSettings) => {
   border-bottom: 1px solid #e8e8ed;
 }
 
-.setting-row:last-child {
+.setting-row:last-child,
+.setting-row:has(+ .setting-section-divider) {
   border-bottom: none;
 }
 
