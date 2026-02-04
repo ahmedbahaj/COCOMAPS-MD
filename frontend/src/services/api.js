@@ -138,6 +138,11 @@ export default {
       formData.append('end_frame', options.endFrame)
     }
 
+    // Add frame step if specified (for step-based sampling)
+    if (options.frameStep !== undefined && options.frameStep > 1) {
+      formData.append('frame_step', options.frameStep)
+    }
+
     const response = await api.post('/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'

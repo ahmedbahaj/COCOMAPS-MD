@@ -28,7 +28,7 @@ ALLOWED_EXTENSIONS = {'pdb'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def split_pdb(pdb_file, pdb_name, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1):
+def split_pdb(pdb_file, pdb_name, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1, frame_step=1):
     """Split PDB file into frames
     
     Args:
@@ -39,6 +39,7 @@ def split_pdb(pdb_file, pdb_name, chain1='A', chain2='B', interface_cutoff=5.0, 
         interface_cutoff: Cutoff distance for interface detection
         start_frame: Starting frame index (0-based). Default 0.
         end_frame: Ending frame index (0-based, exclusive). -1 means all frames.
+        frame_step: Step size for frame sampling. Default 1 (every frame).
     """
     if not HAS_MDA:
         raise Exception("MDAnalysis not available")
@@ -59,8 +60,11 @@ def split_pdb(pdb_file, pdb_name, chain1='A', chain2='B', interface_cutoff=5.0, 
             end_frame = total_frames
         if start_frame < 0:
             start_frame = 0
+        if frame_step < 1:
+            frame_step = 1
         
-        frames_to_process = range(start_frame, end_frame)
+        # Use step in range for frame sampling
+        frames_to_process = list(range(start_frame, end_frame, frame_step))
         num_frames_to_process = len(frames_to_process)
         
         # Iterate through selected frames
@@ -176,15 +180,15 @@ def run_cocomaps_analysis(pdb_name, frame_count, use_reduce=True):
             processing_status[pdb_name]['status'] = 'failed'
             processing_status[pdb_name]['error'] = str(e)
 
-def process_pdb_async(app, pdb_file, pdb_name, use_reduce=True, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1):
+def process_pdb_async(app, pdb_file, pdb_name, use_reduce=True, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1, frame_step=1):
     """Process PDB file asynchronously"""
     with app.app_context():
         try:
             processing_status[pdb_name]['status'] = 'splitting'
             processing_status[pdb_name]['progress'] = 0
             
-            # Split PDB into frames with specified chains, cutoff, and frame range
-            frame_count = split_pdb(pdb_file, pdb_name, chain1, chain2, interface_cutoff, start_frame, end_frame)
+            # Split PDB into frames with specified chains, cutoff, frame range, and step
+            frame_count = split_pdb(pdb_file, pdb_name, chain1, chain2, interface_cutoff, start_frame, end_frame, frame_step)
             
             processing_status[pdb_name]['status'] = 'analyzing'
             processing_status[pdb_name]['frames'] = frame_count
@@ -237,6 +241,14 @@ def upload_file():
             start_frame = 0
             end_frame = -1
         
+        # Extract frame step parameter (for step-based sampling)
+        try:
+            frame_step = int(request.form.get('frame_step', 1))
+            if frame_step < 1:
+                frame_step = 1
+        except (ValueError, TypeError):
+            frame_step = 1
+        
         # optional flag to choose no-reduce image (defaults to False for web interface)
         reduce_param = request.form.get('reduce', request.args.get('reduce'))
         use_reduce = False  # Default OFF for web interface
@@ -258,14 +270,15 @@ def upload_file():
             'chain1': chain1,
             'chain2': chain2,
             'startFrame': start_frame + 1,  # Store as 1-indexed for display
-            'endFrame': end_frame if end_frame != -1 else 'all'
+            'endFrame': end_frame if end_frame != -1 else 'all',
+            'frameStep': frame_step
         }
         
         # Start processing in background thread
         app_instance = current_app._get_current_object()
         thread = threading.Thread(
             target=process_pdb_async,
-            args=(app_instance, filepath, pdb_name, use_reduce, chain1, chain2, interface_cutoff, start_frame, end_frame)
+            args=(app_instance, filepath, pdb_name, use_reduce, chain1, chain2, interface_cutoff, start_frame, end_frame, frame_step)
         )
         thread.daemon = True
         thread.start()

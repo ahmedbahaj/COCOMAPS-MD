@@ -66,14 +66,78 @@
             <span class="toggle-label">{{ settings.useReduce ? 'ON' : 'OFF' }}</span>
           </div>
         </div>
+
+        <!-- Frame Selection Section (only shown when > maxFrames) -->
+        <template v-if="totalFrames > maxFrames">
+          <div class="setting-section-divider"></div>
+          <h4 class="setting-section-title">Frame Sampling</h4>
+          
+          <!-- Step Size -->
+          <div class="setting-row">
+            <div class="setting-label">
+              <span>Step Size</span>
+              <TooltipIcon text="Sample every Nth frame from the trajectory. A step size of 2 means every other frame (1, 3, 5, ...). Disabled when using custom interval." />
+            </div>
+            <div class="setting-control">
+              <input 
+                type="number" 
+                v-model.number="settings.frameStep"
+                min="1" 
+                :max="Math.ceil(totalFrames / 2)"
+                :disabled="settings.useCustomInterval"
+                class="number-input"
+                :class="{ disabled: settings.useCustomInterval }"
+              />
+              <span class="unit">frames</span>
+            </div>
+          </div>
+
+          <!-- Effective Frames Display -->
+          <div class="setting-row info-row" v-if="!settings.useCustomInterval">
+            <div class="setting-label">
+              <span>Frames to Analyze</span>
+            </div>
+            <div class="setting-value">
+              {{ Math.ceil(totalFrames / (settings.frameStep || 1)) }} frames (1 to {{ totalFrames }})
+            </div>
+          </div>
+
+          <!-- Use Custom Interval Toggle -->
+          <div class="setting-row">
+            <div class="setting-label">
+              <span>Use Custom Interval</span>
+              <TooltipIcon text="Switch to selecting a specific contiguous range of frames instead of sampling the entire trajectory." />
+            </div>
+            <div class="setting-control">
+              <label class="toggle-switch">
+                <input 
+                  type="checkbox" 
+                  v-model="settings.useCustomInterval"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">{{ settings.useCustomInterval ? 'ON' : 'OFF' }}</span>
+            </div>
+          </div>
+
+          <!-- Frame Interval Selector (shown when custom interval is enabled) -->
+          <div v-if="settings.useCustomInterval" class="interval-selector-wrapper">
+            <FrameIntervalSelector
+              :totalFrames="totalFrames"
+              :maxFrames="maxFrames"
+              v-model="frameInterval"
+            />
+          </div>
+        </template>
       </div>
     </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import TooltipIcon from './TooltipIcon.vue'
+import FrameIntervalSelector from './FrameIntervalSelector.vue'
 
 const emit = defineEmits(['update:settings'])
 
@@ -83,8 +147,20 @@ const props = defineProps({
     default: () => ({
       interfaceCutoff: 6.0,
       waterCutoff: 5.0,
-      useReduce: false
+      useReduce: false,
+      frameStep: 1,
+      useCustomInterval: false,
+      startFrame: 1,
+      endFrame: 50
     })
+  },
+  totalFrames: {
+    type: Number,
+    default: 0
+  },
+  maxFrames: {
+    type: Number,
+    default: 50
   }
 })
 
@@ -93,8 +169,32 @@ const isExpanded = ref(false)
 const settings = reactive({
   interfaceCutoff: props.modelValue.interfaceCutoff ?? 6.0,
   waterCutoff: props.modelValue.waterCutoff ?? 5.0,
-  useReduce: props.modelValue.useReduce ?? false
+  useReduce: props.modelValue.useReduce ?? false,
+  frameStep: props.modelValue.frameStep ?? 1,
+  useCustomInterval: props.modelValue.useCustomInterval ?? false,
+  startFrame: props.modelValue.startFrame ?? 1,
+  endFrame: props.modelValue.endFrame ?? 50
 })
+
+// Frame interval for FrameIntervalSelector v-model
+const frameInterval = ref({
+  startFrame: settings.startFrame,
+  endFrame: Math.min(settings.endFrame, props.maxFrames)
+})
+
+// Sync frameInterval changes back to settings
+watch(frameInterval, (newVal) => {
+  settings.startFrame = newVal.startFrame
+  settings.endFrame = newVal.endFrame
+}, { deep: true })
+
+// Watch for external settings updates (e.g., from parent)
+watch(() => props.modelValue, (newVal) => {
+  if (newVal.frameStep !== undefined) settings.frameStep = newVal.frameStep
+  if (newVal.useCustomInterval !== undefined) settings.useCustomInterval = newVal.useCustomInterval
+  if (newVal.startFrame !== undefined) settings.startFrame = newVal.startFrame
+  if (newVal.endFrame !== undefined) settings.endFrame = newVal.endFrame
+}, { deep: true })
 
 watch(settings, (newSettings) => {
   emit('update:settings', { ...newSettings })
@@ -268,6 +368,56 @@ watch(settings, (newSettings) => {
 .slide-enter-to,
 .slide-leave-from {
   opacity: 1;
-  max-height: 300px;
+  max-height: 800px;
+}
+
+/* Frame Sampling Section */
+.setting-section-divider {
+  height: 1px;
+  background: #d2d2d7;
+  margin: 16px 0;
+}
+
+.setting-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6e6e73;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+}
+
+.info-row {
+  background: #f0f7ff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: -4px 0 8px 0;
+}
+
+.setting-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0066cc;
+}
+
+.number-input.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.interval-selector-wrapper {
+  margin-top: 12px;
+}
+
+.interval-selector-wrapper :deep(.frame-selector) {
+  margin-top: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.interval-selector-wrapper :deep(.selector-title),
+.interval-selector-wrapper :deep(.selector-description) {
+  display: none;
 }
 </style>

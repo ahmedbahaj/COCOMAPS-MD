@@ -115,16 +115,17 @@
             v-model="chainSelection"
           />
 
-          <!-- Frame Interval Selector (only shown when > 50 frames) -->
-          <FrameIntervalSelector
-            v-if="detectedFrames > 50"
-            :totalFrames="detectedFrames"
-            :maxFrames="50"
-            v-model="frameInterval"
-          />
+          <!-- Frame Sampling Info (shown when > 50 frames) -->
+          <p v-if="detectedFrames > 50" class="frame-sampling-note">
+            Analyzing {{ effectiveFrameCount }} frames from 1 to {{ detectedFrames }} with step size {{ defaultStepSize }}.
+          </p>
 
           <!-- Advanced Settings -->
-          <AdvancedSettings v-model:settings="advancedSettings" />
+          <AdvancedSettings 
+            v-model:settings="advancedSettings" 
+            :totalFrames="detectedFrames"
+            :maxFrames="50"
+          />
 
           <!-- Start Analysis Button -->
           <div class="action-section">
@@ -173,7 +174,6 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ChainSelector from '../components/ChainSelector.vue'
 import AdvancedSettings from '../components/AdvancedSettings.vue'
-import FrameIntervalSelector from '../components/FrameIntervalSelector.vue'
 import api from '../services/api'
 
 const router = useRouter()
@@ -191,9 +191,27 @@ const chainSelection = ref({ chain1: '', chain2: '', isValid: false })
 const advancedSettings = ref({
   interfaceCutoff: 5.0,
   waterCutoff: 5.0,
-  useReduce: false
+  useReduce: false,
+  // Frame selection settings
+  frameStep: 1,
+  useCustomInterval: false,
+  startFrame: 1,
+  endFrame: 50
 })
-const frameInterval = ref({ startFrame: 1, endFrame: 50 })
+
+// Computed: default step size to cover full trajectory in ~50 frames
+const defaultStepSize = computed(() => {
+  if (detectedFrames.value <= 50) return 1
+  return Math.floor(detectedFrames.value / 50) || 1
+})
+
+// Computed: effective frame count with current step size
+const effectiveFrameCount = computed(() => {
+  const step = advancedSettings.value.useCustomInterval 
+    ? 1 
+    : (advancedSettings.value.frameStep || defaultStepSize.value)
+  return Math.ceil(detectedFrames.value / step)
+})
 
 // Processing state
 const isProcessing = ref(false)
@@ -298,7 +316,15 @@ const resetUpload = () => {
   detectedChains.value = []
   detectedFrames.value = 0
   chainSelection.value = { chain1: '', chain2: '', isValid: false }
-  frameInterval.value = { startFrame: 1, endFrame: 50 }
+  advancedSettings.value = {
+    interfaceCutoff: 5.0,
+    waterCutoff: 5.0,
+    useReduce: false,
+    frameStep: 1,
+    useCustomInterval: false,
+    startFrame: 1,
+    endFrame: 50
+  }
   processingStatus.value = null
   if (fileInput.value) {
     fileInput.value.value = ''
@@ -327,10 +353,18 @@ const startAnalysis = async () => {
       waterCutoff: advancedSettings.value.waterCutoff
     }
 
-    // Add frame interval if more than 50 frames
+    // Add frame selection parameters if more than 50 frames
     if (detectedFrames.value > 50) {
-      options.startFrame = frameInterval.value.startFrame
-      options.endFrame = frameInterval.value.endFrame
+      if (advancedSettings.value.useCustomInterval) {
+        // Use custom interval selection
+        options.startFrame = advancedSettings.value.startFrame
+        options.endFrame = advancedSettings.value.endFrame
+      } else {
+        // Use step-based selection covering entire trajectory
+        options.startFrame = 1
+        options.endFrame = detectedFrames.value
+        options.frameStep = advancedSettings.value.frameStep || defaultStepSize.value
+      }
     }
 
     // Upload file using the proper API method
@@ -388,6 +422,14 @@ onUnmounted(() => {
     clearInterval(statusPollInterval)
   }
 })
+
+// Sync default step size when frames change
+watch(defaultStepSize, (newStep) => {
+  // Only update if not using custom interval and step hasn't been manually changed
+  if (!advancedSettings.value.useCustomInterval) {
+    advancedSettings.value.frameStep = newStep
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -718,6 +760,14 @@ onUnmounted(() => {
 
 .change-file-btn:hover {
   background: #e8e8ed;
+}
+
+/* Frame Sampling Note */
+.frame-sampling-note {
+  font-size: 14px;
+  color: #86868b;
+  margin: 16px 0 0 0;
+  text-align: center;
 }
 
 /* Action Section */
