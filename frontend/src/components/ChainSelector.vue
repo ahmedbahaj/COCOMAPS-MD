@@ -10,11 +10,10 @@
           <select 
             id="chain1" 
             v-model="selectedChain1"
-            :class="{ error: validationError }"
           >
             <option value="" disabled>Select chain</option>
             <option 
-              v-for="chain in chains" 
+              v-for="chain in chain1Options" 
               :key="chain" 
               :value="chain"
             >
@@ -35,11 +34,10 @@
           <select 
             id="chain2" 
             v-model="selectedChain2"
-            :class="{ error: validationError }"
           >
             <option value="" disabled>Select chain</option>
             <option 
-              v-for="chain in chains" 
+              v-for="chain in chain2Options" 
               :key="chain" 
               :value="chain"
             >
@@ -50,10 +48,6 @@
         </div>
       </div>
     </div>
-    
-    <p v-if="validationError" class="error-message">
-      {{ validationError }}
-    </p>
   </div>
 </template>
 
@@ -76,11 +70,13 @@ const emit = defineEmits(['update:modelValue'])
 const selectedChain1 = ref(props.modelValue.chain1 || '')
 const selectedChain2 = ref(props.modelValue.chain2 || '')
 
-const validationError = computed(() => {
-  if (selectedChain1.value && selectedChain2.value && selectedChain1.value === selectedChain2.value) {
-    return 'Please select two different chains for the analysis.'
-  }
-  return null
+// Filtered options: exclude the chain selected in the other dropdown
+const chain1Options = computed(() => {
+  return props.chains.filter(c => c !== selectedChain2.value)
+})
+
+const chain2Options = computed(() => {
+  return props.chains.filter(c => c !== selectedChain1.value)
 })
 
 const isValid = computed(() => {
