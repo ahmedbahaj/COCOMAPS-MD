@@ -237,11 +237,9 @@ def get_area_data(system_id):
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
         
-        # Find all frame folders (sort numerically, not alphabetically)
-        frame_folders = sorted(
-            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
-            key=lambda x: int(x.name.split('_')[1])
-        )
+        # Find all frame folders
+        frame_folders = sorted([f for f in system_path.iterdir() 
+                               if f.is_dir() and f.name.startswith('frame_')])
         
         if not frame_folders:
             return jsonify({'error': 'No frames found for this system'}), 404
@@ -354,13 +352,11 @@ def get_interaction_trends(system_id):
         
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
-
-        # Find all frame folders (sort numerically, not alphabetically)
-        frame_folders = sorted(
-            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
-            key=lambda x: int(x.name.split('_')[1])
-        )
-
+        
+        # Find all frame folders
+        frame_folders = sorted([f for f in system_path.iterdir() 
+                               if f.is_dir() and f.name.startswith('frame_')])
+        
         if not frame_folders:
             return jsonify({'error': 'No frames found for this system'}), 404
         
@@ -1505,3 +1501,357 @@ def get_distance_distributions(system_id):
         import traceback
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
+
+@bp.route('/systems/<system_id>/consensus-islands', methods=['GET'])
+def get_consensus_islands(system_id):
+    """
+    Compute consensus islands across all frames.
+    
+    An "island" is a connected component of interacting residues within a single frame.
+    "Consensus islands" are groups of residues that tend to be in the same island
+    across multiple frames - representing stable binding patches.
+    
+    Algorithm:
+    1. For each frame, find connected components (islands)
+    2. Build a co-island matrix: how often each pair of residues is in the same island
+    3. Cluster residues by co-island frequency to find consensus islands
+    4. Return islands with membership, statistics, and stability scores
+    
+    Query params:
+        min_co_island_frequency: Minimum % to consider residues in same consensus island (default: 50)
+        min_island_size: Minimum residues in a consensus island (default: 3)
+    
+    Returns:
+    {
+        "system": "...",
+        "total_frames": 50,
+        "islands": [
+            {
+                "id": 1,
+                "residues": [{"id": "A:252", "chain": "A", "resNum": 252, "resName": "ARG", "participation": 94.0}, ...],
+                "size": 5,
+                "avg_persistence": 87.5,
+                "internal_connectivity": 0.85,
+                "chains_involved": ["A", "C"]
+            }
+        ],
+        "residue_stats": {...},
+        "co_island_matrix": {...}  // Optional, for heatmap
+    }
+    """
+    from flask import request
+    from collections import defaultdict
+    import json
+    
+    try:
+        # Parse parameters
+        min_co_island_freq = float(request.args.get('min_co_island_frequency', 50))
+        min_island_size = int(request.args.get('min_island_size', 3))
+        include_matrix = request.args.get('include_matrix', 'false').lower() == 'true'
+        
+        data_folder = current_app.config['DATA_FOLDER']
+        system_path = Path(data_folder) / 'systems' / system_id
+        
+        if not system_path.exists():
+            return jsonify({'error': 'System not found'}), 404
+        
+        # Find all frame folders
+        frame_folders = sorted(
+            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
+            key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else f.name
+        )
+        
+        if not frame_folders:
+            return jsonify({'error': 'No frames found for this system'}), 404
+        
+        total_frames = len(frame_folders)
+        
+        # Data structures
+        node_info = {}  # {node_id: {chain, residue, resName}}
+        co_island_counts = defaultdict(lambda: defaultdict(int))  # {node1: {node2: count}}
+        interaction_counts = defaultdict(lambda: defaultdict(int))  # {node1: {node2: count}} - direct interactions
+        node_island_participation = defaultdict(int)  # {node: frames_in_any_island}
+        node_island_sizes = defaultdict(list)  # {node: [island_sizes_per_frame]}
+        
+        # Process each frame
+        for frame_folder in frame_folders:
+            chain_pattern = _get_chain_pattern(frame_folder)
+            csv_file = frame_folder / f"{frame_folder.name}.pd_h.pdb_{chain_pattern}_final_file.csv"
+            if not csv_file.exists():
+                csv_file = frame_folder / f"{frame_folder.name}.pdb_{chain_pattern}_final_file.csv"
+            
+            if not csv_file.exists():
+                continue
+            
+            # Build graph for this frame
+            frame_graph = defaultdict(set)
+            
+            with open(csv_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if not all(key in row for key in ['Res. Name 1', 'Res. Number 1', 'Chain 1', 
+                                                      'Res. Name 2', 'Res. Number 2', 'Chain 2']):
+                        continue
+                    
+                    try:
+                        chain1 = row['Chain 1'].strip()
+                        chain2 = row['Chain 2'].strip()
+                        res_num1 = int(row['Res. Number 1'])
+                        res_num2 = int(row['Res. Number 2'])
+                        res_name1 = row['Res. Name 1'].strip()
+                        res_name2 = row['Res. Name 2'].strip()
+                    except (ValueError, TypeError):
+                        continue
+                    
+                    node1 = f"{chain1}:{res_num1}"
+                    node2 = f"{chain2}:{res_num2}"
+                    
+                    # Store node info
+                    if node1 not in node_info:
+                        node_info[node1] = {'chain': chain1, 'residue': res_num1, 'resName': res_name1}
+                    if node2 not in node_info:
+                        node_info[node2] = {'chain': chain2, 'residue': res_num2, 'resName': res_name2}
+                    
+                    frame_graph[node1].add(node2)
+                    frame_graph[node2].add(node1)
+                    
+                    # Track direct interactions (edges)
+                    edge_key = tuple(sorted([node1, node2]))
+                    interaction_counts[edge_key[0]][edge_key[1]] += 1
+            
+            # Find connected components (islands) in this frame using BFS
+            visited = set()
+            islands = []
+            
+            for start_node in frame_graph:
+                if start_node in visited:
+                    continue
+                
+                # BFS to find all nodes in this component
+                island = set()
+                queue = [start_node]
+                while queue:
+                    node = queue.pop(0)
+                    if node in visited:
+                        continue
+                    visited.add(node)
+                    island.add(node)
+                    for neighbor in frame_graph[node]:
+                        if neighbor not in visited:
+                            queue.append(neighbor)
+                
+                if len(island) >= 2:  # Only count islands with at least 2 residues
+                    islands.append(island)
+            
+            # Update co-island counts and participation stats
+            for island in islands:
+                island_size = len(island)
+                island_list = list(island)
+                
+                # Update participation
+                for node in island_list:
+                    node_island_participation[node] += 1
+                    node_island_sizes[node].append(island_size)
+                
+                # Update co-island counts (every pair in the same island)
+                for i in range(len(island_list)):
+                    for j in range(i + 1, len(island_list)):
+                        n1, n2 = island_list[i], island_list[j]
+                        # Use sorted order for consistency
+                        if n1 > n2:
+                            n1, n2 = n2, n1
+                        co_island_counts[n1][n2] += 1
+        
+        # Convert co-island counts to frequencies
+        co_island_freq = {}
+        for n1 in co_island_counts:
+            co_island_freq[n1] = {}
+            for n2, count in co_island_counts[n1].items():
+                co_island_freq[n1][n2] = (count / total_frames) * 100
+        
+        # Find consensus islands using Union-Find based on co-island frequency
+        # Two residues are in the same consensus island if they're frequently together
+        
+        # Build adjacency based on frequency threshold
+        consensus_graph = defaultdict(set)
+        all_nodes = set(node_info.keys())
+        
+        for n1 in co_island_freq:
+            for n2, freq in co_island_freq[n1].items():
+                if freq >= min_co_island_freq:
+                    consensus_graph[n1].add(n2)
+                    consensus_graph[n2].add(n1)
+        
+        # Find connected components in consensus graph
+        visited = set()
+        consensus_islands = []
+        
+        for start_node in consensus_graph:
+            if start_node in visited:
+                continue
+            
+            island = set()
+            queue = [start_node]
+            while queue:
+                node = queue.pop(0)
+                if node in visited:
+                    continue
+                visited.add(node)
+                island.add(node)
+                for neighbor in consensus_graph[node]:
+                    if neighbor not in visited:
+                        queue.append(neighbor)
+            
+            if len(island) >= min_island_size:
+                consensus_islands.append(island)
+        
+        # Sort islands by size (largest first)
+        consensus_islands.sort(key=lambda x: len(x), reverse=True)
+        
+        # Build response
+        islands_response = []
+        for idx, island in enumerate(consensus_islands):
+            island_list = sorted(list(island), key=lambda x: (node_info[x]['chain'], node_info[x]['residue']))
+            
+            # Calculate island statistics
+            residues_data = []
+            total_participation = 0
+            chains = set()
+            
+            for node in island_list:
+                info = node_info[node]
+                participation = (node_island_participation[node] / total_frames) * 100
+                avg_island_size = sum(node_island_sizes[node]) / len(node_island_sizes[node]) if node_island_sizes[node] else 0
+                
+                residues_data.append({
+                    'id': node,
+                    'chain': info['chain'],
+                    'resNum': info['residue'],
+                    'resName': info['resName'],
+                    'label': f"{info['resName']}{info['residue']}",
+                    'participation': round(participation, 1),
+                    'avgIslandSize': round(avg_island_size, 1)
+                })
+                total_participation += participation
+                chains.add(info['chain'])
+            
+            # Calculate internal connectivity (how connected are residues within this consensus island?)
+            internal_edges = 0
+            possible_edges = len(island_list) * (len(island_list) - 1) / 2
+            for i in range(len(island_list)):
+                for j in range(i + 1, len(island_list)):
+                    n1, n2 = island_list[i], island_list[j]
+                    if n1 > n2:
+                        n1, n2 = n2, n1
+                    if n1 in co_island_freq and n2 in co_island_freq[n1]:
+                        if co_island_freq[n1][n2] >= min_co_island_freq:
+                            internal_edges += 1
+            
+            internal_connectivity = internal_edges / possible_edges if possible_edges > 0 else 0
+            
+            # Calculate average co-island frequency within this island
+            total_freq = 0
+            freq_count = 0
+            for i in range(len(island_list)):
+                for j in range(i + 1, len(island_list)):
+                    n1, n2 = island_list[i], island_list[j]
+                    if n1 > n2:
+                        n1, n2 = n2, n1
+                    if n1 in co_island_freq and n2 in co_island_freq[n1]:
+                        total_freq += co_island_freq[n1][n2]
+                        freq_count += 1
+            
+            avg_co_island_freq = total_freq / freq_count if freq_count > 0 else 0
+            
+            # Get actual interaction edges within this island
+            island_edges = []
+            for i in range(len(island_list)):
+                for j in range(i + 1, len(island_list)):
+                    n1, n2 = island_list[i], island_list[j]
+                    edge_key = tuple(sorted([n1, n2]))
+                    if edge_key[0] in interaction_counts and edge_key[1] in interaction_counts[edge_key[0]]:
+                        edge_count = interaction_counts[edge_key[0]][edge_key[1]]
+                        edge_freq = (edge_count / total_frames) * 100
+                        if edge_freq >= 10:  # Only include edges present in at least 10% of frames
+                            island_edges.append({
+                                'from': n1,
+                                'to': n2,
+                                'frequency': round(edge_freq, 1)
+                            })
+            
+            islands_response.append({
+                'id': idx + 1,
+                'residues': residues_data,
+                'edges': island_edges,
+                'size': len(island_list),
+                'avgParticipation': round(total_participation / len(island_list), 1),
+                'avgConservation': round(avg_co_island_freq, 1),
+                'internalConnectivity': round(internal_connectivity, 2),
+                'chainsInvolved': sorted(list(chains))
+            })
+        
+        # Build residue statistics for all residues
+        residue_stats = {}
+        for node, info in node_info.items():
+            participation = (node_island_participation[node] / total_frames) * 100
+            avg_size = sum(node_island_sizes[node]) / len(node_island_sizes[node]) if node_island_sizes[node] else 0
+            
+            # Find which consensus island this residue belongs to
+            island_id = None
+            for idx, island in enumerate(consensus_islands):
+                if node in island:
+                    island_id = idx + 1
+                    break
+            
+            residue_stats[node] = {
+                'chain': info['chain'],
+                'resNum': info['residue'],
+                'resName': info['resName'],
+                'participation': round(participation, 1),
+                'avgIslandSize': round(avg_size, 1),
+                'consensusIslandId': island_id
+            }
+        
+        response = {
+            'system': system_id,
+            'totalFrames': total_frames,
+            'islands': islands_response,
+            'totalResidues': len(node_info),
+            'residuesInConsensusIslands': sum(len(i) for i in consensus_islands),
+            'residueStats': residue_stats,
+            'parameters': {
+                'minCoIslandFrequency': min_co_island_freq,
+                'minIslandSize': min_island_size
+            }
+        }
+        
+        # Optionally include co-island matrix for heatmap visualization
+        if include_matrix:
+            # Build symmetric matrix data for heatmap
+            matrix_data = []
+            all_nodes_sorted = sorted(node_info.keys(), key=lambda x: (node_info[x]['chain'], node_info[x]['residue']))
+            
+            for n1 in all_nodes_sorted:
+                for n2 in all_nodes_sorted:
+                    if n1 == n2:
+                        freq = 100.0  # Same residue
+                    else:
+                        key1, key2 = (n1, n2) if n1 < n2 else (n2, n1)
+                        freq = co_island_freq.get(key1, {}).get(key2, 0)
+                    
+                    matrix_data.append({
+                        'residue1': n1,
+                        'residue2': n2,
+                        'frequency': round(freq, 1)
+                    })
+            
+            response['coIslandMatrix'] = {
+                'residues': all_nodes_sorted,
+                'data': matrix_data
+            }
+        
+        return jsonify(response)
+    
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500

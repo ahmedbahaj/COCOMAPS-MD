@@ -28,7 +28,8 @@ const charts = [
   { id: 'area', label: 'Area Chart' },
   { id: 'line', label: 'Interaction Trends' },
   { id: 'interactionConservationMatrix', label: 'Interaction Conservation Matrix' },
-  { id: 'violinPlot', label: 'Distance Distribution' }
+  { id: 'violinPlot', label: 'Distance Distribution' },
+  { id: 'consensusIslands', label: 'Islands Conservation' }
 ]
 
 const chartRows = computed(() => {

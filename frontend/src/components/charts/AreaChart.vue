@@ -71,7 +71,7 @@ const updateChart = () => {
 
   const sortedAreaData = [...dataStore.areaData].sort((a, b) => a.frame - b.frame) //prevents lexicographic order
 
-  const categories = sortedAreaData.map(d => `Frame ${d.frame}`)
+  const categories = sortedAreaData.map(d => `${d.frame}`)
   const totalBSAData = sortedAreaData.map(d => d.totalBSA)
   const polarBSAData = sortedAreaData.map(d => d.polarBSA)
   const nonPolarBSAData = sortedAreaData.map(d => d.nonPolarBSA)

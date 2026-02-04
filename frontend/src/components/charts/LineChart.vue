@@ -86,11 +86,11 @@ const updateChart = () => {
   if (frameNumbers.length > 0) {
     // Use actual frame numbers from backend
     frameCount = frameNumbers.length
-    categories = frameNumbers.map(n => `Frame ${n}`)
+    categories = frameNumbers.map(n => `${n}`)
   } else {
     // Fallback to sequential numbering
     frameCount = Math.max(dataStore.totalFrames || 0, maxTrendLength)
-    categories = Array.from({ length: frameCount }, (_, i) => `Frame ${i + 1}`)
+    categories = Array.from({ length: frameCount }, (_, i) => `${i + 1}`)
   }
   
   if (frameCount === 0) return
