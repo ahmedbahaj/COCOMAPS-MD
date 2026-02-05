@@ -66,6 +66,41 @@
       </div>
     </div>
 
+    <!-- Time Unit Selector (for charts with time axis) -->
+    <div
+      v-if="showTimeUnit"
+      class="control-group slider-container-wrapper"
+    >
+      <label>Time Axis Label</label>
+      <div class="time-unit-chips">
+        <button
+          v-for="unit in TIME_UNITS"
+          :key="unit.value"
+          type="button"
+          :class="['time-unit-chip', { active: isTimeUnitActive(unit.value) }]"
+          @click="selectTimeUnit(unit.value)"
+        >
+          {{ unit.label }}
+        </button>
+        <button
+          type="button"
+          :class="['time-unit-chip', { active: isCustomTimeUnit }]"
+          @click="enableCustomTimeUnit"
+        >
+          Custom
+        </button>
+        <input
+          v-if="isCustomTimeUnit"
+          type="text"
+          v-model="customTimeUnit"
+          @input="updateCustomTimeUnit"
+          placeholder="Enter unit..."
+          class="time-unit-input"
+          ref="customTimeUnitInput"
+        />
+      </div>
+    </div>
+
     <!-- Interaction Type Filter -->
     <div
       v-if="showInteractionFilter"
@@ -141,12 +176,55 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { useDataStore } from '../stores/dataStore'
 import { INTERACTION_TYPES } from '../utils/constants'
 import { getInteractionBaseColor } from '../utils/chartHelpers'
 
 const dataStore = useDataStore()
+
+// Common MD time units
+const TIME_UNITS = [
+  { value: null, label: 'Frame' },
+  { value: 'fs', label: 'fs' },
+  { value: 'ps', label: 'ps' },
+  { value: 'ns', label: 'ns' },
+  { value: 'μs', label: 'μs' },
+  { value: 'ms', label: 'ms' }
+]
+
+// Custom time unit state
+const customTimeUnit = ref('')
+const customTimeUnitInput = ref(null)
+
+const isCustomTimeUnit = computed(() => {
+  const currentUnit = dataStore.timeUnit
+  if (!currentUnit) return false
+  return !TIME_UNITS.some(u => u.value === currentUnit)
+})
+
+const isTimeUnitActive = (value) => {
+  if (isCustomTimeUnit.value) return false
+  return dataStore.timeUnit === value
+}
+
+const selectTimeUnit = (value) => {
+  customTimeUnit.value = ''
+  dataStore.setTimeUnit(value)
+}
+
+const enableCustomTimeUnit = async () => {
+  if (!isCustomTimeUnit.value) {
+    customTimeUnit.value = dataStore.timeUnit || ''
+    dataStore.setTimeUnit(customTimeUnit.value || 'custom')
+  }
+  await nextTick()
+  customTimeUnitInput.value?.focus()
+}
+
+const updateCustomTimeUnit = () => {
+  dataStore.setTimeUnit(customTimeUnit.value || null)
+}
 
 // Get the color for an interaction type based on its keywords
 const getTypeColor = (type) => {
@@ -168,6 +246,10 @@ const showLogScale = computed(() => {
 
 const showInteractionFilter = computed(() => {
   return ['filteredHeatmap', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
+})
+
+const showTimeUnit = computed(() => {
+  return ['line', 'area', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
 })
 
 const thresholdPercent = computed(() => {
@@ -485,6 +567,60 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .checkbox-label:hover .custom-checkbox {
   transform: scale(1.05);
+}
+
+.time-unit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.time-unit-chip {
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: 2px solid transparent;
+  border-radius: 980px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.time-unit-chip:hover {
+  background: #e8e8ed;
+}
+
+.time-unit-chip.active {
+  background: #1d1d1f;
+  color: #ffffff;
+  border-color: #1d1d1f;
+}
+
+.time-unit-input {
+  width: 90px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  border: 2px solid #d2d2d7;
+  border-radius: 8px;
+  background: #ffffff;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.time-unit-input:focus {
+  outline: none;
+  border-color: #1d1d1f;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.1);
+}
+
+.time-unit-input::placeholder {
+  color: #a1a1a6;
+  font-weight: 400;
 }
 </style>
 

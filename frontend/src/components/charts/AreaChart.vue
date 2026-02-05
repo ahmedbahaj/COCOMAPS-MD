@@ -130,7 +130,7 @@ const updateChart = () => {
     xAxis: {
       categories: categories,
       title: {
-        text: 'Frame Index (Time)',
+        text: dataStore.timeUnit ? `Time (${dataStore.timeUnit})` : 'Frame',
         style: {
           fontSize: '15px',
           fontWeight: '600',
@@ -274,9 +274,10 @@ onMounted(() => {
 
 watch([
   () => dataStore.currentChartType,
-      () => dataStore.areaData.length,
-      () => showStats.value,
-      () => showPercentages.value
+  () => dataStore.areaData.length,
+  () => showStats.value,
+  () => showPercentages.value,
+  () => dataStore.timeUnit
 ], () => {
   if (dataStore.currentChartType === 'area') {
     updateChart()

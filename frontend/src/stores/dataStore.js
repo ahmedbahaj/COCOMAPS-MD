@@ -11,19 +11,20 @@ export const useDataStore = defineStore('data', {
     // Systems
     systems: [],
     currentSystem: null,
-    
+
     // Data
     interactions: [],
     areaData: [],
     trends: {},
     trendFrameNumbers: [],  // Actual frame numbers with data (e.g., [21, 22])
-    
+
     // UI State
     currentChartType: 'filteredHeatmap',
     currentThreshold: 0.5,
     useLogScale: false,
     selectedInteractionTypes: new Set(INTERACTION_TYPES.map(t => t.id)), // Select all by default
-    
+    timeUnit: null, // User-defined time unit label (e.g., 'ns', 'ps', 'μs'); null means use 'Frame'
+
     // Loading states
     loading: {
       systems: false,
@@ -31,7 +32,7 @@ export const useDataStore = defineStore('data', {
       area: false,
       trends: false
     },
-    
+
     // Error states
     errors: {
       systems: null,
@@ -57,7 +58,7 @@ export const useDataStore = defineStore('data', {
         // This ensures interactions with exactly x% conservation show when threshold is x%
         if (consistencyPercent < thresholdPercent) return false
         if (state.selectedInteractionTypes.size === 0) return false
-        
+
         // Check if any interaction types match
         const typesString = d.typesArray.join('; ')
         return matchesSelectedTypes(typesString, state.selectedInteractionTypes, INTERACTION_TYPES)
@@ -148,6 +149,10 @@ export const useDataStore = defineStore('data', {
 
     setLogScale(useLog) {
       this.useLogScale = useLog
+    },
+
+    setTimeUnit(unit) {
+      this.timeUnit = unit || null
     },
 
     toggleInteractionType(typeId) {

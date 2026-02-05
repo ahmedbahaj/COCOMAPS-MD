@@ -1378,7 +1378,7 @@ const updateChart = async () => {
     colorAxis: null,  // Disable any color axis
     xAxis: {
       title: {
-        text: 'Frame Number',
+        text: dataStore.timeUnit ? `Time (${dataStore.timeUnit})` : 'Frame',
         style: {
           fontSize: '15px',
           fontWeight: '600',
@@ -1908,7 +1908,8 @@ watch([
   () => dataStore.totalFrames,
   () => dataStore.currentSystem?.id,
   () => dataStore.selectedInteractionTypes.size,
-  () => pairConservationThreshold.value
+  () => pairConservationThreshold.value,
+  () => dataStore.timeUnit
 ], async () => {
   if (dataStore.currentChartType === 'interactionConservationMatrix') {
     if (dataStore.currentSystem?.id && !distanceData.value) {

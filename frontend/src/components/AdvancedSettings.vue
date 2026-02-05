@@ -29,6 +29,22 @@
           </div>
         </div>
 
+        <!-- Time Unit -->
+        <div class="setting-row">
+          <div class="setting-label">
+            <span>Time Unit</span>
+            <TooltipIcon text="Optional label for the time axis in charts (e.g., 'ns', 'ps', 'μs'). Leave empty to show 'Frame' instead." />
+          </div>
+          <div class="setting-control">
+            <input 
+              type="text" 
+              v-model="settings.timeUnit"
+              placeholder="e.g., ns"
+              class="text-input"
+            />
+          </div>
+        </div>
+
         <!-- Frame Selection Section (only shown when > maxFrames) -->
         <template v-if="totalFrames > maxFrames">
           <div class="setting-section-divider"></div>
@@ -132,6 +148,7 @@ const settings = reactive({
   interfaceCutoff: props.modelValue.interfaceCutoff ?? 6.0,
   waterCutoff: props.modelValue.waterCutoff ?? 5.0,
   useReduce: props.modelValue.useReduce ?? false,
+  timeUnit: props.modelValue.timeUnit ?? '',
   frameStep: props.modelValue.frameStep ?? 1,
   useCustomInterval: props.modelValue.useCustomInterval ?? false,
   startFrame: props.modelValue.startFrame ?? 1,
@@ -152,6 +169,7 @@ watch(frameInterval, (newVal) => {
 
 // Watch for external settings updates (e.g., from parent)
 watch(() => props.modelValue, (newVal) => {
+  if (newVal.timeUnit !== undefined) settings.timeUnit = newVal.timeUnit
   if (newVal.frameStep !== undefined) settings.frameStep = newVal.frameStep
   if (newVal.useCustomInterval !== undefined) settings.useCustomInterval = newVal.useCustomInterval
   if (newVal.startFrame !== undefined) settings.startFrame = newVal.startFrame
@@ -255,6 +273,30 @@ watch(settings, (newSettings) => {
   font-weight: 500;
   color: #6e6e73;
   min-width: 20px;
+}
+
+.text-input {
+  width: 80px;
+  padding: 8px 12px;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  border: 2px solid #d2d2d7;
+  border-radius: 8px;
+  background: #ffffff;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.text-input::placeholder {
+  color: #a1a1a6;
+  font-weight: 400;
 }
 
 /* Toggle Switch */

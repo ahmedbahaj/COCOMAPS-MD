@@ -128,7 +128,7 @@ const updateChart = () => {
     xAxis: {
       categories: categories,
       title: {
-        text: 'Time (Frames)',
+        text: dataStore.timeUnit ? `Time (${dataStore.timeUnit})` : 'Frame',
         style: {
           fontSize: '15px',
           fontWeight: '600',
@@ -240,7 +240,8 @@ watch([
   () => dataStore.trends,
   () => dataStore.useLogScale,
   () => dataStore.totalFrames,
-  () => dataStore.trendFrameNumbers
+  () => dataStore.trendFrameNumbers,
+  () => dataStore.timeUnit
 ], () => {
   if (dataStore.currentChartType === 'line') {
     updateChart()

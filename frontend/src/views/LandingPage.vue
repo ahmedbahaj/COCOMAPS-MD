@@ -175,8 +175,10 @@ import { useRouter } from 'vue-router'
 import ChainSelector from '../components/ChainSelector.vue'
 import AdvancedSettings from '../components/AdvancedSettings.vue'
 import api from '../services/api'
+import { useDataStore } from '../stores/dataStore'
 
 const router = useRouter()
+const dataStore = useDataStore()
 const fileInput = ref(null)
 
 // Upload state
@@ -192,6 +194,7 @@ const advancedSettings = ref({
   interfaceCutoff: 5.0,
   waterCutoff: 5.0,
   useReduce: false,
+  timeUnit: '',
   // Frame selection settings
   frameStep: 1,
   useCustomInterval: false,
@@ -320,6 +323,7 @@ const resetUpload = () => {
     interfaceCutoff: 5.0,
     waterCutoff: 5.0,
     useReduce: false,
+    timeUnit: '',
     frameStep: 1,
     useCustomInterval: false,
     startFrame: 1,
@@ -403,6 +407,8 @@ const pollStatus = (pdbId) => {
       if (status.status === 'completed') {
         clearInterval(statusPollInterval)
         isProcessing.value = false
+        // Store timeUnit in dataStore for charts to use
+        dataStore.setTimeUnit(advancedSettings.value.timeUnit)
         // Navigate to analysis page
         router.push({ name: 'Analysis', query: { system: pdbId } })
       } else if (status.status === 'failed') {
