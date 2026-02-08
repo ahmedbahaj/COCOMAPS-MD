@@ -38,18 +38,22 @@ const buildSeries = (frameCount) => {
       paddedData = Array(frameCount).fill(null)
     }
 
+    const baseColor = getInteractionBaseColor(type.label)
+    
     return {
       name: type.label,
-      data: paddedData,
-      color: hasNonZero ? getInteractionBaseColor(type.label) : '#c7c7cc',
-      lineWidth: hasNonZero ? 2 : 1.5,
-      dashStyle: hasNonZero ? 'Solid' : 'ShortDot',
+      data: hasNonZero ? paddedData : [], // Empty data if no interactions
+      color: baseColor, // Always use the real color for legend
+      lineWidth: 2,
       marker: {
-        radius: hasNonZero ? 2.5 : 2,
-        lineWidth: hasNonZero ? 1 : 0.5,
-        lineColor: hasNonZero ? '#ffffff' : '#dcdce0'
+        enabled: hasNonZero,
+        radius: 2.5,
+        lineWidth: 1,
+        lineColor: '#ffffff'
       },
       enableMouseTracking: hasNonZero,
+      showInLegend: true,
+      _hasData: hasNonZero,
       point: {
         events: {
           mouseOver: function() {
@@ -164,6 +168,15 @@ const updateChart = () => {
       align: 'right',
       verticalAlign: 'middle',
       layout: 'vertical',
+      useHTML: true,
+      labelFormatter: function() {
+        const hasData = this.options._hasData
+        if (hasData) {
+          return `<span style="font-weight: 700; font-size: 13px;">${this.name}</span>`
+        } else {
+          return `<span style="color: #9ca3af; font-weight: 400; font-size: 13px;">${this.name}</span>`
+        }
+      },
       itemStyle: {
         fontSize: '13px',
         fontWeight: '500',
