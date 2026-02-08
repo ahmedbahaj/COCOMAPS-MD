@@ -179,7 +179,11 @@ const updateChart = () => {
           fontWeight: '700', // Bold
           color: '#1d1d1f'
         }
-      }
+      },
+      gridLineWidth: 1,
+      gridLineColor: '#e5e7eb',
+      tickWidth: 1,
+      tickColor: '#d1d5db'
     },
     yAxis: {
       categories: chainBCategories,
@@ -243,7 +247,9 @@ const updateChart = () => {
     series: [{
       name: 'Interaction Conservation',
       data: heatmapData,
-      turboThreshold: 10000
+      turboThreshold: 10000,
+      borderWidth: 1,
+      borderColor: '#93c5fd'
     }],
     tooltip: {
       backgroundColor: 'rgba(255, 255, 255, 0.98)',
