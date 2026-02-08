@@ -26,7 +26,6 @@ import AreaChart from './charts/AreaChart.vue'
 import LineChart from './charts/LineChart.vue'
 import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
 import ViolinChart from './charts/ViolinChart.vue'
-import ConsensusIslandsChart from './charts/ConsensusIslandsChart.vue'
 
 const dataStore = useDataStore()
 
@@ -53,8 +52,7 @@ const chartComponents = {
   area: AreaChart,
   line: LineChart,
   interactionConservationMatrix: InteractionConservationMatrix,
-  violinPlot: ViolinChart,
-  consensusIslands: ConsensusIslandsChart
+  violinPlot: ViolinChart
 }
 
 const currentChartComponent = computed(() => {

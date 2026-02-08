@@ -1785,7 +1785,7 @@ def get_consensus_islands(system_id):
                 'edges': island_edges,
                 'size': len(island_list),
                 'avgParticipation': round(total_participation / len(island_list), 1),
-                'avgConservation': round(avg_co_island_freq, 1),
+                'avgCoIslandFrequency': round(avg_co_island_freq, 1),
                 'internalConnectivity': round(internal_connectivity, 2),
                 'chainsInvolved': sorted(list(chains))
             })

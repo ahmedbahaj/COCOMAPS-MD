@@ -138,11 +138,6 @@ export default {
       formData.append('end_frame', options.endFrame)
     }
 
-    // Add frame step if specified (for step-based sampling)
-    if (options.frameStep !== undefined && options.frameStep > 1) {
-      formData.append('frame_step', options.frameStep)
-    }
-
     const response = await api.post('/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -154,29 +149,6 @@ export default {
         }
       }
     })
-    return response.data
-  },
-
-  /**
-   * Get consensus islands data for multi-frame analysis
-   * @param {string} systemId - System ID
-   * @param {Object} options - Options
-   * @param {number} options.minCoIslandFrequency - Min % for residues to be in same consensus island (default: 50)
-   * @param {number} options.minIslandSize - Min residues per consensus island (default: 3)
-   * @param {boolean} options.includeMatrix - Include co-island matrix for heatmap (default: false)
-   */
-  async getConsensusIslands(systemId, options = {}) {
-    const params = {}
-    if (options.minCoIslandFrequency !== undefined) {
-      params.min_co_island_frequency = options.minCoIslandFrequency
-    }
-    if (options.minIslandSize !== undefined) {
-      params.min_island_size = options.minIslandSize
-    }
-    if (options.includeMatrix) {
-      params.include_matrix = 'true'
-    }
-    const response = await api.get(`/systems/${systemId}/consensus-islands`, { params })
     return response.data
   }
 }
