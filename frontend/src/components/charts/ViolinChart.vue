@@ -263,20 +263,7 @@ const updateChart = () => {
         color: '#1d1d1f'
       }
     },
-    annotations: [{
-      text: `Showing ${topPairs.length} pairs with conservation ≥ ${minConsistency.value}% (out of ${distanceData.value.length} total)`,
-      xref: 'paper',
-      yref: 'paper',
-      x: 0.5,
-      y: 1.05,
-      xanchor: 'center',
-      yanchor: 'bottom',
-      showarrow: false,
-      font: {
-        size: 14,
-        color: '#6e6e73'
-      }
-    }],
+    annotations: [],
     shapes: [
       // Global mean line - rendered on top of all violins
       {
