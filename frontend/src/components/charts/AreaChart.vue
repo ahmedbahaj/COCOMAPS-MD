@@ -118,11 +118,7 @@ const updateChart = () => {
       }
     },
     subtitle: {
-      text: 'Total, POLAR, and NON POLAR Buried Surface Area (Å²)',
-      style: {
-        fontSize: '17px',
-        color: '#6e6e73'
-      }
+      text: null
     },
     credits: {
       enabled: false

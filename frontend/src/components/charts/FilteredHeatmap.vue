@@ -155,11 +155,7 @@ const updateChart = () => {
       }
     },
     subtitle: {
-      text: `Chain A (X-axis) ↔ Chain B (Y-axis) | Threshold: ${Math.round(dataStore.currentThreshold * 100)}% | Color intensity = Conservation`,
-      style: {
-        fontSize: '17px',
-        color: '#6e6e73'
-      }
+      text: null
     },
     credits: {
       enabled: false

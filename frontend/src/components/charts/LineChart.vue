@@ -116,11 +116,7 @@ const updateChart = () => {
       }
     },
     subtitle: {
-      text: `Number of Interactions vs Time${dataStore.useLogScale ? ' - Logarithmic Scale' : ''}`,
-      style: {
-        fontSize: '17px',
-        color: '#6e6e73'
-      }
+      text: null
     },
     credits: {
       enabled: false

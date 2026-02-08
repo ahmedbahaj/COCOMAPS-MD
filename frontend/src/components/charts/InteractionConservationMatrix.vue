@@ -1365,11 +1365,7 @@ const updateChart = async () => {
       }
     },
     subtitle: {
-      text: `Pair conservation ≥${Math.round(pairConservationThreshold.value * 100)}% • Type conservation ≥${Math.round(conservationThreshold.value * 100)}% • Click any segment for detailed analysis`,
-      style: {
-        fontSize: '15px',
-        color: '#6e6e73'
-      }
+      text: null
     },
     credits: {
       enabled: false
