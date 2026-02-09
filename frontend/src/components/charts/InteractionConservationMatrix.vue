@@ -621,6 +621,41 @@ const formatPercent = (value) => {
   return `${(value * 100).toFixed(2)}%`
 }
 
+// Helper to check if a type is hidden (handles naming variations using keyword matching)
+const isTypeHidden = (typeName) => {
+  // Direct match first
+  if (hiddenTypes.value.has(typeName)) return true
+  
+  const typeNameLower = typeName.toLowerCase()
+  
+  // Check if any hidden type matches via keywords
+  for (const hiddenType of hiddenTypes.value) {
+    const hiddenTypeLower = hiddenType.toLowerCase()
+    
+    // Direct match (case-insensitive)
+    if (typeNameLower === hiddenTypeLower) return true
+    
+    // Check via INTERACTION_TYPES keywords
+    for (const interactionType of INTERACTION_TYPES) {
+      const keywords = interactionType.keywords || []
+      const labelLower = interactionType.label.toLowerCase()
+      
+      // If hidden type matches this INTERACTION_TYPE
+      const hiddenMatchesType = hiddenTypeLower === labelLower || 
+        keywords.some(kw => hiddenTypeLower.includes(kw.toLowerCase()))
+      
+      // If current type also matches this INTERACTION_TYPE
+      const typeMatchesType = typeNameLower === labelLower || 
+        keywords.some(kw => typeNameLower.includes(kw.toLowerCase()))
+      
+      // If both match the same INTERACTION_TYPE, the type is hidden
+      if (hiddenMatchesType && typeMatchesType) return true
+    }
+  }
+  
+  return false
+}
+
 // Convert number to ordinal (1st, 2nd, 3rd, etc.)
 const getOrdinal = (n) => {
   const s = ['th', 'st', 'nd', 'rd']
@@ -720,7 +755,7 @@ const updateChart = async () => {
         }
         
         // Check if type is hidden via legend click
-        if (hiddenTypes.value.has(type)) {
+        if (isTypeHidden(type)) {
           return // Skip hidden types
         }
         
@@ -776,7 +811,7 @@ const updateChart = async () => {
         }
         
         // LEVEL 4 FILTER: Skip if hidden via legend click
-        if (hiddenTypes.value.has(type)) {
+        if (isTypeHidden(type)) {
           return
         }
 
@@ -1173,22 +1208,10 @@ const updateChart = async () => {
   const series = []
   const allDataPoints = [] // For atom change detection
   
-  // Collect all available interaction types (including hidden ones) for legend
-  const allAvailableTypes = new Set()
-  stablePairs.forEach(interaction => {
-    const typePersistence = interaction.typePersistence || {}
-    interaction.typesArray.forEach(type => {
-      const typeConservation = typePersistence[type] || 0
-      if (typeConservation >= conservationThreshold.value) {
-        if (dataStore.selectedInteractionTypes.size === 0 || 
-            matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)) {
-          allAvailableTypes.add(type)
-        }
-      }
-    })
-  })
+  // Track which types have data in seriesMap
+  const typesWithData = new Set(seriesMap.keys())
   
-  // Create series for visible types (with data)
+  // Create series for types with data
   Array.from(seriesMap.entries()).sort((a, b) => a[0].localeCompare(b[0])).forEach(([type, dataPoints]) => {
     const seriesData = dataPoints.map(point => {
       const dataPoint = {
@@ -1221,31 +1244,56 @@ const updateChart = async () => {
         enabled: false
       },
       showInLegend: true,
-      visible: true
+      visible: true,
+      _hasData: true
     })
   })
   
-  // Add hidden types to legend (with empty data, visually grayed out)
-  Array.from(hiddenTypes.value).sort().forEach(type => {
-    // Only add if it's a valid available type
-    if (allAvailableTypes.has(type)) {
-      series.push({
-        type: 'heatmap',
-        name: type,
-        data: [],
-        color: getInteractionBaseColor(type),
-        borderWidth: 1,
-        borderColor: '#e8e8ed',
-        nullColor: 'transparent',
-        colsize: 1,
-        rowsize: 1,
-        dataLabels: {
-          enabled: false
-        },
-        showInLegend: true,
-        visible: false // This makes it appear grayed out in legend
-      })
+  // Track which type labels are already in series (to avoid duplicates)
+  const existingSeriesNames = new Set(series.map(s => s.name.toLowerCase()))
+  
+  // Helper to check if an INTERACTION_TYPE matches the selected filter
+  const typeMatchesFilter = (interactionType) => {
+    if (dataStore.selectedInteractionTypes.size === 0) return true
+    return dataStore.selectedInteractionTypes.has(interactionType.id)
+  }
+  
+  // Helper to check if type already exists in series (using keyword matching)
+  const typeExistsInSeries = (interactionType) => {
+    const keywords = interactionType.keywords || []
+    for (const seriesName of existingSeriesNames) {
+      if (seriesName === interactionType.label.toLowerCase()) return true
+      if (keywords.some(kw => seriesName.includes(kw.toLowerCase()))) return true
     }
+    return false
+  }
+  
+  // Add ALL interaction types to legend (those without data get empty array and _hasData: false)
+  INTERACTION_TYPES.forEach(interactionType => {
+    // Only add if it matches the selected filter
+    if (!typeMatchesFilter(interactionType)) return
+    
+    // Only add if not already in series
+    if (typeExistsInSeries(interactionType)) return
+    
+    const typeName = interactionType.label
+    
+    series.push({
+      type: 'heatmap',
+      name: typeName,
+      data: [],
+      color: getInteractionBaseColor(typeName),
+      borderWidth: 1,
+      borderColor: '#e8e8ed',
+      nullColor: 'transparent',
+      colsize: 1,
+      rowsize: 1,
+      dataLabels: {
+        enabled: false
+      },
+      showInLegend: true,
+      _hasData: false
+    })
   })
   
   // Collect data points where atoms change
@@ -1426,10 +1474,40 @@ const updateChart = async () => {
         events: {
           legendItemClick: function() {
             const typeName = this.name
-            // Toggle hidden state
-            if (hiddenTypes.value.has(typeName)) {
-              hiddenTypes.value.delete(typeName)
+            // Toggle hidden state using keyword matching
+            if (isTypeHidden(typeName)) {
+              // Un-hide: remove all related type names from hiddenTypes
+              const toRemove = []
+              for (const hiddenType of hiddenTypes.value) {
+                // Check if hiddenType is related to clicked typeName
+                const hiddenLower = hiddenType.toLowerCase()
+                const clickedLower = typeName.toLowerCase()
+                
+                // Direct match
+                if (hiddenLower === clickedLower) {
+                  toRemove.push(hiddenType)
+                  continue
+                }
+                
+                // Check via INTERACTION_TYPES keywords
+                for (const interactionType of INTERACTION_TYPES) {
+                  const keywords = interactionType.keywords || []
+                  const labelLower = interactionType.label.toLowerCase()
+                  
+                  const hiddenMatchesType = hiddenLower === labelLower || 
+                    keywords.some(kw => hiddenLower.includes(kw.toLowerCase()))
+                  const clickedMatchesType = clickedLower === labelLower || 
+                    keywords.some(kw => clickedLower.includes(kw.toLowerCase()))
+                  
+                  if (hiddenMatchesType && clickedMatchesType) {
+                    toRemove.push(hiddenType)
+                    break
+                  }
+                }
+              }
+              toRemove.forEach(t => hiddenTypes.value.delete(t))
             } else {
+              // Hide: add the clicked type name
               hiddenTypes.value.add(typeName)
             }
             // Rebuild chart with updated visibility
@@ -1472,9 +1550,35 @@ const updateChart = async () => {
             if (typeName === 'Atom Changes') {
               return true
             }
-            // Toggle hidden state for interaction types
-            if (hiddenTypes.value.has(typeName)) {
-              hiddenTypes.value.delete(typeName)
+            // Toggle hidden state using keyword matching
+            if (isTypeHidden(typeName)) {
+              // Un-hide: remove all related type names from hiddenTypes
+              const toRemove = []
+              for (const hiddenType of hiddenTypes.value) {
+                const hiddenLower = hiddenType.toLowerCase()
+                const clickedLower = typeName.toLowerCase()
+                
+                if (hiddenLower === clickedLower) {
+                  toRemove.push(hiddenType)
+                  continue
+                }
+                
+                for (const interactionType of INTERACTION_TYPES) {
+                  const keywords = interactionType.keywords || []
+                  const labelLower = interactionType.label.toLowerCase()
+                  
+                  const hiddenMatchesType = hiddenLower === labelLower || 
+                    keywords.some(kw => hiddenLower.includes(kw.toLowerCase()))
+                  const clickedMatchesType = clickedLower === labelLower || 
+                    keywords.some(kw => clickedLower.includes(kw.toLowerCase()))
+                  
+                  if (hiddenMatchesType && clickedMatchesType) {
+                    toRemove.push(hiddenType)
+                    break
+                  }
+                }
+              }
+              toRemove.forEach(t => hiddenTypes.value.delete(t))
             } else {
               hiddenTypes.value.add(typeName)
             }
@@ -1510,6 +1614,15 @@ const updateChart = async () => {
       verticalAlign: 'top',
       layout: 'vertical',
       y: 60,
+      useHTML: true,
+      labelFormatter: function() {
+        const hasData = this.options._hasData
+        if (hasData) {
+          return `<span style="font-weight: 700; font-size: 12px;">${this.name}</span>`
+        } else {
+          return `<span style="color: #9ca3af; font-weight: 400; font-size: 12px;">${this.name}</span>`
+        }
+      },
       itemStyle: {
         fontSize: '12px',
         fontWeight: '500',
