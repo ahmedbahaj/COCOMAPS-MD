@@ -57,6 +57,7 @@
         <ChartSelector />
         <ControlsPanel />
         <ChartContainer />
+        <StatsPanel v-if="dataStore.currentSystem" />
       </div>
     </div>
 
@@ -70,6 +71,7 @@ import { useDataStore } from '../stores/dataStore'
 import ChartSelector from '../components/ChartSelector.vue'
 import ControlsPanel from '../components/ControlsPanel.vue'
 import ChartContainer from '../components/ChartContainer.vue'
+import StatsPanel from '../components/StatsPanel.vue'
 import UploadModal from '../components/UploadModal.vue'
 
 const dataStore = useDataStore()

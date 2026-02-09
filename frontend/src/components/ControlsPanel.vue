@@ -151,27 +151,6 @@
       </div>
     </div>
 
-    <!-- Stats Grid -->
-    <div class="control-group">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value">{{ totalInteractions }}</div>
-          <div class="stat-label">Total Interactions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ visibleInteractions }}</div>
-          <div class="stat-label">Visible Interactions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ avgConsistency }}</div>
-          <div class="stat-label">Avg Conservation</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ dataStore.totalFrames }}</div>
-          <div class="stat-label">Total Frames</div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -265,20 +244,6 @@ const thresholdTicks = computed(() => {
     })
   }
   return ticks
-})
-
-const totalInteractions = computed(() => {
-  return dataStore.interactions.length
-})
-
-const visibleInteractions = computed(() => {
-  return dataStore.filteredInteractions.length
-})
-
-const avgConsistency = computed(() => {
-  if (dataStore.interactions.length === 0) return '-'
-  const avg = dataStore.interactions.reduce((sum, d) => sum + d.consistency, 0) / dataStore.interactions.length
-  return Math.round(avg * 100) + '%'
 })
 
 const updateThreshold = (event) => {
@@ -463,34 +428,6 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-size: 14px;
   color: #6e6e73;
   margin-top: 8px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 20px;
-}
-
-.stat-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  border: 1px solid #d2d2d7;
-}
-
-.stat-value {
-  font-size: 32px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #6e6e73;
-  font-weight: 500;
 }
 
 .filter-buttons {
