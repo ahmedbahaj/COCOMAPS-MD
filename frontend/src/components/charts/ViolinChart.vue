@@ -256,7 +256,7 @@ const updateChart = () => {
 
   const layout = {
     title: {
-      text: `Distance Distribution: ${selectedInteractionType.value}`,
+      text: `${dataStore.currentSystem?.name || 'System'} - Distance Distribution: ${selectedInteractionType.value}`,
       font: {
         size: 20,
         family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',

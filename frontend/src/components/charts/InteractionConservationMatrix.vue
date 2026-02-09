@@ -1357,7 +1357,7 @@ const updateChart = async () => {
       marginRight: 200
     },
     title: {
-      text: `Interaction Conservation Timeline (${pairTypeCombinations.length} pair-type combinations, ${uniquePairCount} unique pairs)`,
+      text: `${dataStore.currentSystem?.name || 'System'} - Interaction Conservation Timeline (${pairTypeCombinations.length} pair-type combinations, ${uniquePairCount} unique pairs)`,
       style: {
         fontSize: '24px',
         fontWeight: '600',

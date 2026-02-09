@@ -110,7 +110,7 @@ const updateChart = () => {
       height: 650
     },
     title: {
-      text: 'Total Buried Surface Area Across Frames',
+      text: `${dataStore.currentSystem?.name || 'System'} - Total Buried Surface Area Across Frames`,
       style: {
         fontSize: '24px',
         fontWeight: '600',

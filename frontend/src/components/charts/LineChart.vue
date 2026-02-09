@@ -112,7 +112,7 @@ const updateChart = () => {
       height: 650
     },
     title: {
-      text: 'Interaction Type Trends Across Frames',
+      text: `${dataStore.currentSystem?.name || 'System'} - Interaction Type Trends Across Frames`,
       style: {
         fontSize: '24px',
         fontWeight: '600',

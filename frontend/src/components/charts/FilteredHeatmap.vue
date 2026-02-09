@@ -147,7 +147,7 @@ const updateChart = () => {
       height: dynamicHeight
     },
     title: {
-      text: `Residue Interaction Heatmap (${heatmapData.length} interactions)`,
+      text: `${dataStore.currentSystem?.name || 'System'} - Residue Interaction Heatmap (${heatmapData.length} interactions)`,
       style: {
         fontSize: '24px',
         fontWeight: '600',
