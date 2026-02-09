@@ -153,7 +153,7 @@
           <div class="insight-pairs-list">
             <div v-for="(item, idx) in statistics.residue.mostConservedList.slice(0, 3)" :key="idx" class="pair-with-types">
               <div class="pair-rank-row">
-                <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                <span class="rank-text">{{ getOrdinal(item.rank) }}.</span>
                 <span class="pair-name">{{ item.pair }}</span>
                 <span class="frame-count">({{ item.frameCount }}/{{ dataStore.totalFrames }} frames)</span>
               </div>
@@ -189,7 +189,7 @@
           <div class="insight-pairs-list">
             <div v-for="(item, idx) in statistics.residue.longestStretchList.slice(0, 3)" :key="idx" class="pair-with-types">
               <div class="pair-rank-row">
-                <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                <span class="rank-text">{{ getOrdinal(item.rank) }}.</span>
                 <span class="pair-name">{{ item.pair }}</span>
                 <span class="frame-count">{{ item.stretchInfo }}</span>
               </div>
@@ -222,7 +222,7 @@
           <div class="insight-pairs-list">
             <div v-for="(item, idx) in statistics.atomic.mostConservedList.slice(0, 3)" :key="idx" class="pair-with-types">
               <div class="pair-rank-row">
-                <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                <span class="rank-text">{{ getOrdinal(item.rank) }}.</span>
                 <span 
                   class="type-tag large"
                   :style="{ backgroundColor: getInteractionBaseColor(item.type), color: getTextColorForBg(item.type) }"
@@ -271,7 +271,7 @@
             <div v-if="listModal.isTypeList" class="list-modal-items">
               <div v-for="(item, idx) in listModal.items" :key="idx" class="list-modal-type-item">
                 <div class="pair-rank-row">
-                  <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                  <span class="rank-text">{{ getOrdinal(item.rank) }}.</span>
                   <span 
                     class="type-tag large" 
                     :style="{ backgroundColor: getInteractionBaseColor(item.type), color: getTextColorForBg(item.type) }"
@@ -288,7 +288,7 @@
             <div v-else-if="listModal.isPairList" class="list-modal-items pair-list">
               <div v-for="(item, idx) in listModal.items" :key="idx" class="list-modal-pair-item">
                 <div class="pair-rank-row">
-                  <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                  <span class="rank-text">{{ getOrdinal(item.rank) }}.</span>
                   <span class="pair-name">{{ item.pair }}</span>
                   <span v-if="item.frameCount !== undefined" class="frame-count">({{ item.frameCount }}/{{ dataStore.totalFrames }} frames)</span>
                   <span v-else-if="item.stretchInfo" class="frame-count">{{ item.stretchInfo }}</span>
@@ -1110,12 +1110,12 @@ const updateChart = async () => {
   residueStats.cr50 = uniquePairs.size // CR50: count of unique pairs with ≥50% conservation
   
   // Build ranked lists with tie handling
-  // Helper function to assign ranks with ties (same value = same rank)
+  // Helper function to assign ranks with ties using DENSE ranking (1,1,2 not 1,1,39)
   const assignRanks = (sortedItems, valueKey) => {
     let currentRank = 1
     return sortedItems.map((item, idx) => {
       if (idx > 0 && item[valueKey] < sortedItems[idx - 1][valueKey]) {
-        currentRank = idx + 1
+        currentRank++ // Dense ranking: just increment, don't skip
       }
       return { ...item, rank: currentRank }
     })
@@ -2406,36 +2406,11 @@ input[type="range"]::-moz-range-thumb:hover {
   flex-wrap: wrap;
 }
 
-.rank-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  padding: 2px 8px;
-  background: linear-gradient(135deg, #8E8E93, #636366);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 12px;
-  text-transform: lowercase;
-}
-
-/* Gold for 1st place */
-.rank-badge.rank-1 {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #1d1d1f;
-}
-
-/* Silver for 2nd place */
-.rank-badge.rank-2 {
-  background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
-  color: #1d1d1f;
-}
-
-/* Bronze for 3rd place */
-.rank-badge.rank-3 {
-  background: linear-gradient(135deg, #CD7F32, #B87333);
-  color: #fff;
+.rank-text {
+  font-size: 12px;
+  color: #6e6e73;
+  font-weight: 600;
+  min-width: 28px;
 }
 
 .frame-count {
