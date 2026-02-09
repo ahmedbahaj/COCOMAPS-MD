@@ -5,6 +5,7 @@
       <div class="slider-group">
         <label for="pair-conservation-slider" class="slider-label">
           Pair Conservation Threshold
+          <span class="info-icon" @mouseenter="showTooltip($event, 'Filter residue pairs by their overall conservation. Only pairs present in at least this percentage of trajectory frames will be shown.')" @mouseleave="hideTooltip">ⓘ</span>
         </label>
         <div class="slider-container">
           <div class="slider-control">
@@ -48,6 +49,7 @@
       <div class="slider-group">
         <label for="conservation-slider" class="slider-label">
           Interaction Type Conservation Threshold
+          <span class="info-icon" @mouseenter="showTooltip($event, 'Filter interaction types by their conservation within each pair. Only interaction types present in at least this percentage of frames (for a given pair) will be displayed.')" @mouseleave="hideTooltip">ⓘ</span>
         </label>
         <div class="slider-container">
           <div class="slider-control">
@@ -2020,11 +2022,25 @@ watch([
 }
 
 .slider-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
   margin-bottom: 0;
   letter-spacing: -0.022em;
+}
+
+.slider-label .info-icon {
+  font-size: 14px;
+  color: #8e8e93;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.slider-label .info-icon:hover {
+  color: #3B6EF5;
 }
 
 .slider-container {
