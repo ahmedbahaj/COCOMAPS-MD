@@ -1,5 +1,55 @@
 <template>
   <div class="controls-panel">
+    <!-- Interaction Type Filter -->
+    <div
+      v-if="showInteractionFilter"
+      class="control-group slider-container-wrapper"
+    >
+      <label>Filter Interaction Types</label>
+      <div class="filter-buttons">
+        <button
+          type="button"
+          @click="selectAllTypes"
+          class="filter-btn secondary"
+        >
+          Select All
+        </button>
+        <button
+          type="button"
+          @click="deselectAllTypes"
+          class="filter-btn secondary"
+        >
+          Deselect All
+        </button>
+      </div>
+      <div class="interaction-checkboxes">
+        <label
+          v-for="type in INTERACTION_TYPES"
+          :key="type.id"
+          class="checkbox-label"
+        >
+          <input
+            type="checkbox"
+            :checked="dataStore.selectedInteractionTypes.has(type.id)"
+            @change="toggleInteractionType(type.id)"
+            class="interaction-checkbox-input"
+          />
+          <span 
+            class="custom-checkbox"
+            :style="{ 
+              borderColor: getTypeColor(type),
+              backgroundColor: dataStore.selectedInteractionTypes.has(type.id) ? getTypeColor(type) : 'transparent'
+            }"
+          >
+            <svg v-if="dataStore.selectedInteractionTypes.has(type.id)" viewBox="0 0 12 12" class="checkmark">
+              <path d="M2 6l3 3 5-5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span>{{ type.label }}</span>
+        </label>
+      </div>
+    </div>
+
     <!-- Conservation Threshold Slider -->
     <div
       v-if="showSlider"
@@ -98,56 +148,6 @@
           class="time-unit-input"
           ref="customTimeUnitInput"
         />
-      </div>
-    </div>
-
-    <!-- Interaction Type Filter -->
-    <div
-      v-if="showInteractionFilter"
-      class="control-group slider-container-wrapper"
-    >
-      <label>Filter Interaction Types</label>
-      <div class="filter-buttons">
-        <button
-          type="button"
-          @click="selectAllTypes"
-          class="filter-btn secondary"
-        >
-          Select All
-        </button>
-        <button
-          type="button"
-          @click="deselectAllTypes"
-          class="filter-btn secondary"
-        >
-          Deselect All
-        </button>
-      </div>
-      <div class="interaction-checkboxes">
-        <label
-          v-for="type in INTERACTION_TYPES"
-          :key="type.id"
-          class="checkbox-label"
-        >
-          <input
-            type="checkbox"
-            :checked="dataStore.selectedInteractionTypes.has(type.id)"
-            @change="toggleInteractionType(type.id)"
-            class="interaction-checkbox-input"
-          />
-          <span 
-            class="custom-checkbox"
-            :style="{ 
-              borderColor: getTypeColor(type),
-              backgroundColor: dataStore.selectedInteractionTypes.has(type.id) ? getTypeColor(type) : 'transparent'
-            }"
-          >
-            <svg v-if="dataStore.selectedInteractionTypes.has(type.id)" viewBox="0 0 12 12" class="checkmark">
-              <path d="M2 6l3 3 5-5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          <span>{{ type.label }}</span>
-        </label>
       </div>
     </div>
 
