@@ -48,7 +48,7 @@
         <h1 v-if="dataStore.currentSystem">{{ dataStore.currentSystem.name }}</h1>
         <h1 v-else>Select a System</h1>
         <p class="subtitle" v-if="dataStore.currentSystem">
-          Chain A ↔ Chain B Residue Interactions Across {{ dataStore.currentSystem.frames }} Frames
+          Chain {{ dataStore.currentSystem.chain1 || 'A' }} ↔ Chain {{ dataStore.currentSystem.chain2 || 'B' }} Residue Interactions Across {{ dataStore.currentSystem.frames }} Frames
         </p>
         <p class="subtitle" v-else>
           Use the menu to select a system for analysis

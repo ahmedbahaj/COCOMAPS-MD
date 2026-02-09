@@ -163,7 +163,7 @@ const updateChart = () => {
     xAxis: {
       categories: chainACategories,
       title: {
-        text: 'Chain A Residues',
+        text: `Chain ${dataStore.currentSystem?.chain1 || 'A'} Residues`,
         style: {
           fontSize: '18px',
           fontWeight: '600',
@@ -188,7 +188,7 @@ const updateChart = () => {
     yAxis: {
       categories: chainBCategories,
       title: {
-        text: 'Chain B Residues',
+        text: `Chain ${dataStore.currentSystem?.chain2 || 'B'} Residues`,
         style: {
           fontSize: '18px',
           fontWeight: '600',
