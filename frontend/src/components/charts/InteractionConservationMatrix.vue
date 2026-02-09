@@ -148,12 +148,15 @@
         <div class="insight-card" v-if="statistics.residue.mostConservedList && statistics.residue.mostConservedList.length > 0">
           <div class="insight-header">
             <span class="insight-title">Most Conserved Pairs</span>
-            <span class="insight-badge">{{ formatPercent(statistics.residue.mostConservedValue) }}</span>
             <span class="info-icon" @mouseenter="showTooltip($event, 'Residue pairs with the highest average conservation across all their interaction types')" @mouseleave="hideTooltip">ⓘ</span>
           </div>
           <div class="insight-pairs-list">
             <div v-for="(item, idx) in statistics.residue.mostConservedList.slice(0, 3)" :key="idx" class="pair-with-types">
-              <span class="pair-name">{{ item.pair }}</span>
+              <div class="pair-rank-row">
+                <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                <span class="pair-name">{{ item.pair }}</span>
+                <span class="frame-count">({{ item.frameCount }}/{{ dataStore.totalFrames }} frames)</span>
+              </div>
               <div class="type-tags">
                 <span 
                   v-for="(typeInfo, tIdx) in item.types.slice(0, 4)" 
@@ -168,24 +171,29 @@
             <button 
               v-if="statistics.residue.mostConservedList.length > 3" 
               class="insight-more-btn"
-              @click="openPairListModal('Most Conserved Pairs', statistics.residue.mostConservedList, formatPercent(statistics.residue.mostConservedValue))"
+              @click="openPairListModal('Most Conserved Pairs', statistics.residue.mostConservedList, '')"
             >
               +{{ statistics.residue.mostConservedList.length - 3 }} more pairs
             </button>
           </div>
         </div>
         
-        <!-- Least Conserved Pairs -->
-        <div class="insight-card" v-if="statistics.residue.leastConservedList && statistics.residue.leastConservedList.length > 0">
+
+        
+        <!-- Longest Conserved Stretch -->
+        <div class="insight-card" v-if="statistics.residue.longestStretchList && statistics.residue.longestStretchList.length > 0">
           <div class="insight-header">
-            <span class="insight-title">Least Conserved Pairs</span>
-            <span class="insight-badge secondary">{{ formatPercent(statistics.residue.leastConservedValue) }}</span>
-            <span class="info-icon" @mouseenter="showTooltip($event, 'Pairs with the lowest conservation among those meeting the threshold')" @mouseleave="hideTooltip">ⓘ</span>
+            <span class="insight-title">Longest Conserved Stretch</span>
+            <span class="info-icon" @mouseenter="showTooltip($event, 'Maximum consecutive frames where the pair maintains any interaction type')" @mouseleave="hideTooltip">ⓘ</span>
           </div>
           <div class="insight-pairs-list">
-            <div v-for="(item, idx) in statistics.residue.leastConservedList.slice(0, 3)" :key="idx" class="pair-with-types">
-              <span class="pair-name">{{ item.pair }}</span>
-              <div class="type-tags">
+            <div v-for="(item, idx) in statistics.residue.longestStretchList.slice(0, 3)" :key="idx" class="pair-with-types">
+              <div class="pair-rank-row">
+                <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                <span class="pair-name">{{ item.pair }}</span>
+                <span class="frame-count">{{ item.stretchInfo }}</span>
+              </div>
+              <div v-if="item.types && item.types.length > 0" class="type-tags">
                 <span 
                   v-for="(typeInfo, tIdx) in item.types.slice(0, 4)" 
                   :key="tIdx" 
@@ -193,39 +201,15 @@
                   :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
                   :title="`${typeInfo.type}: ${formatPercent(typeInfo.conservation)}`"
                 >{{ typeInfo.type }}</span>
-                <span v-if="item.types.length > 4" class="type-tag more-types">+{{ item.types.length - 4 }}</span>
               </div>
             </div>
             <button 
-              v-if="statistics.residue.leastConservedList.length > 3" 
+              v-if="statistics.residue.longestStretchList.length > 3" 
               class="insight-more-btn"
-              @click="openPairListModal('Least Conserved Pairs', statistics.residue.leastConservedList, formatPercent(statistics.residue.leastConservedValue))"
+              @click="openPairListModal('Longest Conserved Stretch', statistics.residue.longestStretchList, '')"
             >
-              +{{ statistics.residue.leastConservedList.length - 3 }} more pairs
+              +{{ statistics.residue.longestStretchList.length - 3 }} more pairs
             </button>
-          </div>
-        </div>
-        
-        <!-- Longest Conserved Stretch -->
-        <div class="insight-card" v-if="statistics.residue.longestStretchPair && statistics.residue.longestStretchPair !== 'N/A'">
-          <div class="insight-header">
-            <span class="insight-title">Longest Conserved Stretch</span>
-            <span class="info-icon" @mouseenter="showTooltip($event, 'Maximum consecutive frames where the pair maintains any interaction type')" @mouseleave="hideTooltip">ⓘ</span>
-          </div>
-          <div class="insight-pairs-list">
-            <div class="pair-with-types">
-              <span class="pair-name">{{ statistics.residue.longestStretchPair }}</span>
-              <span class="stretch-info">{{ statistics.residue.longestStretchInfo }}</span>
-              <div v-if="statistics.residue.longestStretchTypes && statistics.residue.longestStretchTypes.length > 0" class="type-tags">
-                <span 
-                  v-for="(typeInfo, tIdx) in statistics.residue.longestStretchTypes.slice(0, 4)" 
-                  :key="tIdx" 
-                  class="type-tag"
-                  :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
-                  :title="`${typeInfo.type}: ${formatPercent(typeInfo.conservation)}`"
-                >{{ typeInfo.type }}</span>
-              </div>
-            </div>
           </div>
         </div>
         
@@ -233,22 +217,29 @@
         <div class="insight-card" v-if="statistics.atomic.mostConservedList && statistics.atomic.mostConservedList.length > 0">
           <div class="insight-header">
             <span class="insight-title">Most Conserved Types</span>
-            <span class="insight-badge">{{ formatPercent(statistics.atomic.mostConservedValue) }}</span>
             <span class="info-icon" @mouseenter="showTooltip($event, 'Interaction types with highest average conservation across all pairs')" @mouseleave="hideTooltip">ⓘ</span>
           </div>
-          <div class="insight-content">
-            <template v-for="(item, idx) in statistics.atomic.mostConservedList.slice(0, 4)" :key="idx">
-              <span 
-                class="type-tag large"
-                :style="{ backgroundColor: getInteractionBaseColor(item.type), color: getTextColorForBg(item.type) }"
-              >{{ item.type }}</span>
-            </template>
+          <div class="insight-pairs-list">
+            <div v-for="(item, idx) in statistics.atomic.mostConservedList.slice(0, 3)" :key="idx" class="pair-with-types">
+              <div class="pair-rank-row">
+                <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                <span 
+                  class="type-tag large"
+                  :style="{ backgroundColor: getInteractionBaseColor(item.type), color: getTextColorForBg(item.type) }"
+                >{{ item.type }}</span>
+              </div>
+              <div v-if="item.pairs && item.pairs.length > 0" class="type-pairs-preview">
+                <span class="pairs-label">Pairs:</span>
+                <span v-for="(pair, pIdx) in item.pairs.slice(0, 3)" :key="pIdx" class="pair-mini-tag">{{ pair }}</span>
+                <span v-if="item.pairs.length > 3" class="pair-mini-tag more">+{{ item.pairs.length - 3 }}</span>
+              </div>
+            </div>
             <button 
-              v-if="statistics.atomic.mostConservedList.length > 4" 
+              v-if="statistics.atomic.mostConservedList.length > 3" 
               class="insight-more-btn"
-              @click="openTypeListModal('Most Conserved Types', statistics.atomic.mostConservedList, formatPercent(statistics.atomic.mostConservedValue))"
+              @click="openTypeListModal('Most Conserved Types', statistics.atomic.mostConservedList, '')"
             >
-              +{{ statistics.atomic.mostConservedList.length - 4 }} more
+              +{{ statistics.atomic.mostConservedList.length - 3 }} more
             </button>
           </div>
         </div>
@@ -279,19 +270,29 @@
             <!-- Type list (for Most Conserved Types) -->
             <div v-if="listModal.isTypeList" class="list-modal-items">
               <div v-for="(item, idx) in listModal.items" :key="idx" class="list-modal-type-item">
-                <span 
-                  class="type-tag large" 
-                  :style="{ backgroundColor: getInteractionBaseColor(item.type), color: getTextColorForBg(item.type) }"
-                >{{ item.type }}</span>
+                <div class="pair-rank-row">
+                  <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                  <span 
+                    class="type-tag large" 
+                    :style="{ backgroundColor: getInteractionBaseColor(item.type), color: getTextColorForBg(item.type) }"
+                  >{{ item.type }}</span>
+                </div>
                 <div v-if="item.pairs && item.pairs.length > 0" class="type-pairs-list">
-                  <span v-for="(pair, pairIdx) in item.pairs" :key="pairIdx" class="pair-tag">{{ pair }}</span>
+                  <span class="pairs-label">Pairs:</span>
+                  <span v-for="(pair, pairIdx) in item.pairs.slice(0, 5)" :key="pairIdx" class="pair-mini-tag">{{ pair }}</span>
+                  <span v-if="item.pairs.length > 5" class="pair-mini-tag more">+{{ item.pairs.length - 5 }}</span>
                 </div>
               </div>
             </div>
-            <!-- Pair list with types (for Most/Least Conserved Pairs) -->
+            <!-- Pair list with types (for Most/Least Conserved Pairs and Longest Stretch) -->
             <div v-else-if="listModal.isPairList" class="list-modal-items pair-list">
               <div v-for="(item, idx) in listModal.items" :key="idx" class="list-modal-pair-item">
-                <span class="pair-name">{{ item.pair }}</span>
+                <div class="pair-rank-row">
+                  <span :class="['rank-badge', `rank-${item.rank}`]">{{ getOrdinal(item.rank) }}</span>
+                  <span class="pair-name">{{ item.pair }}</span>
+                  <span v-if="item.frameCount !== undefined" class="frame-count">({{ item.frameCount }}/{{ dataStore.totalFrames }} frames)</span>
+                  <span v-else-if="item.stretchInfo" class="frame-count">{{ item.stretchInfo }}</span>
+                </div>
                 <div class="type-tags">
                   <span 
                     v-for="(typeInfo, tIdx) in item.types" 
@@ -620,6 +621,13 @@ const formatPercent = (value) => {
   return `${(value * 100).toFixed(2)}%`
 }
 
+// Convert number to ordinal (1st, 2nd, 3rd, etc.)
+const getOrdinal = (n) => {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
 const updateChart = async () => {
   if (!chartContainer.value) return
 
@@ -851,7 +859,8 @@ const updateChart = async () => {
   const pairConservationMap = new Map() // Track conservation by pair
   const pairFramesMap = new Map() // Track frames by pair
   const typeToPairsMap = new Map() // Track which residue pairs each interaction type belongs to
-  const pairToTypesMap = new Map() // Track which interaction types each pair has
+  const pairToTypesMap = new Map() // Track which interaction types each pair has (filtered by threshold)
+  const allPairToTypesMap = new Map() // Track ALL interaction types each pair has (for stats cards, no threshold filter)
   const pairTypeFramesMap = new Map() // Track frames for each pair-type combination for longest stretch calculation
   const typeToPairConservationMap = new Map() // Track pair conservation per type (type -> Map(pair -> conservation))
   
@@ -871,17 +880,14 @@ const updateChart = async () => {
         }
         pairConservationMap.get(pairLabel).push(interaction.consistency)
         
-        // Track frames for this pair (combine all interaction types)
+        // Track frames for this pair using the frames property (all frames where this pair interacts)
         if (!pairFramesMap.has(pairLabel)) {
           pairFramesMap.set(pairLabel, [])
         }
-        // Collect all frames where ANY interaction type is present
-        const typeFrames = interaction.typeFrames || {}
-        Object.values(typeFrames).forEach(frames => {
-          if (Array.isArray(frames)) {
-            pairFramesMap.get(pairLabel).push(...frames)
-          }
-        })
+        // Use interaction.frames which contains ALL frame numbers where this pair has any interaction
+        if (interaction.frames && Array.isArray(interaction.frames)) {
+          pairFramesMap.get(pairLabel).push(...interaction.frames)
+        }
       }
       
       // Atomic level: type conservation (only if meets threshold and filter)
@@ -892,7 +898,15 @@ const updateChart = async () => {
       interaction.typesArray.forEach((type) => {
         const typeConservation = typePersistence[type]
         
-        // Check if type conservation meets threshold
+        // Always track ALL types for each pair (for stats cards display, regardless of threshold)
+        if (typeConservation !== undefined && typeConservation !== null) {
+          if (!allPairToTypesMap.has(pairLabel)) {
+            allPairToTypesMap.set(pairLabel, new Map())
+          }
+          allPairToTypesMap.get(pairLabel).set(type, typeConservation)
+        }
+        
+        // Check if type conservation meets threshold (for filtered statistics)
         if (typeConservation === undefined || typeConservation === null || typeConservation < conservationThreshold.value) {
           return
         }
@@ -954,33 +968,25 @@ const updateChart = async () => {
   })
   
   // Calculate most and least conserved pairs at residue level
-  let mostConservedPairs = []
-  let leastConservedPairs = []
-  let maxPairConservation = -1
-  let minPairConservation = 2
+  // Collect ALL pairs with their conservation scores for proper ranking
+  const allPairsWithConservation = []
   
   pairConservationMap.forEach((scores, pairLabel) => {
     const avgConservation = scores.reduce((sum, val) => sum + val, 0) / scores.length
-    
-    if (avgConservation > maxPairConservation) {
-      maxPairConservation = avgConservation
-      mostConservedPairs = [pairLabel]
-    } else if (avgConservation === maxPairConservation) {
-      mostConservedPairs.push(pairLabel)
-    }
-    
-    if (avgConservation < minPairConservation) {
-      minPairConservation = avgConservation
-      leastConservedPairs = [pairLabel]
-    } else if (avgConservation === minPairConservation) {
-      leastConservedPairs.push(pairLabel)
-    }
+    const frames = pairFramesMap.get(pairLabel) || []
+    const uniqueFrameCount = new Set(frames).size
+    allPairsWithConservation.push({
+      pair: pairLabel,
+      conservation: avgConservation,
+      frameCount: uniqueFrameCount
+    })
   })
   
-  // Calculate longest conserved pair stretch (without breaking in frames)
-  let longestPairStretch = 0
-  let longestPairStretchLabel = ''
-  let longestPairStretchInfo = ''
+  // Sort by conservation descending (most conserved first)
+  allPairsWithConservation.sort((a, b) => b.frameCount - a.frameCount)
+  
+  // Calculate longest conserved pair stretch for ALL pairs (for proper ranking)
+  const allPairsWithStretch = []
   
   pairFramesMap.forEach((allFrames, pairLabel) => {
     // Get unique sorted frames for this pair
@@ -1011,36 +1017,42 @@ const updateChart = async () => {
       }
     }
     
-    if (maxStretch > longestPairStretch) {
-      longestPairStretch = maxStretch
-      longestPairStretchLabel = pairLabel
-      longestPairStretchInfo = `${maxStretch} frames (${maxStretchStart}-${maxStretchEnd})`
-    }
+    // Get number of interaction types for this pair
+    const typesMap = allPairToTypesMap.get(pairLabel) || new Map()
+    const typeCount = typesMap.size
+    
+    allPairsWithStretch.push({
+      pair: pairLabel,
+      stretchLength: maxStretch,
+      stretchInfo: `${maxStretch} frames (${maxStretchStart}-${maxStretchEnd})`,
+      typeCount
+    })
   })
   
-  // Calculate most and least conserved interaction types
-  let mostConservedTypes = []
-  let leastConservedTypes = []
-  let maxConservation = -1
-  let minConservation = 2
+  // Sort by: 1) stretch length descending, 2) fewer interaction types (ascending)
+  allPairsWithStretch.sort((a, b) => {
+    if (b.stretchLength !== a.stretchLength) {
+      return b.stretchLength - a.stretchLength // Longer stretch first
+    }
+    return a.typeCount - b.typeCount // Fewer types preferred (ideally 1)
+  })
+  
+  // Calculate conservation for ALL interaction types (for proper ranking)
+  const allTypesWithConservation = []
   
   typeConservationMap.forEach((scores, type) => {
     const avgConservation = scores.reduce((sum, val) => sum + val, 0) / scores.length
-    
-    if (avgConservation > maxConservation) {
-      maxConservation = avgConservation
-      mostConservedTypes = [type]
-    } else if (avgConservation === maxConservation) {
-      mostConservedTypes.push(type)
-    }
-    
-    if (avgConservation < minConservation) {
-      minConservation = avgConservation
-      leastConservedTypes = [type]
-    } else if (avgConservation === minConservation) {
-      leastConservedTypes.push(type)
-    }
+    // Get pairs associated with this type
+    const pairs = typeToPairsMap.get(type) ? Array.from(typeToPairsMap.get(type)) : []
+    allTypesWithConservation.push({
+      type,
+      conservation: avgConservation,
+      pairs: pairs.sort()
+    })
   })
+  
+  // Sort by conservation descending
+  allTypesWithConservation.sort((a, b) => b.conservation - a.conservation)
   
   // Calculate longest conserved stretch (without breaking in frames)
   // Track per pair-type combination to find which specific pairs have the longest stretch
@@ -1097,106 +1109,59 @@ const updateChart = async () => {
   const residueStats = calculateStatistics(residueScores)
   residueStats.cr50 = uniquePairs.size // CR50: count of unique pairs with ≥50% conservation
   
-  // Convert pair lists to objects with types - for scientific detail
-  const mostConservedPairsWithTypes = mostConservedPairs.map(pairLabel => {
-    const typesMap = pairToTypesMap.get(pairLabel) || new Map()
+  // Build ranked lists with tie handling
+  // Helper function to assign ranks with ties (same value = same rank)
+  const assignRanks = (sortedItems, valueKey) => {
+    let currentRank = 1
+    return sortedItems.map((item, idx) => {
+      if (idx > 0 && item[valueKey] < sortedItems[idx - 1][valueKey]) {
+        currentRank = idx + 1
+      }
+      return { ...item, rank: currentRank }
+    })
+  }
+  
+  // Build most conserved pairs list with types and ranks
+  const rankedPairs = assignRanks(allPairsWithConservation, 'frameCount')
+  const mostConservedPairsWithTypes = rankedPairs.map(item => {
+    const typesMap = allPairToTypesMap.get(item.pair) || new Map()
     return {
-      pair: pairLabel,
+      pair: item.pair,
+      frameCount: item.frameCount,
+      rank: item.rank,
       types: Array.from(typesMap.entries()).map(([type, conservation]) => ({ type, conservation }))
         .sort((a, b) => b.conservation - a.conservation)
     }
   })
   
-  const leastConservedPairsWithTypes = leastConservedPairs.map(pairLabel => {
-    const typesMap = pairToTypesMap.get(pairLabel) || new Map()
+  // Build ranked longest stretch list with types
+  const rankedStretches = assignRanks(allPairsWithStretch, 'stretchLength')
+  const longestStretchList = rankedStretches.map(item => {
+    const typesMap = allPairToTypesMap.get(item.pair) || new Map()
     return {
-      pair: pairLabel,
+      pair: item.pair,
+      stretchLength: item.stretchLength,
+      stretchInfo: item.stretchInfo,
+      rank: item.rank,
       types: Array.from(typesMap.entries()).map(([type, conservation]) => ({ type, conservation }))
         .sort((a, b) => b.conservation - a.conservation)
     }
   })
   
-  // Get types for longest stretch pair
-  const longestStretchPairTypes = pairToTypesMap.get(longestPairStretchLabel) || new Map()
-  const longestStretchTypesArray = Array.from(longestStretchPairTypes.entries())
-    .map(([type, conservation]) => ({ type, conservation }))
-    .sort((a, b) => b.conservation - a.conservation)
+  // Build ranked types list
+  const rankedTypes = assignRanks(allTypesWithConservation, 'conservation')
   
-  residueStats.mostConservedList = mostConservedPairsWithTypes // Store full list with types
-  residueStats.mostConserved = mostConservedPairs.length > 0 ? (mostConservedPairs.length > 2 ? `${mostConservedPairs.slice(0, 2).join(', ')} (+${mostConservedPairs.length - 2} more)` : mostConservedPairs.join(', ')) : 'N/A'
-  residueStats.mostConservedValue = maxPairConservation >= 0 ? maxPairConservation : 0
-  residueStats.leastConservedList = leastConservedPairsWithTypes // Store full list with types
-  residueStats.leastConserved = leastConservedPairs.length > 0 ? (leastConservedPairs.length > 2 ? `${leastConservedPairs.slice(0, 2).join(', ')} (+${leastConservedPairs.length - 2} more)` : leastConservedPairs.join(', ')) : 'N/A'
-  residueStats.leastConservedValue = minPairConservation < 2 ? minPairConservation : 0
-  residueStats.longestStretchPair = longestPairStretchLabel || 'N/A'
-  residueStats.longestStretchInfo = longestPairStretchInfo || 'N/A'
-  residueStats.longestStretchTypes = longestStretchTypesArray
+  residueStats.mostConservedList = mostConservedPairsWithTypes
+  residueStats.longestStretchList = longestStretchList
+  residueStats.longestStretchPair = longestStretchList[0]?.pair || 'N/A'
+  residueStats.longestStretchInfo = longestStretchList[0]?.stretchInfo || 'N/A'
+  residueStats.longestStretchTypes = longestStretchList[0]?.types || []
   
   const atomicStats = calculateStatistics(atomicScores)
   atomicStats.ca = pairTypeCombinations.length // CA: count of pair-type combinations meeting threshold
   
-  // Build most/least conserved types with their residue pairs
-  // Show only pairs that have the maximum/minimum conservation values for that specific type
-  const mostConservedTypesWithPairs = mostConservedTypes.map(type => {
-    const pairConservationMap = typeToPairConservationMap.get(type) || new Map()
-    
-    // Find the maximum conservation value for this type
-    let maxConservationForType = -1
-    pairConservationMap.forEach((conservation) => {
-      if (conservation > maxConservationForType) {
-        maxConservationForType = conservation
-      }
-    })
-    
-    // Get only pairs that have this maximum conservation value
-    const pairs = []
-    pairConservationMap.forEach((conservation, pair) => {
-      if (Math.abs(conservation - maxConservationForType) < 0.0001) {
-        pairs.push(pair)
-      }
-    })
-    
-    return {
-      type,
-      pairs: pairs.sort(),
-      maxConservation: maxConservationForType
-    }
-  })
-  const leastConservedTypesWithPairs = leastConservedTypes.map(type => {
-    const pairConservationMap = typeToPairConservationMap.get(type) || new Map()
-    
-    // Find the minimum conservation value for this type
-    let minConservationForType = 2
-    pairConservationMap.forEach((conservation) => {
-      if (conservation < minConservationForType) {
-        minConservationForType = conservation
-      }
-    })
-    
-    // Get only pairs that have this minimum conservation value
-    const pairs = []
-    pairConservationMap.forEach((conservation, pair) => {
-      if (Math.abs(conservation - minConservationForType) < 0.0001) {
-        pairs.push(pair)
-      }
-    })
-    
-    return {
-      type,
-      pairs: pairs.sort(),
-      minConservation: minConservationForType
-    }
-  })
-  
-  atomicStats.mostConservedList = mostConservedTypesWithPairs // Store full list with pairs
-  atomicStats.mostConserved = mostConservedTypes.length > 0 ? mostConservedTypes.join(', ') : 'N/A'
-  atomicStats.mostConservedValue = maxConservation >= 0 ? maxConservation : 0
-  atomicStats.leastConservedList = leastConservedTypesWithPairs // Store full list with pairs
-  atomicStats.leastConserved = leastConservedTypes.length > 0 ? leastConservedTypes.join(', ') : 'N/A'
-  atomicStats.leastConservedValue = minConservation < 2 ? minConservation : 0
-  atomicStats.longestStretchType = longestStretchType || 'N/A'
-  atomicStats.longestStretchPairs = longestStretchPairs.length > 0 ? longestStretchPairs.sort() : []
-  atomicStats.longestStretchInfo = longestStretchInfo || 'N/A'
+  // Use the ranked types list for atomic stats
+  atomicStats.mostConservedList = rankedTypes
   
   statistics.value = {
     residue: residueStats,
@@ -2426,13 +2391,86 @@ input[type="range"]::-moz-range-thumb:hover {
 
 .pair-with-types {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
   background: #f9f9fb;
   border-radius: 8px;
   border: 1px solid #e8e8ed;
+}
+
+.pair-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #8E8E93, #636366);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 12px;
+  text-transform: lowercase;
+}
+
+/* Gold for 1st place */
+.rank-badge.rank-1 {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #1d1d1f;
+}
+
+/* Silver for 2nd place */
+.rank-badge.rank-2 {
+  background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+  color: #1d1d1f;
+}
+
+/* Bronze for 3rd place */
+.rank-badge.rank-3 {
+  background: linear-gradient(135deg, #CD7F32, #B87333);
+  color: #fff;
+}
+
+.frame-count {
+  font-size: 12px;
+  color: #6e6e73;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.type-pairs-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.pairs-label {
+  font-size: 11px;
+  color: #8e8e93;
+  font-weight: 500;
+}
+
+.pair-mini-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: #e8e8ed;
+  color: #1d1d1f;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+}
+
+.pair-mini-tag.more {
+  background: #d1d1d6;
+  color: #6e6e73;
 }
 
 .pair-name {
@@ -2493,8 +2531,7 @@ input[type="range"]::-moz-range-thumb:hover {
 .list-modal-pair-item {
   width: 100%;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   padding: 12px 14px;
   background: #f9f9fb;
@@ -2502,9 +2539,27 @@ input[type="range"]::-moz-range-thumb:hover {
   border: 1px solid #e8e8ed;
 }
 
+.list-modal-pair-item .pair-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .list-modal-pair-item .pair-name {
-  min-width: 140px;
+  min-width: 100px;
   flex-shrink: 0;
+}
+
+.list-modal-type-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #f9f9fb;
+  border-radius: 8px;
+  border: 1px solid #e8e8ed;
 }
 
 .list-modal-items.pair-list {
