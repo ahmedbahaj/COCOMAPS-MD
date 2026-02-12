@@ -29,7 +29,7 @@
             <input
               id="conservation-slider"
               type="range"
-              min="50"
+              min="0"
               max="100"
               step="10"
               :value="minConsistency"
@@ -51,7 +51,7 @@
               :value="minConsistency"
               @input="updateThresholdFromInput"
               @blur="validateThresholdInput"
-              min="50"
+              min="0"
               max="100"
               step="1"
               class="value-input"
@@ -80,10 +80,10 @@ const distanceData = ref(null)
 const loading = ref(false)
 const minConsistency = ref(50)
 
-// Conservation threshold ticks (50% to 100% in 10% steps)
+// Conservation threshold ticks (0% to 100% in 10% steps)
 const conservationTicks = computed(() => {
   const ticks = []
-  for (let value = 50; value <= 100; value += 10) {
+  for (let value = 0; value <= 100; value += 10) {
     ticks.push({
       value,
       label: value
@@ -100,7 +100,7 @@ const updateThreshold = (event) => {
 
 const updateThresholdFromInput = (event) => {
   const value = parseInt(event.target.value)
-  if (!isNaN(value) && value >= 50 && value <= 100) {
+  if (!isNaN(value) && value >= 0 && value <= 100) {
     minConsistency.value = value
     updateChart()
   }
@@ -112,8 +112,8 @@ const validateThresholdInput = (event) => {
     event.target.value = minConsistency.value
     return
   }
-  // Clamp value between 50 and 100
-  value = Math.max(50, Math.min(100, value))
+  // Clamp value between 0 and 100
+  value = Math.max(0, Math.min(100, value))
   event.target.value = value
   minConsistency.value = value
   updateChart()
