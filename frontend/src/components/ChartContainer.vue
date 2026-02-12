@@ -24,9 +24,9 @@ import { computed, ref, watch } from 'vue'
 import { useDataStore } from '../stores/dataStore'
 import FilteredHeatmap from './charts/FilteredHeatmap.vue'
 import AreaChart from './charts/AreaChart.vue'
-import LineChart from './charts/LineChart.vue'
+import InteractionTrends from './charts/InteractionTrends.vue'
 import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
-import ViolinChart from './charts/ViolinChart.vue'
+import DistanceDistribution from './charts/DistanceDistribution.vue'
 
 const dataStore = useDataStore()
 
@@ -51,9 +51,9 @@ const hasData = computed(() => {
 const chartComponents = {
   filteredHeatmap: FilteredHeatmap,
   area: AreaChart,
-  line: LineChart,
+  line: InteractionTrends,
   interactionConservationMatrix: InteractionConservationMatrix,
-  violinPlot: ViolinChart
+  violinPlot: DistanceDistribution
 }
 
 const currentChartComponent = computed(() => {
