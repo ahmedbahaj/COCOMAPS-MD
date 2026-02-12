@@ -762,8 +762,13 @@ def get_atom_pairs(system_id):
                             if atom1 and atom2:
                                 atom_pair_key = f"{atom1}-{atom2}"
                                 
-                                # Get distance
-                                distance_str = row.get('Distance (Å)', '').strip()
+                                # Get distance - try multiple possible column names
+                                distance_str = None
+                                for dist_col in ['Distance (Å)', 'Distance', 'Distance(Å)', 'Dist (Å)', 'Dist', 'distance', 'Centroid Distance', 'Centroid Distance (Å)', 'Ring Distance', 'Ring Distance (Å)']:
+                                    if dist_col in row and row[dist_col]:
+                                        distance_str = row[dist_col].strip()
+                                        break
+                                
                                 distance = None
                                 if distance_str:
                                     # Remove asterisks and extract number
@@ -1094,8 +1099,13 @@ def get_atom_pairs_batch(system_id):
                         
                         atom_pair_key = f"{atom1}-{atom2}"
                         
-                        # Get distance
-                        distance_str = row.get('Distance (Å)', '').strip().replace('*', '')
+                        # Get distance - try multiple possible column names
+                        distance_str = None
+                        for dist_col in ['Distance (Å)', 'Distance', 'Distance(Å)', 'Dist (Å)', 'Dist', 'distance', 'Centroid Distance', 'Centroid Distance (Å)', 'Ring Distance', 'Ring Distance (Å)']:
+                            if dist_col in row and row[dist_col]:
+                                distance_str = row[dist_col].strip().replace('*', '')
+                                break
+                        
                         distance = None
                         if distance_str:
                             try:
@@ -1265,15 +1275,19 @@ def get_interaction_distances(system_id):
                             # Get distance - handle different CSV formats
                             distance = None
                             
-                            # Standard format: single Distance (Å) column
-                            if 'Distance (Å)' in type_row:
-                                distance_str = type_row.get('Distance (Å)', '').strip()
-                                if distance_str:
-                                    distance_str = distance_str.replace('*', '').strip()
-                                    try:
-                                        distance = float(distance_str)
-                                    except ValueError:
-                                        pass
+                            # Standard format: try multiple possible distance column names
+                            distance_str = None
+                            for dist_col in ['Distance (Å)', 'Distance', 'Distance(Å)', 'Dist (Å)', 'Dist', 'distance', 'Centroid Distance', 'Centroid Distance (Å)', 'Ring Distance', 'Ring Distance (Å)']:
+                                if dist_col in type_row and type_row[dist_col]:
+                                    distance_str = type_row[dist_col].strip()
+                                    break
+                            
+                            if distance_str:
+                                distance_str = distance_str.replace('*', '').strip()
+                                try:
+                                    distance = float(distance_str)
+                                except ValueError:
+                                    pass
                             
                             # Water-mediated format: has Distance from Res 1 and Distance from Res 2
                             # Sum both distances (total path through water)
@@ -1412,13 +1426,18 @@ def get_distance_distributions(system_id):
                     with open(type_csv, 'r', encoding='utf-8') as tf:
                         type_reader = csv.DictReader(tf)
                         for row in type_reader:
-                            # Check required fields
+                            # Check required fields (excluding distance for now)
                             if not all(key in row for key in ['Res. Name 1', 'Res. Number 1', 'Chain 1', 
-                                                              'Res. Name 2', 'Res. Number 2', 'Chain 2', 'Distance (Å)']):
+                                                              'Res. Name 2', 'Res. Number 2', 'Chain 2']):
                                 continue
                             
-                            # Extract distance
-                            distance_str = row.get('Distance (Å)', '').strip()
+                            # Try multiple possible distance column names
+                            distance_str = None
+                            for dist_col in ['Distance (Å)', 'Distance', 'Distance(Å)', 'Dist (Å)', 'Dist', 'distance', 'Centroid Distance', 'Centroid Distance (Å)', 'Ring Distance', 'Ring Distance (Å)']:
+                                if dist_col in row and row[dist_col]:
+                                    distance_str = row[dist_col].strip()
+                                    break
+                            
                             if not distance_str:
                                 continue
                             

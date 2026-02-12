@@ -1,24 +1,25 @@
 <template>
   <div class="chart-wrapper">
     <div class="chart-toolbar">
-      <!-- Interaction Type Dropdown -->
+      <!-- Interaction Type Chips -->
       <div class="control-group">
-        <label for="interaction-type-select">Interaction Type</label>
-        <select 
-          id="interaction-type-select"
-          v-model="selectedInteractionType" 
-          class="interaction-dropdown"
-          @change="loadDistanceData"
-        >
-          <option value="">Select an interaction type...</option>
-          <option 
-            v-for="type in availableInteractionTypes" 
-            :key="type" 
-            :value="type"
+        <label>Select Interaction Type</label>
+        <div class="interaction-chips">
+          <button
+            v-for="type in availableInteractionTypes"
+            :key="type"
+            type="button"
+            :class="['interaction-chip', { active: selectedInteractionType === type }]"
+            :style="getChipStyle(type)"
+            @click="selectInteractionType(type)"
           >
+            <span class="chip-color-dot" :style="{ backgroundColor: getInteractionBaseColor(type) }"></span>
             {{ type }}
-          </option>
-        </select>
+          </button>
+        </div>
+        <p v-if="availableInteractionTypes.length === 0" class="no-types-message">
+          No interaction types available. Adjust filters to see more types.
+        </p>
       </div>
       
       <!-- Conservation Threshold Slider -->
@@ -131,6 +132,42 @@ const availableInteractionTypes = computed(() => {
   })
   return Array.from(typesSet).sort()
 })
+
+// Chip styling helpers
+const getChipStyle = (type) => {
+  const baseColor = getInteractionBaseColor(type)
+  const isActive = selectedInteractionType.value === type
+  
+  if (isActive) {
+    return {
+      backgroundColor: baseColor,
+      borderColor: baseColor,
+      color: getContrastColor(baseColor)
+    }
+  }
+  return {
+    backgroundColor: 'transparent',
+    borderColor: baseColor,
+    color: '#1d1d1f'
+  }
+}
+
+// Get contrasting text color (white or black) based on background
+const getContrastColor = (hexColor) => {
+  // Remove # if present
+  const hex = hexColor.replace('#', '')
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.5 ? '#1d1d1f' : '#ffffff'
+}
+
+const selectInteractionType = (type) => {
+  selectedInteractionType.value = type
+  loadDistanceData()
+}
 
 const loadDistanceData = async () => {
   if (!selectedInteractionType.value || !dataStore.currentSystem) {
@@ -511,28 +548,55 @@ watch([
   letter-spacing: -0.022em;
 }
 
-.interaction-dropdown {
-  padding: 10px 16px;
-  font-size: 15px;
-  font-weight: 500;
-  color: #1d1d1f;
-  background: #ffffff;
-  border: 2px solid #d2d2d7;
-  border-radius: 8px;
+/* Interaction Type Chips */
+.interaction-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.interaction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px solid;
+  border-radius: 980px;
   cursor: pointer;
-  min-width: 300px;
+  transition: all 0.2s ease;
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  background: transparent;
 }
 
-.interaction-dropdown:hover {
-  border-color: #6e6e73;
+.interaction-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.interaction-dropdown:focus {
-  outline: none;
-  border-color: #1d1d1f;
-  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.1);
+.interaction-chip.active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.chip-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.interaction-chip.active .chip-color-dot {
+  background-color: currentColor !important;
+  opacity: 0.3;
+}
+
+.no-types-message {
+  font-size: 14px;
+  color: #6e6e73;
+  font-style: italic;
+  margin: 0;
 }
 
 /* Slider styles matching ControlsPanel */
