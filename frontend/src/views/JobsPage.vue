@@ -21,6 +21,12 @@
           <h1>Your Jobs</h1>
           <p class="subtitle">Manage and access your trajectory analyses</p>
         </div>
+        <router-link to="/" class="submit-job-btn">
+          <svg viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
+          </svg>
+          Submit a new Job
+        </router-link>
       </div>
     </header>
 
@@ -404,6 +410,37 @@ const confirmRename = async () => {
 .header-content {
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.submit-job-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #007aff;
+  border: none;
+  border-radius: 980px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.submit-job-btn:hover {
+  background: #0066d6;
+  transform: translateY(-1px);
+}
+
+.submit-job-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .header-text h1 {
@@ -959,6 +996,16 @@ const confirmRename = async () => {
 
   .page-header {
     padding: 24px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .submit-job-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .content {

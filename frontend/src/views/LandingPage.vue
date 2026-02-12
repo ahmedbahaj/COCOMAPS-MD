@@ -87,7 +87,7 @@
           <div class="existing-systems">
             <span class="divider-text">or</span>
             <button class="view-systems-btn" @click="viewExistingSystems">
-              View Existing Systems
+              View Existing Jobs
             </button>
           </div>
         </section>
@@ -237,7 +237,7 @@ const triggerFileInput = () => {
 }
 
 const viewExistingSystems = () => {
-  router.push({ name: 'Analysis' })
+  router.push({ name: 'Jobs' })
 }
 
 const handleDrop = (event) => {
@@ -548,7 +548,7 @@ watch(defaultStepSize, (newStep) => {
   line-height: 1.5;
   color: #6e6e73;
   margin: 24px 0 0 0;
-  max-width: 600px;
+  max-width: 800px;
   margin-left: auto;
   margin-right: auto;
 }
