@@ -489,11 +489,30 @@ watch(defaultStepSize, (newStep) => {
   color: #6e6e73;
   text-decoration: none;
   transition: color 0.15s ease;
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #1d1d1f;
+  transition: width 0.15s ease;
 }
 
 .nav-link:hover,
-.nav-link.active {
+.nav-link.active,
+.nav-link.router-link-active {
   color: #1d1d1f;
+}
+
+.nav-link.active::after,
+.nav-link.router-link-active::after {
+  width: 100%;
 }
 
 /* Hero Section */
