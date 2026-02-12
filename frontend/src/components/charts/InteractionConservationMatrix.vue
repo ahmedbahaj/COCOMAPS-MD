@@ -131,11 +131,6 @@
       </div>
     </Teleport>
     
-    <!-- Statistics Cards Section -->
-    <ConservationAnalysis
-      :pair-threshold="pairConservationThreshold"
-      :type-threshold="conservationThreshold"
-    />
     
     <!-- Interaction Trajectory Modal -->
     <InteractionTrajectoryModal
@@ -157,7 +152,6 @@ import { getInteractionBaseColor, matchesSelectedTypes, formatResiduePairFromIds
 import { INTERACTION_TYPES } from '../../utils/constants'
 import api from '../../services/api'
 import InteractionTrajectoryModal from '../InteractionTrajectoryModal.vue'
-import ConservationAnalysis from '../ConservationAnalysis.vue'
 
 HeatmapModule(Highcharts)
 
@@ -1674,5 +1668,6 @@ input[type="range"]::-moz-range-thumb:hover {
     transform: translateY(0);
   }
 }
+
 </style>
 

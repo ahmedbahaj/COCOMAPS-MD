@@ -15,9 +15,6 @@
         :is="currentChartComponent"
         :key="chartKey"
       />
-      <ConservationAnalysis
-        v-if="dataStore.currentChartType !== 'interactionConservationMatrix'"
-      />
     </template>
   </div>
 </template>
@@ -30,7 +27,6 @@ import AreaChart from './charts/AreaChart.vue'
 import LineChart from './charts/LineChart.vue'
 import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
 import ViolinChart from './charts/ViolinChart.vue'
-import ConservationAnalysis from './ConservationAnalysis.vue'
 
 const dataStore = useDataStore()
 
