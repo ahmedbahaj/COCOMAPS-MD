@@ -10,11 +10,15 @@
     <div v-else-if="!hasData" class="no-data">
       No data available. Please select a system.
     </div>
-    <component
-      v-else
-      :is="currentChartComponent"
-      :key="chartKey"
-    />
+    <template v-else>
+      <component
+        :is="currentChartComponent"
+        :key="chartKey"
+      />
+      <ConservationAnalysis
+        v-if="dataStore.currentChartType !== 'interactionConservationMatrix'"
+      />
+    </template>
   </div>
 </template>
 
@@ -26,6 +30,7 @@ import AreaChart from './charts/AreaChart.vue'
 import LineChart from './charts/LineChart.vue'
 import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
 import ViolinChart from './charts/ViolinChart.vue'
+import ConservationAnalysis from './ConservationAnalysis.vue'
 
 const dataStore = useDataStore()
 
