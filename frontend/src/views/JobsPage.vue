@@ -21,21 +21,6 @@
           <h1>Your Jobs</h1>
           <p class="subtitle">Manage and access your trajectory analyses</p>
         </div>
-        <div class="header-search">
-          <div class="search-box">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input 
-              type="text" 
-              v-model="searchQuery" 
-              placeholder="Search jobs..."
-              class="search-input"
-            />
-            <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">×</button>
-          </div>
-        </div>
       </div>
     </header>
 
@@ -77,7 +62,25 @@
       </div>
 
       <!-- Jobs Table -->
-      <div v-else class="table-container">
+      <div v-else class="table-wrapper">
+        <!-- Search Bar -->
+        <div class="table-search">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="Search jobs..."
+              class="search-input"
+            />
+            <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">×</button>
+          </div>
+        </div>
+        
+        <div class="table-container">
         <table class="jobs-table">
           <thead>
             <tr>
@@ -149,6 +152,7 @@
         
         <div class="table-footer">
           <span class="job-count">Showing {{ filteredSystems.length }} of {{ systems.length }} jobs</span>
+        </div>
         </div>
       </div>
     </main>
@@ -400,10 +404,6 @@ const confirmRename = async () => {
 .header-content {
   max-width: 1200px;
   margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
 }
 
 .header-text h1 {
@@ -417,64 +417,6 @@ const confirmRename = async () => {
   font-size: 17px;
   color: #6e6e73;
   margin: 0;
-}
-
-/* Search */
-.search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 16px;
-  width: 20px;
-  height: 20px;
-  color: #8e8e93;
-  pointer-events: none;
-}
-
-.search-input {
-  width: 300px;
-  padding: 12px 40px 12px 48px;
-  font-size: 15px;
-  border: 2px solid #d2d2d7;
-  border-radius: 12px;
-  background: #f5f5f7;
-  transition: all 0.15s ease;
-  font-family: inherit;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #1d1d1f;
-  background: #ffffff;
-}
-
-.search-input::placeholder {
-  color: #8e8e93;
-}
-
-.clear-search {
-  position: absolute;
-  right: 12px;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: #8e8e93;
-  color: #ffffff;
-  border-radius: 50%;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease;
-}
-
-.clear-search:hover {
-  background: #6e6e73;
 }
 
 /* Content */
@@ -560,6 +502,78 @@ const confirmRename = async () => {
 .clear-btn:hover {
   background: #000000;
   transform: translateY(-1px);
+}
+
+/* Table Wrapper */
+.table-wrapper {
+  width: 100%;
+}
+
+/* Table Search */
+.table-search {
+  margin-bottom: 16px;
+}
+
+.table-search .search-box {
+  position: relative;
+  width: 100%;
+}
+
+.table-search .search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #8e8e93;
+}
+
+.table-search .search-input {
+  width: 100%;
+  padding: 14px 44px 14px 48px;
+  font-size: 15px;
+  border: 1px solid #e8e8ed;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1d1d1f;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.table-search .search-input:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.table-search .search-input::placeholder {
+  color: #8e8e93;
+}
+
+.table-search .clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #e8e8ed;
+  color: #6e6e73;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.table-search .clear-search:hover {
+  background: #d1d1d6;
+  color: #1d1d1f;
 }
 
 /* Table */
@@ -911,15 +925,6 @@ const confirmRename = async () => {
 
   .page-header {
     padding: 24px;
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .search-input {
-    width: 100%;
   }
 
   .content {
