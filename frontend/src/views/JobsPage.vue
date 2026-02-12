@@ -32,8 +32,8 @@
         <p>Loading jobs...</p>
       </div>
 
-      <!-- Empty State -->
-      <div v-else-if="filteredSystems.length === 0 && !searchQuery" class="empty-state">
+      <!-- Empty State (no jobs at all) -->
+      <div v-else-if="systems.length === 0" class="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="6" y="10" width="36" height="28" rx="3"/>
@@ -48,20 +48,7 @@
         <router-link to="/" class="start-btn">Get Started</router-link>
       </div>
 
-      <!-- No Results State -->
-      <div v-else-if="filteredSystems.length === 0 && searchQuery" class="empty-state">
-        <div class="empty-icon">
-          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="20" cy="20" r="14"/>
-            <path d="M30 30l12 12"/>
-          </svg>
-        </div>
-        <h2>No results found</h2>
-        <p>No jobs match "{{ searchQuery }}". Try a different search term.</p>
-        <button @click="searchQuery = ''" class="clear-btn">Clear Search</button>
-      </div>
-
-      <!-- Jobs Table -->
+      <!-- Jobs Table (with search) -->
       <div v-else class="table-wrapper">
         <!-- Search Bar -->
         <div class="table-search">
@@ -79,8 +66,21 @@
             <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">×</button>
           </div>
         </div>
+
+        <!-- No Results State -->
+        <div v-if="filteredSystems.length === 0" class="no-results-state">
+          <div class="no-results-icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="20" cy="20" r="14"/>
+              <path d="M30 30l12 12"/>
+            </svg>
+          </div>
+          <h3>No results found</h3>
+          <p>No jobs match "{{ searchQuery }}". Try a different search term.</p>
+          <button @click="searchQuery = ''" class="clear-btn">Clear Search</button>
+        </div>
         
-        <div class="table-container">
+        <div v-else class="table-container">
         <table class="jobs-table">
           <thead>
             <tr>
@@ -502,6 +502,40 @@ const confirmRename = async () => {
 .clear-btn:hover {
   background: #000000;
   transform: translateY(-1px);
+}
+
+/* No Results State (inside table wrapper) */
+.no-results-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+}
+
+.no-results-icon {
+  width: 64px;
+  height: 64px;
+  color: #8e8e93;
+  margin-bottom: 20px;
+}
+
+.no-results-state h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+}
+
+.no-results-state p {
+  font-size: 15px;
+  color: #6e6e73;
+  margin: 0 0 20px 0;
+  max-width: 400px;
 }
 
 /* Table Wrapper */
