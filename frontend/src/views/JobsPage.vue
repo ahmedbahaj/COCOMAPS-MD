@@ -194,9 +194,7 @@
     </Teleport>
 
     <!-- Footer -->
-    <footer class="page-footer">
-      <p>© 2024 Trajectory Analysis Tool</p>
-    </footer>
+    <AppFooter />
   </div>
 </template>
 
@@ -205,6 +203,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataStore } from '../stores/dataStore'
 import api from '../services/api'
+import AppFooter from '../components/AppFooter.vue'
 
 const router = useRouter()
 const dataStore = useDataStore()
@@ -987,20 +986,6 @@ const confirmRename = async () => {
 .btn-confirm:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* Footer */
-.page-footer {
-  padding: 24px 40px;
-  text-align: center;
-  border-top: 1px solid #e8e8ed;
-  background: #ffffff;
-}
-
-.page-footer p {
-  font-size: 14px;
-  color: #8e8e93;
-  margin: 0;
 }
 
 /* Responsive */

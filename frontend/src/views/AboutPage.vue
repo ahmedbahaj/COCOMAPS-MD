@@ -105,13 +105,13 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
-      <p>Trajectory Analysis • Powered by CoCoMaps 2.0 and MDAnalysis</p>
-    </footer>
+    <AppFooter />
   </div>
 </template>
 
 <script setup>
+import AppFooter from '../components/AppFooter.vue'
+
 const interactionTypes = [
   {
     id: 'h-bond',
@@ -475,20 +475,6 @@ const interactionTypes = [
   font-size: 14px;
   color: #6e6e73;
   margin: 0;
-}
-
-/* Footer */
-.footer {
-  padding: 24px 40px;
-  text-align: center;
-  border-top: 1px solid #e8e8ed;
-  background: #ffffff;
-}
-
-.footer p {
-  margin: 0;
-  font-size: 14px;
-  color: #86868b;
 }
 
 /* Responsive */

@@ -168,9 +168,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
-      <p>Powered by CoCoMaps 2.0 and MDAnalysis</p>
-    </footer>
+    <AppFooter />
   </div>
 </template>
 
@@ -179,6 +177,7 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ChainSelector from '../components/ChainSelector.vue'
 import AdvancedSettings from '../components/AdvancedSettings.vue'
+import AppFooter from '../components/AppFooter.vue'
 import api from '../services/api'
 import { useDataStore } from '../stores/dataStore'
 
@@ -907,20 +906,6 @@ watch(defaultStepSize, (newStep) => {
   border-radius: 8px;
   color: #d32f2f;
   font-size: 14px;
-}
-
-/* Footer */
-.footer {
-  padding: 24px 40px;
-  text-align: center;
-  border-top: 1px solid #e8e8ed;
-  background: #ffffff;
-}
-
-.footer p {
-  margin: 0;
-  font-size: 14px;
-  color: #86868b;
 }
 
 /* Responsive */

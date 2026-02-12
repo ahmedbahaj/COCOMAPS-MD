@@ -188,14 +188,13 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
-      <p>Trajectory Analysis • Powered by CoCoMaps 2.0 and MDAnalysis</p>
-    </footer>
+    <AppFooter />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import AppFooter from '../components/AppFooter.vue'
 
 const copiedBib = ref(null)
 
@@ -618,20 +617,6 @@ const copyBibtex = async (key) => {
   font-size: 13px;
   color: #6e6e73;
   margin-top: 2px;
-}
-
-/* Footer */
-.footer {
-  padding: 24px 40px;
-  text-align: center;
-  border-top: 1px solid #e8e8ed;
-  background: #ffffff;
-}
-
-.footer p {
-  margin: 0;
-  font-size: 14px;
-  color: #86868b;
 }
 
 /* Responsive */

@@ -43,6 +43,9 @@
     </div>
 
     <UploadModal ref="uploadModal" />
+
+    <!-- Footer -->
+    <AppFooter />
   </div>
 </template>
 
@@ -56,6 +59,7 @@ import StatsPanel from '../components/StatsPanel.vue'
 import ConservationAnalysis from '../components/ConservationAnalysis.vue'
 import UploadModal from '../components/UploadModal.vue'
 import SystemSidebar from '../components/SystemSidebar.vue'
+import AppFooter from '../components/AppFooter.vue'
 
 const dataStore = useDataStore()
 const sidebarOpen = ref(false)
