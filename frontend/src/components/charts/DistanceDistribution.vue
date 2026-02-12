@@ -1,8 +1,9 @@
 <template>
   <div class="chart-wrapper">
     <div class="chart-toolbar">
-      <div class="dropdown-group">
-        <label for="interaction-type-select" class="dropdown-label">Interaction Type:</label>
+      <!-- Interaction Type Dropdown -->
+      <div class="control-group">
+        <label for="interaction-type-select">Interaction Type</label>
         <select 
           id="interaction-type-select"
           v-model="selectedInteractionType" 
@@ -19,19 +20,46 @@
           </option>
         </select>
       </div>
-      <div class="slider-group">
-        <label for="conservation-slider" class="dropdown-label">Min Conservation:</label>
-        <input
-          id="conservation-slider"
-          type="range"
-          min="50"
-          max="100"
-          step="5"
-          v-model.number="minConsistency"
-          @input="updateChart"
-          class="conservation-slider"
-        />
-        <span class="slider-value">{{ minConsistency }}%</span>
+      
+      <!-- Conservation Threshold Slider -->
+      <div class="control-group">
+        <label for="conservation-slider">Min Conservation Threshold</label>
+        <div class="slider-container">
+          <div class="slider-control">
+            <input
+              id="conservation-slider"
+              type="range"
+              min="50"
+              max="100"
+              step="10"
+              :value="minConsistency"
+              @input="updateThreshold"
+            />
+            <div class="slider-ticks">
+              <span
+                v-for="tick in conservationTicks"
+                :key="tick.value"
+                class="slider-tick"
+              >
+                <span class="slider-tick-label">{{ tick.label }}</span>
+              </span>
+            </div>
+          </div>
+          <div class="slider-value-input">
+            <input
+              type="number"
+              :value="minConsistency"
+              @input="updateThresholdFromInput"
+              @blur="validateThresholdInput"
+              min="50"
+              max="100"
+              step="1"
+              class="value-input"
+            />
+            <span class="percent-symbol">%</span>
+          </div>
+        </div>
+        <p class="slider-description">Show pairs with conservation ≥ {{ minConsistency }}%</p>
       </div>
     </div>
     <div ref="chartContainer" class="chart-container"></div>
@@ -51,6 +79,45 @@ const selectedInteractionType = ref('')
 const distanceData = ref(null)
 const loading = ref(false)
 const minConsistency = ref(50)
+
+// Conservation threshold ticks (50% to 100% in 10% steps)
+const conservationTicks = computed(() => {
+  const ticks = []
+  for (let value = 50; value <= 100; value += 10) {
+    ticks.push({
+      value,
+      label: value
+    })
+  }
+  return ticks
+})
+
+// Slider update handlers
+const updateThreshold = (event) => {
+  minConsistency.value = parseInt(event.target.value)
+  updateChart()
+}
+
+const updateThresholdFromInput = (event) => {
+  const value = parseInt(event.target.value)
+  if (!isNaN(value) && value >= 50 && value <= 100) {
+    minConsistency.value = value
+    updateChart()
+  }
+}
+
+const validateThresholdInput = (event) => {
+  let value = parseInt(event.target.value)
+  if (isNaN(value)) {
+    event.target.value = minConsistency.value
+    return
+  }
+  // Clamp value between 50 and 100
+  value = Math.max(50, Math.min(100, value))
+  event.target.value = value
+  minConsistency.value = value
+  updateChart()
+}
 
 // Get all unique interaction types from filtered data
 const availableInteractionTypes = computed(() => {
@@ -420,33 +487,28 @@ watch([
 }
 
 .chart-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+  background: #fbfbfd;
+  border-radius: 18px;
+  padding: 24px 32px;
   margin-bottom: 24px;
-  padding: 16px;
-  background: #f5f5f7;
-  border-radius: 12px;
-  flex-wrap: wrap;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
 }
 
-.dropdown-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.control-group {
+  margin-bottom: 24px;
 }
 
-.slider-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.control-group:last-child {
+  margin-bottom: 0;
 }
 
-.dropdown-label {
-  font-size: 15px;
+.control-group > label {
+  display: block;
+  font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
-  white-space: nowrap;
+  margin-bottom: 12px;
+  letter-spacing: -0.022em;
 }
 
 .interaction-dropdown {
@@ -469,41 +531,127 @@ watch([
 
 .interaction-dropdown:focus {
   outline: none;
-  border-color: #3B6EF5;
+  border-color: #1d1d1f;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.1);
 }
 
-.conservation-slider {
-  width: 150px;
-  height: 6px;
-  border-radius: 3px;
+/* Slider styles matching ControlsPanel */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-control {
+  position: relative;
+  flex: 1;
+}
+
+.slider-ticks {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.slider-tick {
+  position: relative;
+  width: 2px;
+  height: 16px;
+  background: #b4b4bb;
+  opacity: 0.7;
+}
+
+.slider-tick-label {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #6e6e73;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
   background: #d2d2d7;
   outline: none;
-  cursor: pointer;
+  flex: 1;
 }
 
-.conservation-slider::-webkit-slider-thumb {
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #1d1d1f;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
 }
 
-.conservation-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #1d1d1f;
-  cursor: pointer;
-  border: none;
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: #000000;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  transform: scale(1.05);
 }
 
-.slider-value {
-  font-size: 15px;
+.slider-value-input {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+}
+
+.value-input {
+  width: 60px;
+  font-size: 17px;
   font-weight: 600;
   color: #1d1d1f;
-  min-width: 45px;
+  text-align: right;
+  border: 2px solid #d2d2d7;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #ffffff;
+  font-variant-numeric: tabular-nums;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.value-input:focus {
+  outline: none;
+  border-color: #1d1d1f;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.1);
+}
+
+.value-input::-webkit-inner-spin-button,
+.value-input::-webkit-outer-spin-button {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.percent-symbol {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.slider-description {
+  font-size: 14px;
+  color: #6e6e73;
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 
 .chart-container {
