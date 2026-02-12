@@ -3,6 +3,7 @@ import LandingPage from '../views/LandingPage.vue'
 import Home from '../views/Home.vue'
 import AboutPage from '../views/AboutPage.vue'
 import ReferencesPage from '../views/ReferencesPage.vue'
+import JobsPage from '../views/JobsPage.vue'
 
 const routes = [
   {
@@ -14,6 +15,11 @@ const routes = [
     path: '/analysis',
     name: 'Analysis',
     component: Home
+  },
+  {
+    path: '/jobs',
+    name: 'Jobs',
+    component: JobsPage
   },
   {
     path: '/about',
