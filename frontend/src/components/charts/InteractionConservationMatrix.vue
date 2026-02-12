@@ -165,7 +165,8 @@
                   :key="tIdx" 
                   class="type-tag"
                   :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
-                  :title="`${typeInfo.type}: ${formatPercent(typeInfo.conservation)}`"
+                  @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * dataStore.totalFrames)}/${dataStore.totalFrames} frames)`)"
+                  @mouseleave="hideTooltip"
                 >{{ typeInfo.type }}</span>
                 <span v-if="item.types.length > 4" class="type-tag more-types">+{{ item.types.length - 4 }}</span>
               </div>
@@ -201,7 +202,8 @@
                   :key="tIdx" 
                   class="type-tag"
                   :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
-                  :title="`${typeInfo.type}: ${formatPercent(typeInfo.conservation)}`"
+                  @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * dataStore.totalFrames)}/${dataStore.totalFrames} frames)`)"
+                  @mouseleave="hideTooltip"
                 >{{ typeInfo.type }}</span>
               </div>
             </div>
@@ -301,7 +303,8 @@
                     :key="tIdx" 
                     class="type-tag"
                     :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
-                    :title="`${formatPercent(typeInfo.conservation)}`"
+                    @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * dataStore.totalFrames)}/${dataStore.totalFrames} frames)`)"
+                    @mouseleave="hideTooltip"
                   >{{ typeInfo.type }}</span>
                 </div>
               </div>
@@ -2605,6 +2608,7 @@ input[type="range"]::-moz-range-thumb:hover {
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
+  cursor: help;
 }
 
 .type-tag.large {
