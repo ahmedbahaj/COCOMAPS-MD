@@ -2,12 +2,15 @@
   <div class="about-page">
     <!-- Navigation -->
     <nav class="nav-bar">
-      <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
-      <div class="nav-links">
-        <router-link to="/" class="nav-link">Home</router-link>
-        <router-link to="/about" class="nav-link active">About</router-link>
-        <router-link to="/references" class="nav-link">References</router-link>
+      <div class="nav-left">
+        <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
+        <div class="nav-links">
+          <router-link to="/" class="nav-link">Home</router-link>
+          <router-link to="/about" class="nav-link active">About</router-link>
+          <router-link to="/references" class="nav-link">References</router-link>
+        </div>
       </div>
+      <div class="nav-right"></div>
     </nav>
 
     <!-- Header -->
@@ -260,6 +263,12 @@ const interactionTypes = [
   z-index: 100;
 }
 
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .nav-logo {
   font-size: 20px;
   font-weight: 700;
@@ -270,6 +279,7 @@ const interactionTypes = [
 .nav-links {
   display: flex;
   gap: 32px;
+  margin-left: 32px;
 }
 
 .nav-link {

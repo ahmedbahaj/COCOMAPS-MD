@@ -9,12 +9,13 @@
           <span></span>
         </button>
         <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
+        <div class="nav-links">
+          <router-link to="/" class="nav-link">Home</router-link>
+          <router-link to="/about" class="nav-link">About</router-link>
+          <router-link to="/references" class="nav-link">References</router-link>
+        </div>
       </div>
-      <div class="nav-links">
-        <router-link to="/" class="nav-link">Home</router-link>
-        <router-link to="/about" class="nav-link">About</router-link>
-        <router-link to="/references" class="nav-link">References</router-link>
-      </div>
+      <div class="nav-right"></div>
     </nav>
 
     <!-- Sidebar Overlay -->
@@ -181,6 +182,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 24px;
+  margin-left: 32px;
 }
 
 .nav-link {

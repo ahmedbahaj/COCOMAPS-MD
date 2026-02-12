@@ -2,12 +2,15 @@
   <div class="landing-page">
     <!-- Navigation -->
     <nav class="nav-bar">
-      <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
-      <div class="nav-links">
-        <router-link to="/" class="nav-link active">Home</router-link>
-        <router-link to="/about" class="nav-link">About</router-link>
-        <router-link to="/references" class="nav-link">References</router-link>
+      <div class="nav-left">
+        <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
+        <div class="nav-links">
+          <router-link to="/" class="nav-link active">Home</router-link>
+          <router-link to="/about" class="nav-link">About</router-link>
+          <router-link to="/references" class="nav-link">References</router-link>
+        </div>
       </div>
+      <div class="nav-right"></div>
     </nav>
 
     <!-- Hero Section -->
@@ -459,6 +462,12 @@ watch(defaultStepSize, (newStep) => {
   z-index: 100;
 }
 
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .nav-logo {
   font-size: 20px;
   font-weight: 700;
@@ -469,6 +478,7 @@ watch(defaultStepSize, (newStep) => {
 .nav-links {
   display: flex;
   gap: 32px;
+  margin-left: 32px;
 }
 
 .nav-link {
