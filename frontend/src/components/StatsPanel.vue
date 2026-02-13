@@ -3,11 +3,25 @@
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-value">{{ totalInteractions }}</div>
-        <div class="stat-label">Unique Residue Pairs</div>
+        <div class="stat-label">
+          Unique Residue Pairs
+          <span 
+            class="info-icon" 
+            @mouseenter="showTooltip($event, 'Total number of unique residue pairs that have at least one interaction across all frames in the trajectory.')"
+            @mouseleave="hideTooltip"
+          >ⓘ</span>
+        </div>
       </div>
       <div class="stat-card">
         <div class="stat-value">{{ visibleInteractions }}</div>
-        <div class="stat-label">Unique Filtered Pairs</div>
+        <div class="stat-label">
+          Unique Filtered Pairs
+          <span 
+            class="info-icon" 
+            @mouseenter="showTooltip($event, 'Number of unique residue pairs remaining after applying the current conservation threshold and interaction type filters.')"
+            @mouseleave="hideTooltip"
+          >ⓘ</span>
+        </div>
       </div>
       <div class="stat-card">
         <div class="stat-value">{{ avgConsistency }}</div>
