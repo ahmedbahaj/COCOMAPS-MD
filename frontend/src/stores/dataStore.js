@@ -19,7 +19,7 @@ export const useDataStore = defineStore('data', {
     trendFrameNumbers: [],  // Actual frame numbers with data (e.g., [21, 22])
 
     // UI State
-    currentChartType: 'filteredHeatmap',
+    currentChartType: 'interactionConservationMatrix',
     currentThreshold: 0.5,
     useLogScale: false,
     selectedInteractionTypes: new Set(INTERACTION_TYPES.map(t => t.id)), // Select all by default

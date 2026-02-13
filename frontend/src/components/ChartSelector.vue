@@ -27,14 +27,14 @@ const tabRefs = ref({})
 
 const charts = [
   { 
+    id: 'interactionConservationMatrix', 
+    label: 'Conservation Matrix',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>'
+  },
+  { 
     id: 'filteredHeatmap', 
     label: 'Interaction Heatmap',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
-  },
-  { 
-    id: 'area', 
-    label: 'Area Composition',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><path d="M3 17l5-7 4 4 5-8 4 6" fill="currentColor" opacity="0.2"/><path d="M3 17l5-7 4 4 5-8 4 6"/></svg>'
   },
   { 
     id: 'line', 
@@ -42,14 +42,14 @@ const charts = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><path d="M3 17l5-5 4 2 5-7 4 4"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/><circle cx="17" cy="7" r="1.5" fill="currentColor"/></svg>'
   },
   { 
-    id: 'interactionConservationMatrix', 
-    label: 'Conservation Matrix',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>'
-  },
-  { 
     id: 'violinPlot', 
     label: 'Distance Distribution',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><ellipse cx="12" cy="12" rx="5" ry="8" opacity="0.2" fill="currentColor"/><ellipse cx="12" cy="12" rx="5" ry="8"/></svg>'
+  },
+  { 
+    id: 'area', 
+    label: 'Area Composition',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><path d="M3 17l5-7 4 4 5-8 4 6" fill="currentColor" opacity="0.2"/><path d="M3 17l5-7 4 4 5-8 4 6"/></svg>'
   }
 ]
 

@@ -112,10 +112,6 @@
           {{ atomChangeModeOptions.find(o => o.value === atomChangeMode)?.description }}
         </p>
       </div>
-      
-      <div class="info-notice">
-        <strong>Interaction Timeline View:</strong> Click on a segment for trajectory analysis.
-      </div>
     </div>
     
     <div ref="chartContainer" class="chart-container"></div>
@@ -1618,20 +1614,6 @@ input[type="range"]::-moz-range-thumb:hover {
   color: #6e6e73;
   font-weight: 500;
   font-style: italic;
-}
-
-.info-notice {
-  font-size: 14px;
-  color: #1d1d1f;
-  padding: 12px 16px;
-  background: #ffffff;
-  border-left: 4px solid #3B6EF5;
-  border-radius: 8px;
-}
-
-.info-notice strong {
-  font-weight: 700;
-  color: #3B6EF5;
 }
 
 .chart-container {
