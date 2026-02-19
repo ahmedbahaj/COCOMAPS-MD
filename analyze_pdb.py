@@ -566,6 +566,15 @@ Environment Variables:
             verbose=True,
             step_num=step_num,
         )
+        step_num += 1
+
+        # STEP 5: Aggregate per-frame CSVs into system-level files
+        from aggregate_csv import aggregate_system
+        print(f"\n{'='*80}")
+        print(f"STEP {step_num}: Aggregating system CSVs")
+        print(f"{'='*80}")
+        aggregate_system(output_dir, verbose=True)
+        step_num += 1
 
         # Final summary
         total_time = time.time() - overall_start

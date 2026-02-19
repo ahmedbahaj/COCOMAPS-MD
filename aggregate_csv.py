@@ -1,0 +1,312 @@
+"""
+Aggregate per-frame CoCoMaps CSVs into system-level files.
+
+Produces:
+  - _interactions.csv  (one row per residue pair per frame)
+  - _area.csv          (one row per frame: BSA data)
+  - _trends.csv        (one row per frame: interaction type counts)
+  - _metadata.json     (totalFrames, chainPattern, etc.)
+
+Used by analyze_pdb.py (Step 5).
+"""
+import csv
+import json
+import re
+from pathlib import Path
+from typing import Optional
+
+
+def _extract_first_number(value_str):
+    """Extract first numeric value from strings like '2331.8 / 1165.9' or '25.35%'"""
+    if not value_str:
+        return None
+    slash_match = re.match(r'\s*([0-9]+(?:\.[0-9]+)?)\s*/', value_str)
+    if slash_match:
+        return slash_match.group(1)
+    number_match = re.search(r'([0-9]+(?:\.[0-9]+)?)', value_str)
+    return number_match.group(1) if number_match else None
+
+
+def _get_chain_pattern(frame_folder: Path) -> str:
+    """Detect chain pattern (e.g. 'A_B') from CSV files in frame folder."""
+    pattern = re.compile(r'\.pd[b_h\.]*_([A-Z])_([A-Z])_final_file\.csv$')
+    for f in frame_folder.iterdir():
+        if f.is_file():
+            match = pattern.search(f.name)
+            if match:
+                return f"{match.group(1)}_{match.group(2)}"
+    return "A_B"
+
+
+def _normalize_interaction_type(type_label):
+    """Map equivalent interaction labels to canonical value (matches data.py)."""
+    if not type_label:
+        return None
+    clean_label = type_label.strip()
+    lower_label = clean_label.lower()
+    if 'h-bond' in lower_label or 'hydrogen bond' in lower_label:
+        return 'H-bond'
+    elif 'salt-bridge' in lower_label or 'salt bridge' in lower_label:
+        return 'Salt-bridge'
+    elif 'π-π' in clean_label or 'pi-pi' in lower_label or 'pi pi' in lower_label:
+        return 'π-π interactions'
+    elif 'cation-π' in lower_label or 'cation-pi' in lower_label or 'cation_pi' in lower_label:
+        return 'Cation-π interactions'
+    elif 'anion-π' in lower_label or 'anion-pi' in lower_label or 'anion_pi' in lower_label:
+        return 'Anion-π interactions'
+    elif 'ch-o/n' in lower_label or 'c-h_on' in lower_label or 'c-h on' in lower_label or 'ch-on' in lower_label:
+        return 'CH-O/N bonds'
+    elif 'ch-π' in lower_label or 'ch-pi' in lower_label or 'c-h_pi' in lower_label or 'ch-π interaction' in lower_label:
+        return 'CH-π interactions'
+    elif 'halogen' in lower_label:
+        return 'Halogen bonds'
+    elif 'apolar vdw' in lower_label or 'apolar_vdw' in lower_label:
+        return 'Apolar vdW contacts'
+    elif 'polar vdw' in lower_label or 'polar_vdw' in lower_label:
+        return 'Polar vdW contacts'
+    elif 'proximal' in lower_label:
+        return 'Proximal contacts'
+    elif 'clash' in lower_label:
+        return 'Clashes'
+    elif 'metal mediated' in lower_label or 'metal_mediated' in lower_label or 'metal-mediated' in lower_label:
+        return 'Metal-mediated contacts'
+    elif 'n-s-o-h' in lower_label or 'n-s-o-h_pi' in lower_label or 'o/n/sh' in lower_label or 'ons-oh-pi' in lower_label:
+        return 'O/N/SH-π interactions'
+    elif 'lone pair' in lower_label or 'lone_pair' in lower_label or 'lp-π' in lower_label or 'lp-pi' in lower_label:
+        return 'lp-π interactions'
+    elif 'water mediated' in lower_label or 'water_mediated' in lower_label or 'water-mediated' in lower_label:
+        return 'Water-mediated contacts'
+    elif 's-s bond' in lower_label or 'ss bond' in lower_label or 'ss_bond' in lower_label or 's-s' in lower_label:
+        return 'S-S bond'
+    elif 'amino-pi' in lower_label or 'amino_pi' in lower_label or 'polar-π' in lower_label or 'polar-pi' in lower_label:
+        return 'Amino-π interactions'
+    return clean_label
+
+
+def _get_final_file(frame_folder: Path, chain_pattern: str) -> Optional[Path]:
+    """Return path to final_file.csv for frame, or None."""
+    for base in [f"{frame_folder.name}.pd_h.pdb", f"{frame_folder.name}.pdb"]:
+        p = frame_folder / f"{base}_{chain_pattern}_final_file.csv"
+        if p.exists():
+            return p
+    return None
+
+
+def _get_rsa_stats_file(frame_folder: Path, chain_pattern: str) -> Optional[Path]:
+    """Return path to Rsa_stats.csv for frame, or None."""
+    for base in [f"{frame_folder.name}.pd_h.pdb", f"{frame_folder.name}.pdb"]:
+        p = frame_folder / f"{base}_{chain_pattern}_complex.pdb_Rsa_stats.csv"
+        if p.exists():
+            return p
+    return None
+
+
+def _get_summary_table_file(frame_folder: Path, chain_pattern: str) -> Optional[Path]:
+    """Return path to summary_table.csv for frame, or None."""
+    for base in [f"{frame_folder.name}.pd_h.pdb", f"{frame_folder.name}.pdb"]:
+        p = frame_folder / f"{base}_{chain_pattern}_summary_table.csv"
+        if p.exists():
+            return p
+    return None
+
+
+# Mapping from summary_table Property name to trends key
+_TRENDS_PROPERTY_MAP = {
+    'H-bonds': 'H-bonds',
+    'Salt-bridges': 'Salt-bridges',
+    'π-π interactions': 'π-π interactions',
+    'Cation-π': 'Cation-π interactions',
+    'Anion-π': 'Anion-π interactions',
+    'CH-O/N bonds': 'CH-O/N bonds',
+    'CH-π interactions': 'CH-π interactions',
+    'Halogen bonds': 'Halogen bonds',
+    'Apolar vdW': 'Apolar vdW contacts',
+    'Polar vdW': 'Polar vdW contacts',
+    'Proximal contacts': 'Proximal contacts',
+    'Clashes': 'Clashes',
+    'Water mediated': 'Water-mediated contacts',
+    'Metal mediated': 'Metal-mediated contacts',
+    'S-S': 'S-S bonds',
+    'SS bond': 'S-S bonds',
+    'Amino-π': 'Amino-π interactions',
+    'Polar-π (Amino-π)': 'Amino-π interactions',
+    'lp-π': 'Lone pair-π interactions',
+    'Lone pair-π': 'Lone pair-π interactions',
+    'O/N/SH-π': 'O/N/SH-π interactions',
+}
+
+
+def aggregate_system(system_path: str | Path, verbose: bool = True) -> bool:
+    """
+    Aggregate per-frame CSVs into system-level _interactions.csv, _area.csv,
+    _trends.csv, and _metadata.json.
+
+    Returns True if any files were written, False if nothing to aggregate.
+    """
+    system_path = Path(system_path)
+    if not system_path.is_dir():
+        return False
+
+    frame_folders = sorted(
+        [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
+        key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else 0,
+    )
+
+    if not frame_folders:
+        return False
+
+    chain_pattern = _get_chain_pattern(frame_folders[0])
+    total_frames = len(frame_folders)
+
+    interactions_rows = []
+    area_rows = []
+    trends_rows = []
+
+    for frame_folder in frame_folders:
+        try:
+            frame_num = int(frame_folder.name.split('_')[1])
+        except (IndexError, ValueError):
+            continue
+
+        # --- Interactions from final_file.csv ---
+        final_file = _get_final_file(frame_folder, chain_pattern)
+        if final_file:
+            with open(final_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if not all(k in row for k in ['Res. Name 1', 'Res. Number 1', 'Chain 1',
+                                                  'Res. Name 2', 'Res. Number 2', 'Chain 2']):
+                        continue
+                    types_raw = row.get('Type of Interactions', '')
+                    types_list = []
+                    if types_raw:
+                        for t in types_raw.split(';'):
+                            nt = _normalize_interaction_type(t.strip())
+                            if nt and nt not in types_list:
+                                types_list.append(nt)
+                    interactions_rows.append({
+                        'resName1': row['Res. Name 1'],
+                        'resNum1': row['Res. Number 1'],
+                        'chain1': row['Chain 1'],
+                        'resName2': row['Res. Name 2'],
+                        'resNum2': row['Res. Number 2'],
+                        'chain2': row['Chain 2'],
+                        'frame': frame_num,
+                        'types': ';'.join(types_list),
+                    })
+
+        # --- Area from Rsa_stats.csv ---
+        rsa_file = _get_rsa_stats_file(frame_folder, chain_pattern)
+        if rsa_file:
+            total_bsa = polar_bsa = non_polar_bsa = 0.0
+            total_percent = polar_percent = non_polar_percent = 0.0
+            with open(rsa_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    row_idx_str = row.get('', '').strip()
+                    try:
+                        row_idx = int(row_idx_str)
+                    except ValueError:
+                        continue
+                    val = row.get('Value', '')
+                    match = _extract_first_number(val)
+                    if not match:
+                        continue
+                    v = float(match)
+                    if row_idx == 0:
+                        total_bsa = v
+                    elif row_idx == 1:
+                        total_percent = v
+                    elif row_idx == 2:
+                        polar_bsa = v
+                    elif row_idx == 3:
+                        polar_percent = v
+                    elif row_idx == 4:
+                        non_polar_bsa = v
+                    elif row_idx == 5:
+                        non_polar_percent = v
+            area_rows.append({
+                'frame': frame_num,
+                'totalBSA': total_bsa,
+                'polarBSA': polar_bsa,
+                'nonPolarBSA': non_polar_bsa,
+                'totalPercent': total_percent,
+                'polarPercent': polar_percent,
+                'nonPolarPercent': non_polar_percent,
+            })
+
+        # --- Trends from summary_table.csv ---
+        summary_file = _get_summary_table_file(frame_folder, chain_pattern)
+        if summary_file:
+            trend_vals = {k: 0 for k in [
+                'H-bonds', 'Salt-bridges', 'π-π interactions', 'Cation-π interactions',
+                'Anion-π interactions', 'CH-O/N bonds', 'CH-π interactions', 'Halogen bonds',
+                'Apolar vdW contacts', 'Polar vdW contacts', 'Proximal contacts', 'Clashes',
+                'Water mediated', 'Metal mediated', 'S-S bonds', 'Amino-π interactions',
+                'Lone pair-π interactions', 'O/N/SH-π interactions',
+            ]}
+            with open(summary_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    prop = row.get('Property', '')
+                    try:
+                        val = int(row.get('Value', 0))
+                    except (TypeError, ValueError):
+                        val = 0
+                    for key, trend_key in _TRENDS_PROPERTY_MAP.items():
+                        if key in prop and trend_key in trend_vals:
+                            trend_vals[trend_key] = val
+                            break
+            trends_rows.append({'frame': frame_num, **trend_vals})
+
+    # Write outputs
+    wrote_any = False
+
+    if interactions_rows:
+        out_path = system_path / '_interactions.csv'
+        with open(out_path, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=[
+                'resName1', 'resNum1', 'chain1', 'resName2', 'resNum2', 'chain2', 'frame', 'types'
+            ])
+            writer.writeheader()
+            writer.writerows(interactions_rows)
+        wrote_any = True
+        if verbose:
+            print(f"  Wrote {out_path} ({len(interactions_rows)} rows)")
+
+    if area_rows:
+        out_path = system_path / '_area.csv'
+        with open(out_path, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=[
+                'frame', 'totalBSA', 'polarBSA', 'nonPolarBSA',
+                'totalPercent', 'polarPercent', 'nonPolarPercent'
+            ])
+            writer.writeheader()
+            writer.writerows(area_rows)
+        wrote_any = True
+        if verbose:
+            print(f"  Wrote {out_path} ({len(area_rows)} rows)")
+
+    if trends_rows:
+        out_path = system_path / '_trends.csv'
+        fieldnames = ['frame'] + [k for k in trends_rows[0].keys() if k != 'frame']
+        with open(out_path, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(trends_rows)
+        wrote_any = True
+        if verbose:
+            print(f"  Wrote {out_path} ({len(trends_rows)} rows)")
+
+    metadata = {
+        'totalFrames': total_frames,
+        'chainPattern': chain_pattern,
+    }
+    metadata_path = system_path / '_metadata.json'
+    with open(metadata_path, 'w', encoding='utf-8') as f:
+        json.dump(metadata, f, indent=2)
+    wrote_any = True
+    if verbose:
+        print(f"  Wrote {metadata_path}")
+
+    return wrote_any
