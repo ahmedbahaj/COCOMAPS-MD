@@ -34,7 +34,9 @@ import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 
 const props = defineProps({
   systemId: { type: String, default: null },
-  frameNum: { type: Number, default: 1 }
+  frameNum: { type: Number, default: 1 },
+  /** Residues to highlight: [{ chain, resNum, resName }]. Null to clear. */
+  selectedResidues: { type: Array, default: null }
 })
 
 const containerId = ref(`molstar-${Math.random().toString(36).slice(2, 11)}`)
@@ -81,16 +83,19 @@ async function initViewer() {
     const url = getPdbUrl()
     viewer = await window.molstar.Viewer.create(containerId.value, {
       layoutIsExpanded: false,
-      layoutShowControls: true,
+      layoutShowControls: false,
+      layoutShowRemoteState: false,
       layoutShowSequence: false,
       layoutShowLog: false,
       layoutShowLeftPanel: false,
       viewportShowExpand: true,
+      viewportShowControls: false,
       viewportShowSelectionMode: false,
       viewportShowAnimation: false
     })
     await viewer.loadStructureFromUrl(url, 'pdb', false)
     if (viewer?.handleResize) viewer.handleResize()
+    highlightResidues(props.selectedResidues)
   } catch (err) {
     console.error('Mol* load error:', err)
     loadError.value = err?.message || 'Failed to load structure'
@@ -106,6 +111,30 @@ function disposeViewer() {
   }
 }
 
+function highlightResidues(residues) {
+  if (!viewer) return
+  try {
+    if (!residues || residues.length === 0) {
+      viewer.plugin.managers.interactivity.lociSelects.deselectAll()
+      return
+    }
+    viewer.plugin.managers.interactivity.lociSelects.deselectAll()
+    const schema = {
+      items: residues.map(r => ({
+        auth_asym_id: String(r.chain),
+        auth_seq_id: Number(r.resNum)
+      }))
+    }
+    viewer.structureInteractivity({
+      elements: schema,
+      action: 'select',
+      applyGranularity: true
+    })
+  } catch (err) {
+    console.warn('Mol* highlight:', err)
+  }
+}
+
 onMounted(() => initViewer())
 onBeforeUnmount(() => disposeViewer())
 
@@ -116,6 +145,12 @@ watch(() => [props.systemId, props.frameNum], () => {
     nextTick(() => initViewer())
   }
 })
+
+watch(() => props.selectedResidues, (residues) => {
+  if (!loading.value && !loadError.value) {
+    highlightResidues(residues)
+  }
+}, { immediate: true, deep: true })
 </script>
 
 <style scoped>
@@ -139,18 +174,19 @@ watch(() => [props.systemId, props.frameNum], () => {
 
 .molstar-container {
   width: 100%;
-  height: 450px;
+  height: 600px;
   position: relative;
-  min-height: 450px;
+  min-height: 600px;
 }
 
 .molstar-viewer-inner {
   position: relative;
-  min-height: 450px;
+  min-height: 600px;
 }
 
 .molstar-error-overlay,
 .molstar-loading-overlay {
+  min-height: 600px;
   position: absolute;
   inset: 0;
   z-index: 10;

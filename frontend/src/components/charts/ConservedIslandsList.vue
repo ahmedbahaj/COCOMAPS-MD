@@ -3,6 +3,7 @@
     <MolStarViewer
       v-if="dataStore.currentSystem?.id"
       :system-id="dataStore.currentSystem.id"
+      :selected-residues="selectedIslandResidues"
       class="structure-viewer"
     />
     <div v-if="dataStore.loading.conservedIslands" class="loading-state">
@@ -20,13 +21,25 @@
     <div v-else class="islands-content">
       <h3 class="panel-title">Conserved Islands (70% threshold)</h3>
       <p class="panel-subtitle">{{ dataStore.conservedIslands.length }} island(s) found</p>
-      <div class="islands-list">
+      <p class="selection-hint">
+        <span class="radio-icon" aria-hidden="true">◉</span>
+        Select one island below to highlight its residues in the 3D viewer. Click again to clear.
+      </p>
+      <div class="islands-list" role="radiogroup" aria-label="Conserved islands">
         <div
           v-for="island in dataStore.conservedIslands"
           :key="island.id"
           class="island-card"
+          :class="{ selected: selectedIslandId === island.id }"
+          role="radio"
+          :aria-checked="selectedIslandId === island.id"
+          tabindex="0"
+          @click="selectIsland(island.id)"
+          @keydown.enter.prevent="selectIsland(island.id)"
+          @keydown.space.prevent="selectIsland(island.id)"
         >
           <div class="island-header">
+            <span class="island-radio" :class="{ checked: selectedIslandId === island.id }" aria-hidden="true" />
             <span class="island-id">Island {{ island.id }}</span>
             <span class="island-size">{{ island.size }} residues</span>
             <span class="island-chains">Chains: {{ island.chains?.join(', ') || '—' }}</span>
@@ -56,11 +69,22 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
 import { useDataStore } from '../../stores/dataStore'
 import MolStarViewer from '../MolStarViewer.vue'
 
 const dataStore = useDataStore()
+const selectedIslandId = ref(null)
 
+function selectIsland(id) {
+  selectedIslandId.value = selectedIslandId.value === id ? null : id
+}
+
+const selectedIslandResidues = computed(() => {
+  if (!selectedIslandId.value || !dataStore.conservedIslands) return null
+  const island = dataStore.conservedIslands.find(i => i.id === selectedIslandId.value)
+  return island?.residues ?? null
+})
 </script>
 
 <style scoped>
@@ -131,7 +155,21 @@ const dataStore = useDataStore()
 .panel-subtitle {
   font-size: 15px;
   color: #6e6e73;
-  margin: 0 0 20px 0;
+  margin: 0 0 8px 0;
+}
+
+.selection-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #86868b;
+  margin: 0 0 16px 0;
+}
+
+.radio-icon {
+  color: #007aff;
+  font-size: 16px;
 }
 
 .islands-list {
@@ -144,17 +182,45 @@ const dataStore = useDataStore()
   background: #f5f5f7;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #e8e8ed;
+  border: 2px solid #e8e8ed;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.island-card:hover {
+  border-color: #c7c7cc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.island-card.selected {
+  border-color: #007aff;
+  box-shadow: 0 0 0 1px #007aff;
 }
 
 .island-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 14px 20px;
   background: #ffffff;
   border-bottom: 1px solid #e8e8ed;
   font-size: 15px;
+}
+
+.island-radio {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #c7c7cc;
+  border-radius: 50%;
+  background: #fff;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.island-radio.checked {
+  border-color: #007aff;
+  background: #007aff;
+  box-shadow: inset 0 0 0 3px #fff;
 }
 
 .island-id {
