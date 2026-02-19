@@ -9,5 +9,3 @@ systems/
 
 __pycache__/
 *.pyx
-
-new_features.py

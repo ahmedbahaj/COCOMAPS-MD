@@ -27,6 +27,7 @@ import AreaChart from './charts/AreaChart.vue'
 import InteractionTrends from './charts/InteractionTrends.vue'
 import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
 import DistanceDistribution from './charts/DistanceDistribution.vue'
+import ConservedIslandsList from './charts/ConservedIslandsList.vue'
 
 const dataStore = useDataStore()
 
@@ -53,7 +54,8 @@ const chartComponents = {
   area: AreaChart,
   line: InteractionTrends,
   interactionConservationMatrix: InteractionConservationMatrix,
-  violinPlot: DistanceDistribution
+  violinPlot: DistanceDistribution,
+  conservedIslandsList: ConservedIslandsList
 }
 
 const currentChartComponent = computed(() => {

@@ -555,7 +555,18 @@ Environment Variables:
         analysis_time, successful, failed = run_cocomaps_analysis(
             output_dir, args.use_reduce, step_num=step_num
         )
-        
+        step_num += 1
+
+        # STEP 4: Conserved island analysis
+        from conserved_islands import run_conserved_islands
+        run_conserved_islands(
+            output_dir,
+            min_consistency=0.70,
+            min_island_size=2,
+            verbose=True,
+            step_num=step_num,
+        )
+
         # Final summary
         total_time = time.time() - overall_start
         print(f"\n{'='*80}")

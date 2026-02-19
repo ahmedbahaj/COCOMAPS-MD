@@ -79,6 +79,39 @@ export default {
     return response.data
   },
 
+  async getConservedIslands(systemId) {
+    const response = await api.get(`/systems/${systemId}/conserved-islands`)
+    return response.data
+  },
+
+  /**
+   * Get the URL for a frame's PDB file (for Mol* viewer).
+   * Uses current origin in dev (Vite proxy) or VITE_API_URL when set.
+   */
+  getFramePdbUrl(systemId, frameNum = 1) {
+    const base = import.meta.env.VITE_API_URL
+    const path = `/systems/${systemId}/frame/${frameNum}/pdb`
+    if (base) {
+      return `${base.replace(/\/$/, '')}${path}`
+    }
+    return `${typeof window !== 'undefined' ? window.location.origin : ''}/api${path}`
+  },
+
+  /**
+   * Fetch PDB file content for a frame (for Mol* loadStructureFromData).
+   * Uses same-origin URL in dev (Vite proxy) so the request appears in Network tab
+   * and avoids CORS. Falls back to direct API URL when VITE_API_URL is set.
+   */
+  async getFramePdbContent(systemId, frameNum = 1) {
+    const base = import.meta.env.VITE_API_URL
+    const url = base
+      ? `${base.replace(/\/$/, '')}/systems/${systemId}/frame/${frameNum}/pdb`
+      : `/api/systems/${systemId}/frame/${frameNum}/pdb`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`Failed to load PDB: ${res.status} ${res.statusText}`)
+    return res.text()
+  },
+
   async getDistanceDistributions(systemId, interactionTypes, minConsistency) {
     const params = {}
     if (interactionTypes && interactionTypes.length > 0) {

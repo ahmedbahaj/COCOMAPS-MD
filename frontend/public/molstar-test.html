@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <title>Mol* PDB Test</title>
+  <style>
+    body { margin: 20px; font-family: system-ui, sans-serif; }
+    #status { margin-bottom: 16px; padding: 12px; background: #f5f5f7; border-radius: 8px; }
+    #molstar-app {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      min-height: 500px;
+      background: #1a1a1a;
+      border-radius: 8px;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/molstar@5.6.1/build/viewer/molstar.css">
+</head>
+<body>
+  <h1>Mol* PDB Load Test</h1>
+  <p id="status">Initializing...</p>
+  <div id="molstar-app"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/molstar@5.6.1/build/viewer/molstar.js"></script>
+  <script>
+    const PDB_URL = '/api/systems/1ULL/frame/1/pdb';
+    const statusEl = document.getElementById('status');
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+      console.log('[Mol* Test]', msg);
+    }
+
+    async function run() {
+      try {
+        setStatus('Creating viewer...');
+        const viewer = await molstar.Viewer.create('molstar-app', {
+          layoutIsExpanded: false,
+          layoutShowControls: true,
+          layoutShowLeftPanel: false,
+          layoutShowSequence: false,
+          layoutShowLog: false,
+          viewportShowExpand: true,
+          viewportShowSelectionMode: false,
+          viewportShowAnimation: false
+        });
+
+        setStatus('Loading structure from ' + PDB_URL + ' ...');
+        const fullUrl = window.location.origin + PDB_URL;
+        await viewer.loadStructureFromUrl(fullUrl, 'pdb');
+        setStatus('Done! Structure loaded.');
+      } catch (err) {
+        setStatus('Error: ' + err.message);
+        console.error(err);
+      }
+    }
+
+    run();
+  </script>
+</body>
+</html>

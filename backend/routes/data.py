@@ -1,7 +1,7 @@
 """
 Routes for data retrieval
 """
-from flask import Blueprint, jsonify, current_app
+from flask import Blueprint, jsonify, current_app, send_file
 from pathlib import Path
 import csv
 import os
@@ -94,6 +94,72 @@ def _format_residue_id(res_name, res_num, chain):
 def _format_pair_key(res_id1, res_id2):
     """Stable residue pair key using a separator unlikely to appear in IDs."""
     return f"{res_id1}__{res_id2}"
+
+
+@bp.route('/systems/<system_id>/conserved-islands', methods=['GET'])
+def get_conserved_islands(system_id):
+    """
+    Get conserved island data for a system.
+    Returns JSON from _conserved_islands.json if it exists.
+    """
+    import json
+    try:
+        data_folder = current_app.config['DATA_FOLDER']
+        system_path = Path(data_folder) / 'systems' / system_id
+        islands_file = system_path / '_conserved_islands.json'
+
+        if not system_path.exists():
+            return jsonify({'error': 'System not found'}), 404
+        if not islands_file.exists():
+            return jsonify({
+                'system': system_id,
+                'islands': [],
+                'message': 'No conserved islands data. Run the pipeline or conserved_islands.py to generate.'
+            })
+
+        with open(islands_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        return jsonify({
+            'system': system_id,
+            'islands': data.get('islands', [])
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/systems/<system_id>/frame/<int:frame_num>/pdb', methods=['GET'])
+def get_frame_pdb(system_id, frame_num):
+    """
+    Serve the PDB file for a given frame.
+    Used by Mol* viewer to display the first-frame structure.
+    """
+    try:
+        data_folder = current_app.config['DATA_FOLDER']
+        system_path = Path(data_folder) / 'systems' / system_id
+        frame_folder = system_path / f'frame_{frame_num}'
+
+        if not system_path.exists():
+            return jsonify({'error': 'System not found'}), 404
+        if not frame_folder.exists() or not frame_folder.is_dir():
+            return jsonify({'error': f'Frame {frame_num} not found'}), 404
+
+        # Prefer frame_N.pdb, fallback to frame_N.pd_h.pdb
+        pdb_file = frame_folder / f'frame_{frame_num}.pdb'
+        if not pdb_file.exists():
+            pdb_file = frame_folder / f'frame_{frame_num}.pd_h.pdb'
+        if not pdb_file.exists():
+            return jsonify({'error': f'PDB file not found for frame {frame_num}'}), 404
+
+        return send_file(
+            pdb_file,
+            mimetype='chemical/x-pdb',
+            as_attachment=False,
+            download_name=f'{system_id}_frame_{frame_num}.pdb'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @bp.route('/systems/<system_id>/interactions', methods=['GET'])
 def get_interactions(system_id):

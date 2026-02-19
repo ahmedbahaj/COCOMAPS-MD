@@ -1077,6 +1077,7 @@ const updateChart = async () => {
 
   const systemName = dataStore.currentSystem?.id || 'unknown'
   const exportOptions = withExporting(chartOptions, `interaction-conservation-matrix-${systemName}`)
+  if (!chartContainer.value) return
   chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
 

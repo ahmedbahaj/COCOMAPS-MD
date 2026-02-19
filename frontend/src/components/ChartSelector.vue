@@ -50,6 +50,11 @@ const charts = [
     id: 'area', 
     label: 'Area Composition',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><path d="M3 17l5-7 4 4 5-8 4 6" fill="currentColor" opacity="0.2"/><path d="M3 17l5-7 4 4 5-8 4 6"/></svg>'
+  },
+  { 
+    id: 'conservedIslandsList', 
+    label: 'Conserved Islands',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>'
   }
 ]
 

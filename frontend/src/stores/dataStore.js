@@ -17,9 +17,10 @@ export const useDataStore = defineStore('data', {
     areaData: [],
     trends: {},
     trendFrameNumbers: [],  // Actual frame numbers with data (e.g., [21, 22])
+    conservedIslands: [],
 
     // UI State
-    currentChartType: 'interactionConservationMatrix',
+    currentChartType: 'conservedIslandsList',
     currentThreshold: 0.5,
     useLogScale: false,
     selectedInteractionTypes: new Set(INTERACTION_TYPES.map(t => t.id)), // Select all by default
@@ -30,7 +31,8 @@ export const useDataStore = defineStore('data', {
       systems: false,
       interactions: false,
       area: false,
-      trends: false
+      trends: false,
+      conservedIslands: false
     },
 
     // Error states
@@ -38,7 +40,8 @@ export const useDataStore = defineStore('data', {
       systems: null,
       interactions: null,
       area: null,
-      trends: null
+      trends: null,
+      conservedIslands: null
     }
   }),
 
@@ -89,7 +92,8 @@ export const useDataStore = defineStore('data', {
         await Promise.all([
           this.loadInteractions(systemId),
           this.loadAreaData(systemId),
-          this.loadTrends(systemId)
+          this.loadTrends(systemId),
+          this.loadConservedIslands(systemId)
         ])
       }
     },
@@ -135,6 +139,21 @@ export const useDataStore = defineStore('data', {
         console.error('Error loading trends:', error)
       } finally {
         this.loading.trends = false
+      }
+    },
+
+    async loadConservedIslands(systemId) {
+      this.loading.conservedIslands = true
+      this.errors.conservedIslands = null
+      try {
+        const data = await api.getConservedIslands(systemId)
+        this.conservedIslands = data.islands || []
+      } catch (error) {
+        this.errors.conservedIslands = error.message
+        this.conservedIslands = []
+        console.error('Error loading conserved islands:', error)
+      } finally {
+        this.loading.conservedIslands = false
       }
     },
 
