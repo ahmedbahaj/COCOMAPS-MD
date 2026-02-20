@@ -37,6 +37,22 @@ def _get_display_name(system_path, default_name):
     return default_name
 
 
+def _get_frame_count_from_metadata(system_path, fallback_count):
+    """Get totalFrames from _metadata.json when it exists, else return fallback (from frame folder count)."""
+    import json
+    meta = system_path / '_metadata.json'
+    if meta.exists():
+        try:
+            with open(meta, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            tf = data.get('totalFrames')
+            if tf is not None and isinstance(tf, (int, float)) and tf > 0:
+                return int(tf)
+        except Exception:
+            pass
+    return fallback_count
+
+
 def _set_display_name(system_path, display_name):
     """Set display name in metadata file"""
     import json
@@ -72,9 +88,9 @@ def list_systems():
                 frame_folders = [f for f in item.iterdir() if f.is_dir() and f.name.startswith('frame_')]
                 
                 if frame_folders:
-                    # Count frames
-                    frame_count = len(frame_folders)
-                    
+                    # Use totalFrames from _metadata.json when available (deployment: CSVs only)
+                    frame_count = _get_frame_count_from_metadata(item, len(frame_folders))
+
                     # Get chain pattern from first frame folder
                     first_frame = sorted(frame_folders, key=lambda f: f.name)[0]
                     chain1, chain2 = _get_chain_pattern(first_frame)
@@ -115,10 +131,10 @@ def get_system(system_id):
         if not system_path.exists() or not system_path.is_dir():
             return jsonify({'error': 'System not found'}), 404
         
-        # Count frames
+        # Use totalFrames from _metadata.json when available (deployment: CSVs only)
         frame_folders = [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')]
-        frame_count = len(frame_folders)
-        
+        frame_count = _get_frame_count_from_metadata(system_path, len(frame_folders))
+
         # Get chain pattern from first frame folder
         chain1, chain2 = ("A", "B")  # default
         if frame_folders:

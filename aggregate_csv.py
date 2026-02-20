@@ -5,6 +5,7 @@ Produces:
   - _interactions.csv  (one row per residue pair per frame)
   - _area.csv          (one row per frame: BSA data)
   - _trends.csv        (one row per frame: interaction type counts)
+  - _atom_pairs.csv    (one row per atom pair: all residue pairs, all frames)
   - _metadata.json     (totalFrames, chainPattern, etc.)
 
 Used by analyze_pdb.py (Step 5).
@@ -110,6 +111,121 @@ def _get_summary_table_file(frame_folder: Path, chain_pattern: str) -> Optional[
     return None
 
 
+# CSV filename -> normalized interaction type (for atom-pairs aggregation)
+_CSV_TO_INTERACTION_TYPE = {
+    'H-bond': 'H-bond',
+    'Salt_bridge': 'Salt-bridge',
+    'pi-pi': 'π-π interactions',
+    'Cation_pi': 'Cation-π interactions',
+    'Anion_pi': 'Anion-π interactions',
+    'C-H_ON': 'CH-O/N bonds',
+    'C-H_pi': 'CH-π interactions',
+    'Halogen_bond': 'Halogen bonds',
+    'Apolar_vdw': 'Apolar vdW contacts',
+    'Polar_vdw': 'Polar vdW contacts',
+    'Proximal': 'Proximal contacts',
+    'Clash': 'Clashes',
+    'Metal_Mediated': 'Metal-mediated contacts',
+    'N-S-O-H_pi': 'O/N/SH-π interactions',
+    'Lone_pair_pi': 'lp-π interactions',
+    'Water_Mediated': 'Water-mediated contacts',
+    'SS_bond': 'S-S bond',
+    'Amino_pi': 'Amino-π interactions',
+}
+
+_INTERACTION_CSV_NAMES = list(_CSV_TO_INTERACTION_TYPE.keys())
+
+
+def _extract_atom_pair_from_row(row: dict, interaction_type: str) -> Optional[tuple]:
+    """
+    Extract (atom1, atom2, distance, angle) from a type-specific CSV row.
+    Returns None if extraction fails.
+    """
+    if not all(k in row for k in ['Res. Name 1', 'Res. Number 1', 'Chain 1',
+                                  'Res. Name 2', 'Res. Number 2', 'Chain 2']):
+        return None
+
+    is_pi = 'π' in interaction_type or 'pi' in interaction_type.lower()
+    row_res_name1 = str(row.get('Res. Name 1', '')).strip()
+    row_res_num1 = str(row.get('Res. Number 1', ''))
+    row_chain1 = str(row.get('Chain 1', '')).strip()
+    row_res_name2 = str(row.get('Res. Name 2', '')).strip()
+    row_res_num2 = str(row.get('Res. Number 2', ''))
+    row_chain2 = str(row.get('Chain 2', '')).strip()
+
+    if is_pi:
+        is_pi_pi = interaction_type.lower().count('pi') >= 2 or 'π-π' in interaction_type
+        is_ch_pi = ('ch' in interaction_type.lower() or 'c-h' in interaction_type.lower()) and not is_pi_pi
+        is_cation_pi = 'cation' in interaction_type.lower()
+        is_anion_pi = 'anion' in interaction_type.lower()
+        is_lp_pi = 'lp' in interaction_type.lower() or 'lone' in interaction_type.lower()
+        is_amino_pi = 'amino' in interaction_type.lower() or 'polar' in interaction_type.lower()
+        is_ons_h_pi = 'o/n/s' in interaction_type.lower() or 'n-s-o-h' in interaction_type.lower()
+
+        ring_from = row.get('Ring From', '').strip()
+
+        def is_ring(res_name, res_num, chain):
+            if not ring_from:
+                return False
+            return f"{res_name}-{res_num}" in ring_from or f"{chain}-{res_num}" in ring_from
+
+        res1_ring = is_ring(row_res_name1, row_res_num1, row_chain1)
+        res2_ring = is_ring(row_res_name2, row_res_num2, row_chain2)
+        if not res1_ring and not res2_ring and ring_from:
+            if row_res_num1 in ring_from:
+                res1_ring = True
+            elif row_res_num2 in ring_from:
+                res2_ring = True
+
+        if is_pi_pi:
+            atom1, atom2 = "Pi-Ring", "Pi-Ring"
+        elif is_ch_pi or is_ons_h_pi:
+            c_atom = row.get('C Atom', '').strip()
+            h_atom = row.get('H Atom', '').strip()
+            ch_label = f"{c_atom}({h_atom})" if c_atom and h_atom else (c_atom or "CH")
+            atom1, atom2 = ch_label, "Pi-Ring"
+        elif is_cation_pi:
+            cation_atom = row.get('Cation Atom', '').strip()
+            atom1, atom2 = (cation_atom or "Cation"), "Pi-Ring"
+        elif is_anion_pi:
+            anion_atom = row.get('Anion Atom', '').strip()
+            atom1, atom2 = (anion_atom or "Anion"), "Pi-Ring"
+        elif is_lp_pi:
+            lp_atom = row.get('Lone_pair Atom', '').strip()
+            atom1, atom2 = (lp_atom or "Lone_pair"), "Pi-Ring"
+        elif is_amino_pi:
+            polar_atom = row.get('Polar Atom', '').strip()
+            atom1, atom2 = (polar_atom or "Polar"), "Pi-Ring"
+        else:
+            atom1 = row.get('Atom 1', '').strip() or "Partner"
+            atom2 = "Pi-Ring"
+    else:
+        atom1 = row.get('Atom 1', '').strip()
+        atom2 = row.get('Atom 2', '').strip()
+
+    if not atom1 or not atom2:
+        return None
+
+    distance = None
+    for col in ['Distance (Å)', 'Distance', 'Distance(Å)', 'Dist (Å)', 'Dist', 'distance',
+                'Centroid Distance', 'Centroid Distance (Å)', 'Ring Distance', 'Ring Distance (Å)']:
+        if col in row and row[col]:
+            try:
+                distance = float(str(row[col]).replace('*', '').strip())
+            except ValueError:
+                pass
+            break
+
+    angle = None
+    if 'DHA Angle' in row and row['DHA Angle']:
+        try:
+            angle = float(str(row['DHA Angle']).strip())
+        except ValueError:
+            pass
+
+    return (atom1, atom2, distance, angle)
+
+
 # Mapping from summary_table Property name to trends key
 _TRENDS_PROPERTY_MAP = {
     'H-bonds': 'H-bonds',
@@ -161,6 +277,7 @@ def aggregate_system(system_path: str | Path, verbose: bool = True) -> bool:
     interactions_rows = []
     area_rows = []
     trends_rows = []
+    atom_pairs_rows = []
 
     for frame_folder in frame_folders:
         try:
@@ -259,6 +376,39 @@ def aggregate_system(system_path: str | Path, verbose: bool = True) -> bool:
                             break
             trends_rows.append({'frame': frame_num, **trend_vals})
 
+        # --- Atom pairs from type-specific CSVs ---
+        for csv_name in _INTERACTION_CSV_NAMES:
+            interaction_type = _CSV_TO_INTERACTION_TYPE[csv_name]
+            csv_file = None
+            for base in [f"{frame_folder.name}.pd_h.pdb", f"{frame_folder.name}.pdb"]:
+                p = frame_folder / f"{base}_{chain_pattern}_{csv_name}.csv"
+                if p.exists():
+                    csv_file = p
+                    break
+            if not csv_file:
+                continue
+
+            with open(csv_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    result = _extract_atom_pair_from_row(row, interaction_type)
+                    if result:
+                        atom1, atom2, distance, angle = result
+                        atom_pairs_rows.append({
+                            'resName1': row['Res. Name 1'],
+                            'resNum1': row['Res. Number 1'],
+                            'chain1': row['Chain 1'],
+                            'resName2': row['Res. Name 2'],
+                            'resNum2': row['Res. Number 2'],
+                            'chain2': row['Chain 2'],
+                            'frame': frame_num,
+                            'interactionType': interaction_type,
+                            'atom1': atom1,
+                            'atom2': atom2,
+                            'distance': '' if distance is None else str(distance),
+                            'angle': '' if angle is None else str(angle),
+                        })
+
     # Write outputs
     wrote_any = False
 
@@ -297,6 +447,20 @@ def aggregate_system(system_path: str | Path, verbose: bool = True) -> bool:
         wrote_any = True
         if verbose:
             print(f"  Wrote {out_path} ({len(trends_rows)} rows)")
+
+    if atom_pairs_rows:
+        out_path = system_path / '_atom_pairs.csv'
+        fieldnames = [
+            'resName1', 'resNum1', 'chain1', 'resName2', 'resNum2', 'chain2',
+            'frame', 'interactionType', 'atom1', 'atom2', 'distance', 'angle'
+        ]
+        with open(out_path, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(atom_pairs_rows)
+        wrote_any = True
+        if verbose:
+            print(f"  Wrote {out_path} ({len(atom_pairs_rows)} rows)")
 
     metadata = {
         'totalFrames': total_frames,
