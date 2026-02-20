@@ -143,8 +143,13 @@ export default {
     return response.data
   },
 
-  async getStatus(pdbId) {
-    const response = await api.get(`/status/${pdbId}`)
+  async getStatus(jobId) {
+    const response = await api.get(`/status/${jobId}`)
+    return response.data
+  },
+
+  async getJobs() {
+    const response = await api.get('/jobs')
     return response.data
   },
 
@@ -174,6 +179,11 @@ export default {
     if (options.startFrame !== undefined && options.endFrame !== undefined) {
       formData.append('start_frame', options.startFrame)
       formData.append('end_frame', options.endFrame)
+    }
+
+    // Add frame step if specified
+    if (options.frameStep !== undefined) {
+      formData.append('frame_step', options.frameStep)
     }
 
     const response = await api.post('/upload', formData, {
