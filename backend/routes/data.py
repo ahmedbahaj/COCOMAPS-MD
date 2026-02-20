@@ -4,6 +4,7 @@ Routes for data retrieval
 from flask import Blueprint, jsonify, current_app, send_file
 from pathlib import Path
 import csv
+import json
 import os
 
 bp = Blueprint('data', __name__)
@@ -23,59 +24,6 @@ def _get_chain_pattern(frame_folder):
             if match:
                 return f"{match.group(1)}_{match.group(2)}"
     return "A_B"  # fallback default
-
-
-def _normalize_interaction_type(type_label):
-    """Map equivalent interaction labels to a single canonical value.
-    Handles both singular and plural forms as they appear in final_file.csv
-    """
-    if not type_label:
-        return None
-    clean_label = type_label.strip()
-    lower_label = clean_label.lower()
-
-    # Normalize all interaction type variants to canonical names
-    # Based on COCOMAPS2 output file naming conventions
-    # Note: final_file.csv uses singular forms, but we normalize to plural for consistency
-    
-    if 'h-bond' in lower_label or 'hydrogen bond' in lower_label:
-        return 'H-bond'
-    elif 'salt-bridge' in lower_label or 'salt bridge' in lower_label:
-        return 'Salt-bridge'
-    elif 'π-π' in clean_label or 'pi-pi' in lower_label or 'pi pi' in lower_label:
-        return 'π-π interactions'
-    elif 'cation-π' in lower_label or 'cation-pi' in lower_label or 'cation_pi' in lower_label:
-        return 'Cation-π interactions'
-    elif 'anion-π' in lower_label or 'anion-pi' in lower_label or 'anion_pi' in lower_label:
-        return 'Anion-π interactions'
-    elif 'ch-o/n' in lower_label or 'c-h_on' in lower_label or 'c-h on' in lower_label or 'ch-on' in lower_label:
-        return 'CH-O/N bonds'
-    elif 'ch-π' in lower_label or 'ch-pi' in lower_label or 'c-h_pi' in lower_label or 'ch-π interaction' in lower_label:
-        return 'CH-π interactions'
-    elif 'halogen' in lower_label:
-        return 'Halogen bonds'
-    elif 'apolar vdw' in lower_label or 'apolar_vdw' in lower_label:
-        return 'Apolar vdW contacts'
-    elif 'polar vdw' in lower_label or 'polar_vdw' in lower_label:
-        return 'Polar vdW contacts'
-    elif 'proximal' in lower_label:
-        return 'Proximal contacts'
-    elif 'clash' in lower_label:
-        return 'Clashes'
-    elif 'metal mediated' in lower_label or 'metal_mediated' in lower_label or 'metal-mediated' in lower_label:
-        return 'Metal-mediated contacts'
-    elif 'n-s-o-h' in lower_label or 'n-s-o-h_pi' in lower_label or 'o/n/sh' in lower_label or 'ons-oh-pi' in lower_label:
-        return 'O/N/SH-π interactions'
-    elif 'lone pair' in lower_label or 'lone_pair' in lower_label or 'lp-π' in lower_label or 'lp-pi' in lower_label:
-        return 'lp-π interactions'
-    elif 'water mediated' in lower_label or 'water_mediated' in lower_label or 'water-mediated' in lower_label:
-        return 'Water-mediated contacts'
-    elif 's-s bond' in lower_label or 'ss bond' in lower_label or 'ss_bond' in lower_label or 's-s' in lower_label:
-        return 'S-S bond'
-    elif 'amino-pi' in lower_label or 'amino_pi' in lower_label or 'polar-π' in lower_label or 'polar-pi' in lower_label:
-        return 'Amino-π interactions'
-    
-    return clean_label
 
 
 def _format_residue_id(res_name, res_num, chain):
@@ -350,16 +298,6 @@ def get_interaction_trends(system_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def __extract_first_number(value_str):
-    """Extract first numeric value from strings like '2331.8 / 1165.9' or '25.35%'"""
-    import re
-    if not value_str:
-        return None
-    slash_match = re.match(r'\s*([0-9]+(?:\.[0-9]+)?)\s*/', value_str)
-    if slash_match:
-        return slash_match.group(1)
-    number_match = re.search(r'([0-9]+(?:\.[0-9]+)?)', value_str)
-    return number_match.group(1) if number_match else None
 
 def _get_atom_pairs_response_from_csv(system_path, res_name1, res_num1, chain1,
                                        res_name2, res_num2, chain2, total_frames):
@@ -470,47 +408,6 @@ def _get_atom_pairs_response_from_csv(system_path, res_name1, res_num1, chain1,
     }
 
 
-def _get_interaction_csv_filename(interaction_type):
-    """Map interaction type to CSV filename (matches actual CSV file naming)"""
-    mapping = {
-        'H-bond': 'H-bond',
-        'H-bonds': 'H-bond',
-        'Salt-bridge': 'Salt_bridge',
-        'Salt-bridges': 'Salt_bridge',
-        'π-π interactions': 'pi-pi',
-        'pi-pi': 'pi-pi',
-        'Cation-π interactions': 'Cation_pi',
-        'Cation-π': 'Cation_pi',
-        'Anion-π interactions': 'Anion_pi',
-        'Anion-π': 'Anion_pi',
-        'CH-O/N bonds': 'C-H_ON',
-        'CH-O/N': 'C-H_ON',
-        'CH-π interactions': 'C-H_pi',
-        'CH-π': 'C-H_pi',
-        'Halogen bonds': 'Halogen_bond',
-        'Halogen bond': 'Halogen_bond',
-        'Apolar vdW contacts': 'Apolar_vdw',
-        'Apolar vdW': 'Apolar_vdw',
-        'Polar vdW contacts': 'Polar_vdw',
-        'Polar vdW': 'Polar_vdw',
-        'Proximal contacts': 'Proximal',
-        'Proximal contact': 'Proximal',
-        'Clashes': 'Clash',
-        'Clash': 'Clash',
-        'Metal-mediated contacts': 'Metal_Mediated',
-        'Metal mediated': 'Metal_Mediated',
-        'O/N/SH-π interactions': 'N-S-O-H_pi',
-        'lp-π interactions': 'Lone_pair_pi',
-        'Lone pair-π': 'Lone_pair_pi',
-        'Water mediated': 'Water_Mediated',
-        'Water-mediated contacts': 'Water_Mediated',
-        'S-S bond': 'SS_bond',
-        'S / S-S bond': 'SS_bond',
-        'Amino-π interactions': 'Amino_pi',
-        'Polar-π (Amino-π)': 'Amino_pi'
-    }
-    return mapping.get(interaction_type, None)
-
 @bp.route('/systems/<system_id>/atom-pairs', methods=['GET'])
 def get_atom_pairs(system_id):
     """
@@ -559,9 +456,6 @@ def get_atom_pairs(system_id):
     except Exception as e:
         import traceback
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
-
-
-# Fallback logic removed - all data endpoints now require aggregated CSVs
 
 
 @bp.route('/systems/<system_id>/atom-pairs/batch', methods=['POST'])
@@ -628,153 +522,56 @@ def get_atom_pairs_batch(system_id):
 @bp.route('/systems/<system_id>/interaction-distances', methods=['GET'])
 def get_interaction_distances(system_id):
     """
-    Get distance data for all interactions across all frames
-    Returns a map: {pair_key: {frame: {type: distance}}}
+    Get distance data for all interactions across all frames.
+    Requires _atom_pairs.csv. Returns {pair_key: {frame: {type: distance}}}.
     """
     try:
         data_folder = current_app.config['DATA_FOLDER']
         system_path = Path(data_folder) / 'systems' / system_id
-        
+
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
-        
-        # Find all frame folders
-        frame_folders = sorted(
-            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
-            key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else f.name
-        )
-        
-        if not frame_folders:
-            return jsonify({'error': 'No frames found for this system'}), 404
-        
+
+        atom_pairs_csv = system_path / '_atom_pairs.csv'
+        if not atom_pairs_csv.exists():
+            return jsonify({'error': 'Aggregated data not found. Run the pipeline to generate _atom_pairs.csv.'}), 404
+
         # Structure: {pair_key: {frame: {type: [distances]}}}
         distance_map = {}
-        
-        # Get all possible interaction type CSV filenames
-        all_interaction_types = [
-            'H-bond', 'Salt_bridge', 'pi-pi', 'Cation_pi', 'Anion_pi',
-            'C-H_ON', 'C-H_pi', 'Halogen_bond', 'Apolar_vdw', 'Polar_vdw',
-            'Proximal', 'Clash', 'Metal_Mediated', 'N-S-O-H_pi', 'Lone_pair_pi',
-            'Water_Mediated', 'SS_bond', 'Amino_pi'
-        ]
-        
-        # Map CSV filename back to normalized type name
-        csv_to_type_map = {
-            'H-bond': 'H-bond',
-            'Salt_bridge': 'Salt-bridge',
-            'pi-pi': 'π-π interactions',
-            'Cation_pi': 'Cation-π interactions',
-            'Anion_pi': 'Anion-π interactions',
-            'C-H_ON': 'CH-O/N bonds',
-            'C-H_pi': 'CH-π interactions',
-            'Halogen_bond': 'Halogen bonds',
-            'Apolar_vdw': 'Apolar vdW contacts',
-            'Polar_vdw': 'Polar vdW contacts',
-            'Proximal': 'Proximal contacts',
-            'Clash': 'Clashes',
-            'Metal_Mediated': 'Metal-mediated contacts',
-            'N-S-O-H_pi': 'O/N/SH-π interactions',
-            'Lone_pair_pi': 'lp-π interactions',
-            'Water_Mediated': 'Water-mediated contacts',
-            'SS_bond': 'S-S bond',
-            'Amino_pi': 'Amino-π interactions'
-        }
-        
-        # Scan all interaction type CSV files directly (more reliable than using final_file.csv)
-        for frame_folder in frame_folders:
-            frame_num = int(frame_folder.name.split('_')[1])
-            
-            for csv_filename in all_interaction_types:
-                # Detect chain pattern dynamically (e.g., A_B, A_C, etc.)
-                chain_pattern = _get_chain_pattern(frame_folder)
-                # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
-                type_csv = frame_folder / f"{frame_folder.name}.pd_h.pdb_{chain_pattern}_{csv_filename}.csv"
-                if not type_csv.exists():
-                    type_csv = frame_folder / f"{frame_folder.name}.pdb_{chain_pattern}_{csv_filename}.csv"
-                
-                if not type_csv.exists():
+        with open(atom_pairs_csv, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                res_id1 = _format_residue_id(row['resName1'], row['resNum1'], row['chain1'])
+                res_id2 = _format_residue_id(row['resName2'], row['resNum2'], row['chain2'])
+                pair_key = _format_pair_key(res_id1, res_id2)
+                frame_num = int(row['frame'])
+                interaction_type = row.get('interactionType', '').strip()
+                if not interaction_type:
                     continue
-                
-                normalized_type = csv_to_type_map.get(csv_filename)
-                if not normalized_type:
-                    continue
-                
-                # Parse the type-specific CSV to get distances
                 try:
-                    with open(type_csv, 'r', encoding='utf-8') as tf:
-                        type_reader = csv.DictReader(tf)
-                        for type_row in type_reader:
-                            # Check if required fields exist
-                            if not all(key in type_row for key in ['Res. Name 1', 'Res. Number 1', 'Chain 1', 
-                                                                  'Res. Name 2', 'Res. Number 2', 'Chain 2']):
-                                continue
-                            
-                            res_id1 = _format_residue_id(type_row['Res. Name 1'], type_row['Res. Number 1'], type_row['Chain 1'])
-                            res_id2 = _format_residue_id(type_row['Res. Name 2'], type_row['Res. Number 2'], type_row['Chain 2'])
-                            pair_key = _format_pair_key(res_id1, res_id2)
-                            
-                            # Get distance - handle different CSV formats
-                            distance = None
-                            
-                            # Standard format: try multiple possible distance column names
-                            distance_str = None
-                            for dist_col in ['Distance (Å)', 'Distance', 'Distance(Å)', 'Dist (Å)', 'Dist', 'distance', 'Centroid Distance', 'Centroid Distance (Å)', 'Ring Distance', 'Ring Distance (Å)']:
-                                if dist_col in type_row and type_row[dist_col]:
-                                    distance_str = type_row[dist_col].strip()
-                                    break
-                            
-                            if distance_str:
-                                distance_str = distance_str.replace('*', '').strip()
-                                try:
-                                    distance = float(distance_str)
-                                except ValueError:
-                                    pass
-                            
-                            # Water-mediated format: has Distance from Res 1 and Distance from Res 2
-                            # Sum both distances (total path through water)
-                            elif 'Distance from Res 1' in type_row and 'Distance from Res 2' in type_row:
-                                try:
-                                    dist1_str = type_row.get('Distance from Res 1', '').strip()
-                                    dist2_str = type_row.get('Distance from Res 2', '').strip()
-                                    if dist1_str and dist2_str:
-                                        dist1 = float(dist1_str.replace('*', '').strip())
-                                        dist2 = float(dist2_str.replace('*', '').strip())
-                                        distance = dist1 + dist2  # Total path through water
-                                except ValueError:
-                                    pass
-                            
-                            if distance is not None:
-                                try:
-                                    
-                                    if pair_key not in distance_map:
-                                        distance_map[pair_key] = {}
-                                    if frame_num not in distance_map[pair_key]:
-                                        distance_map[pair_key][frame_num] = {}
-                                    if normalized_type not in distance_map[pair_key][frame_num]:
-                                        distance_map[pair_key][frame_num][normalized_type] = []
-                                    
-                                    distance_map[pair_key][frame_num][normalized_type].append(distance)
-                                except ValueError:
-                                    pass
-                except Exception as e:
-                    # Skip files that can't be read
+                    dist = float(row['distance']) if row.get('distance') else None
+                except (ValueError, TypeError):
+                    dist = None
+                if dist is None:
                     continue
-        
-        # Convert to simpler structure: use minimum distance if multiple (closest interaction)
+                if pair_key not in distance_map:
+                    distance_map[pair_key] = {}
+                if frame_num not in distance_map[pair_key]:
+                    distance_map[pair_key][frame_num] = {}
+                if interaction_type not in distance_map[pair_key][frame_num]:
+                    distance_map[pair_key][frame_num][interaction_type] = []
+                distance_map[pair_key][frame_num][interaction_type].append(dist)
+
         simplified_map = {}
         for pair_key, frames in distance_map.items():
             simplified_map[pair_key] = {}
             for frame_num, types in frames.items():
                 simplified_map[pair_key][frame_num] = {}
-                for interaction_type, distances in types.items():
-                    # Use the minimum distance (closest interaction) if multiple atom pairs exist
-                    simplified_map[pair_key][frame_num][interaction_type] = min(distances) if distances else None
-        
-        return jsonify({
-            'system': system_id,
-            'distances': simplified_map
-        })
-    
+                for itype, distances in types.items():
+                    simplified_map[pair_key][frame_num][itype] = min(distances) if distances else None
+
+        return jsonify({'system': system_id, 'distances': simplified_map})
+
     except Exception as e:
         import traceback
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
@@ -782,181 +579,105 @@ def get_interaction_distances(system_id):
 @bp.route('/systems/<system_id>/distance-distributions', methods=['GET'])
 def get_distance_distributions(system_id):
     """
-    Get distance distributions for residue pairs filtered by interaction types
-    Query params: interaction_types (comma-separated list)
-    Returns: {pairs: [{id, chain1, res1, chain2, res2, interaction_type, distances: []}]}
+    Get distance distributions for residue pairs filtered by interaction types.
+    Requires _atom_pairs.csv and _metadata.json.
+    Query params: interaction_types (comma-separated list).
+    Returns: {pairs: [...], totalFrames}.
     """
     from flask import request
-    
+
     try:
-        # Get query parameters
         interaction_types_param = request.args.get('interaction_types', '')
         selected_types = [t.strip() for t in interaction_types_param.split(',') if t.strip()]
-        
+
         data_folder = current_app.config['DATA_FOLDER']
         system_path = Path(data_folder) / 'systems' / system_id
-        
+
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
-        
-        # Find all frame folders
-        frame_folders = sorted(
-            [f for f in system_path.iterdir() if f.is_dir() and f.name.startswith('frame_')],
-            key=lambda f: int(f.name.split('_')[1]) if '_' in f.name else f.name
-        )
-        
-        if not frame_folders:
-            return jsonify({'error': 'No frames found for this system'}), 404
-        
-        total_frames = len(frame_folders)
-        
-        # Structure: {(pair_key, interaction_type): {'distances': [], 'frames': set()}}
+
+        atom_pairs_csv = system_path / '_atom_pairs.csv'
+        metadata_path = system_path / '_metadata.json'
+        if not atom_pairs_csv.exists():
+            return jsonify({'error': 'Aggregated data not found. Run the pipeline to generate _atom_pairs.csv.'}), 404
+
+        total_frames = 0
+        if metadata_path.exists():
+            try:
+                with open(metadata_path, 'r', encoding='utf-8') as mf:
+                    meta = json.load(mf)
+                    total_frames = int(meta.get('totalFrames', 0))
+            except (json.JSONDecodeError, TypeError):
+                pass
+
         pair_type_distances = {}
-        pair_info = {}  # Store residue info for each pair
-        
-        # CSV filename mapping
-        csv_to_type_map = {
-            'H-bond': 'H-bond',
-            'Salt_bridge': 'Salt-bridge',
-            'pi-pi': 'π-π interactions',
-            'Cation_pi': 'Cation-π interactions',
-            'Anion_pi': 'Anion-π interactions',
-            'C-H_ON': 'CH-O/N bonds',
-            'C-H_pi': 'CH-π interactions',
-            'Halogen_bond': 'Halogen bonds',
-            'Apolar_vdw': 'Apolar vdW contacts',
-            'Polar_vdw': 'Polar vdW contacts',
-            'Proximal': 'Proximal contacts',
-            'Clash': 'Clashes',
-            'Metal_Mediated': 'Metal-mediated contacts',
-            'N-S-O-H_pi': 'O/N/SH-π interactions',
-            'Lone_pair_pi': 'lp-π interactions',
-            'Water_Mediated': 'Water-mediated contacts',
-            'SS_bond': 'S-S bond',
-            'Amino_pi': 'Amino-π interactions'
-        }
-        
-        # Filter CSV files to scan based on selected types
-        csv_files_to_scan = []
-        if selected_types:
-            # Map selected types back to CSV filenames
-            for csv_name, normalized_type in csv_to_type_map.items():
-                if normalized_type in selected_types:
-                    csv_files_to_scan.append((csv_name, normalized_type))
-        else:
-            # If no filter, scan all
-            csv_files_to_scan = list(csv_to_type_map.items())
-        
-        # Scan all frames and collect distances
-        for frame_folder in frame_folders:
-            frame_num = int(frame_folder.name.split('_')[1])
-            
-            for csv_filename, normalized_type in csv_files_to_scan:
-                # Detect chain pattern dynamically (e.g., A_B, A_C, etc.)
-                chain_pattern = _get_chain_pattern(frame_folder)
-                # Try both naming patterns: with Reduce (.pd_h.pdb) and without Reduce (.pdb)
-                type_csv = frame_folder / f"{frame_folder.name}.pd_h.pdb_{chain_pattern}_{csv_filename}.csv"
-                if not type_csv.exists():
-                    type_csv = frame_folder / f"{frame_folder.name}.pdb_{chain_pattern}_{csv_filename}.csv"
-                
-                if not type_csv.exists():
+        pair_info = {}
+
+        with open(atom_pairs_csv, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                itype = row.get('interactionType', '').strip()
+                if not itype:
                     continue
-                
-                # Parse the CSV file
+                if selected_types and itype not in selected_types:
+                    continue
                 try:
-                    with open(type_csv, 'r', encoding='utf-8') as tf:
-                        type_reader = csv.DictReader(tf)
-                        for row in type_reader:
-                            # Check required fields (excluding distance for now)
-                            if not all(key in row for key in ['Res. Name 1', 'Res. Number 1', 'Chain 1', 
-                                                              'Res. Name 2', 'Res. Number 2', 'Chain 2']):
-                                continue
-                            
-                            # Try multiple possible distance column names
-                            distance_str = None
-                            for dist_col in ['Distance (Å)', 'Distance', 'Distance(Å)', 'Dist (Å)', 'Dist', 'distance', 'Centroid Distance', 'Centroid Distance (Å)', 'Ring Distance', 'Ring Distance (Å)']:
-                                if dist_col in row and row[dist_col]:
-                                    distance_str = row[dist_col].strip()
-                                    break
-                            
-                            if not distance_str:
-                                continue
-                            
-                            # Remove asterisks and parse
-                            distance_str = distance_str.replace('*', '').strip()
-                            try:
-                                distance = float(distance_str)
-                            except ValueError:
-                                continue
-                            
-                            # Create pair key in unified residue format
-                            res_id1 = _format_residue_id(row['Res. Name 1'], row['Res. Number 1'], row['Chain 1'])
-                            res_id2 = _format_residue_id(row['Res. Name 2'], row['Res. Number 2'], row['Chain 2'])
-                            pair_key = _format_pair_key(res_id1, res_id2)
-                            compound_key = (pair_key, normalized_type)
-                            
-                            # Store pair info
-                            if pair_key not in pair_info:
-                                pair_info[pair_key] = {
-                                    'chain1': row['Chain 1'],
-                                    'resName1': row['Res. Name 1'],
-                                    'resNum1': int(row['Res. Number 1']),
-                                    'chain2': row['Chain 2'],
-                                    'resName2': row['Res. Name 2'],
-                                    'resNum2': int(row['Res. Number 2']),
-                                    'id1': res_id1,
-                                    'id2': res_id2
-                                }
-                            
-                            # Store distance and track frame
-                            if compound_key not in pair_type_distances:
-                                pair_type_distances[compound_key] = {
-                                    'distances': [],
-                                    'frames': set()
-                                }
-                            pair_type_distances[compound_key]['distances'].append(distance)
-                            pair_type_distances[compound_key]['frames'].add(frame_num)
-                
-                except Exception as e:
+                    dist = float(row['distance']) if row.get('distance') else None
+                except (ValueError, TypeError):
                     continue
-        
-        # Format results
+                if dist is None:
+                    continue
+
+                res_id1 = _format_residue_id(row['resName1'], row['resNum1'], row['chain1'])
+                res_id2 = _format_residue_id(row['resName2'], row['resNum2'], row['chain2'])
+                pair_key = _format_pair_key(res_id1, res_id2)
+                compound_key = (pair_key, itype)
+
+                if pair_key not in pair_info:
+                    pair_info[pair_key] = {
+                        'chain1': row['chain1'],
+                        'resName1': row['resName1'],
+                        'resNum1': int(row['resNum1']),
+                        'chain2': row['chain2'],
+                        'resName2': row['resName2'],
+                        'resNum2': int(row['resNum2']),
+                        'id1': res_id1,
+                        'id2': res_id2
+                    }
+                if compound_key not in pair_type_distances:
+                    pair_type_distances[compound_key] = {'distances': [], 'frames': set()}
+                pair_type_distances[compound_key]['distances'].append(dist)
+                pair_type_distances[compound_key]['frames'].add(int(row['frame']))
+
         pairs = []
         for (pair_key, interaction_type), data in pair_type_distances.items():
-            if pair_key in pair_info:
-                info = pair_info[pair_key]
-                distances = data['distances']
-                unique_frames = data['frames']
-                
-                pairs.append({
-                    'id': pair_key,
-                    'chain1': info['chain1'],
-                    'resName1': info['resName1'],
-                    'resNum1': info['resNum1'],
-                    'chain2': info['chain2'],
-                    'resName2': info['resName2'],
-                    'resNum2': info['resNum2'],
-                    'interactionType': interaction_type,
-                    'distances': distances,
-                    'frameCount': len(unique_frames),  # Count unique frames, not total measurements
-                    'consistency': len(unique_frames) / total_frames if total_frames > 0 else 0,  # Fixed: unique frames
-                    'totalMeasurements': len(distances),  # Total distance measurements (can be > frames)
-                    'avgDistance': sum(distances) / len(distances) if distances else 0,
-                    'minDistance': min(distances) if distances else 0,
-                    'maxDistance': max(distances) if distances else 0,
-                    'id1': info.get('id1'),
-                    'id2': info.get('id2')
-                })
-        
-        # Sort by consistency (most persistent first)
+            info = pair_info[pair_key]
+            distances = data['distances']
+            unique_frames = data['frames']
+            pairs.append({
+                'id': pair_key,
+                'chain1': info['chain1'],
+                'resName1': info['resName1'],
+                'resNum1': info['resNum1'],
+                'chain2': info['chain2'],
+                'resName2': info['resName2'],
+                'resNum2': info['resNum2'],
+                'interactionType': interaction_type,
+                'distances': distances,
+                'frameCount': len(unique_frames),
+                'consistency': len(unique_frames) / total_frames if total_frames > 0 else 0,
+                'totalMeasurements': len(distances),
+                'avgDistance': sum(distances) / len(distances) if distances else 0,
+                'minDistance': min(distances) if distances else 0,
+                'maxDistance': max(distances) if distances else 0,
+                'id1': info.get('id1'),
+                'id2': info.get('id2')
+            })
+
         pairs.sort(key=lambda x: x['consistency'], reverse=True)
-        
-        return jsonify({
-            'system': system_id,
-            'totalFrames': total_frames,
-            'pairs': pairs
-        })
-    
+
+        return jsonify({'system': system_id, 'totalFrames': total_frames, 'pairs': pairs})
+
     except Exception as e:
         import traceback
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
