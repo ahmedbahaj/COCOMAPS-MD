@@ -299,67 +299,85 @@ def get_interaction_trends(system_id):
         return jsonify({'error': str(e)}), 500
 
 
-def _get_atom_pairs_response_from_csv(system_path, res_name1, res_num1, chain1,
-                                       res_name2, res_num2, chain2, total_frames):
-    """Build atom-pairs response from _atom_pairs.csv filtered by residue pair."""
-    res_num1_str = str(res_num1)
-    res_num2_str = str(res_num2)
+def _canonical_pair_key(res_name1, res_num1, chain1, res_name2, res_num2, chain2):
+    """Stable key for a residue pair (order-independent)."""
+    id1 = _format_residue_id(res_name1, str(res_num1), chain1)
+    id2 = _format_residue_id(res_name2, str(res_num2), chain2)
+    return tuple(sorted([id1, id2]))
+
+
+def _read_atom_pairs_grouped(system_path, requested_canonical_keys):
+    """
+    Read _atom_pairs.csv once and return dict: canonical_pair_key -> list of row dicts.
+    Only includes rows for pairs in requested_canonical_keys (or all if set is empty).
+    """
+    grouped = {}
+    path = system_path / '_atom_pairs.csv'
+    if not path.exists():
+        return grouped
+    with open(path, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            r1, n1, c1 = row.get('resName1'), row.get('resNum1'), row.get('chain1')
+            r2, n2, c2 = row.get('resName2'), row.get('resNum2'), row.get('chain2')
+            if not all([r1, n1, c1, r2, n2, c2]):
+                continue
+            key = _canonical_pair_key(r1, n1, c1, r2, n2, c2)
+            if requested_canonical_keys and key not in requested_canonical_keys:
+                continue
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(row)
+    return grouped
+
+
+def _build_atom_pairs_response_from_rows(rows, res_name1, res_num1, chain1,
+                                         res_name2, res_num2, chain2, total_frames):
+    """Build the same response structure from a list of CSV row dicts (one residue pair)."""
     atom_pairs_by_frame = {}
     atom_pair_stats = {}
     interaction_types = set()
 
-    with open(system_path / '_atom_pairs.csv', 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            m1 = (row.get('resName1') == res_name1 and row.get('resNum1') == res_num1_str and
-                  row.get('chain1') == chain1 and row.get('resName2') == res_name2 and
-                  row.get('resNum2') == res_num2_str and row.get('chain2') == chain2)
-            m2 = (row.get('resName1') == res_name2 and row.get('resNum1') == res_num2_str and
-                  row.get('chain1') == chain2 and row.get('resName2') == res_name1 and
-                  row.get('resNum2') == res_num1_str and row.get('chain2') == chain1)
-            if not (m1 or m2):
-                continue
+    for row in rows:
+        frame_num = int(row['frame'])
+        interaction_type = row.get('interactionType', '')
+        atom1 = row.get('atom1', '').strip()
+        atom2 = row.get('atom2', '').strip()
+        if not atom1 or not atom2:
+            continue
 
-            frame_num = int(row['frame'])
-            interaction_type = row.get('interactionType', '')
-            atom1 = row.get('atom1', '').strip()
-            atom2 = row.get('atom2', '').strip()
-            if not atom1 or not atom2:
-                continue
+        atom_pair_key = f"{atom1}-{atom2}"
+        interaction_types.add(interaction_type)
 
-            atom_pair_key = f"{atom1}-{atom2}"
-            interaction_types.add(interaction_type)
+        try:
+            dist = float(row['distance']) if row.get('distance') else None
+        except (ValueError, TypeError):
+            dist = None
+        try:
+            ang = float(row['angle']) if row.get('angle') else None
+        except (ValueError, TypeError):
+            ang = None
 
-            if frame_num not in atom_pairs_by_frame:
-                atom_pairs_by_frame[frame_num] = []
-            try:
-                dist = float(row['distance']) if row.get('distance') else None
-            except (ValueError, TypeError):
-                dist = None
-            try:
-                ang = float(row['angle']) if row.get('angle') else None
-            except (ValueError, TypeError):
-                ang = None
+        if frame_num not in atom_pairs_by_frame:
+            atom_pairs_by_frame[frame_num] = []
+        atom_pairs_by_frame[frame_num].append({
+            'atom1': atom1, 'atom2': atom2, 'atomPair': atom_pair_key,
+            'interactionType': interaction_type, 'distance': dist, 'angle': ang, 'frame': frame_num
+        })
 
-            atom_pairs_by_frame[frame_num].append({
+        if atom_pair_key not in atom_pair_stats:
+            atom_pair_stats[atom_pair_key] = {
                 'atom1': atom1, 'atom2': atom2, 'atomPair': atom_pair_key,
-                'interactionType': interaction_type, 'distance': dist, 'angle': ang, 'frame': frame_num
-            })
+                'frames': [], 'distances': [], 'angles': [], 'count': 0, 'interactionTypes': set()
+            }
+        atom_pair_stats[atom_pair_key]['frames'].append(frame_num)
+        atom_pair_stats[atom_pair_key]['interactionTypes'].add(interaction_type)
+        atom_pair_stats[atom_pair_key]['count'] += 1
+        if dist is not None:
+            atom_pair_stats[atom_pair_key]['distances'].append(dist)
+        if ang is not None:
+            atom_pair_stats[atom_pair_key]['angles'].append(ang)
 
-            if atom_pair_key not in atom_pair_stats:
-                atom_pair_stats[atom_pair_key] = {
-                    'atom1': atom1, 'atom2': atom2, 'atomPair': atom_pair_key,
-                    'frames': [], 'distances': [], 'angles': [], 'count': 0, 'interactionTypes': set()
-                }
-            atom_pair_stats[atom_pair_key]['frames'].append(frame_num)
-            atom_pair_stats[atom_pair_key]['interactionTypes'].add(interaction_type)
-            atom_pair_stats[atom_pair_key]['count'] += 1
-            if dist is not None:
-                atom_pair_stats[atom_pair_key]['distances'].append(dist)
-            if ang is not None:
-                atom_pair_stats[atom_pair_key]['angles'].append(ang)
-
-    # Transitions
     transitions = []
     sorted_frames = sorted(atom_pairs_by_frame.keys())
     for i in range(len(sorted_frames) - 1):
@@ -371,7 +389,6 @@ def _get_atom_pairs_response_from_csv(system_path, res_name1, res_num1, chain1,
                 for p2 in pairs2:
                     transitions.append({'from': p1, 'to': p2, 'fromFrame': f1, 'toFrame': f2, 'type': 'transition'})
 
-    # atom_pair_list
     atom_pair_list = []
     for stats in atom_pair_stats.values():
         frames_set = sorted(set(stats['frames']))
@@ -406,6 +423,17 @@ def _get_atom_pairs_response_from_csv(system_path, res_name1, res_num1, chain1,
         'mostCommonAtomPairs': most_common,
         'interactionTypes': list(interaction_types)
     }
+
+
+def _get_atom_pairs_response_from_csv(system_path, res_name1, res_num1, chain1,
+                                       res_name2, res_num2, chain2, total_frames):
+    """Build atom-pairs response from _atom_pairs.csv filtered by residue pair (single pair, single read)."""
+    key = _canonical_pair_key(res_name1, res_num1, chain1, res_name2, res_num2, chain2)
+    grouped = _read_atom_pairs_grouped(system_path, {key})
+    rows = grouped.get(key, [])
+    return _build_atom_pairs_response_from_rows(
+        rows, res_name1, res_num1, chain1, res_name2, res_num2, chain2, total_frames
+    )
 
 
 @bp.route('/systems/<system_id>/atom-pairs', methods=['GET'])
@@ -464,7 +492,7 @@ def get_atom_pairs_batch(system_id):
     Get atom pair data for multiple residue pairs at once.
     POST body: { "pairs": [ { "resName1", "resNum1", "chain1", "resName2", "resNum2", "chain2" }, ... ] }
     Returns: { "pairKey1": { atomPairs, atomPairsByFrame, ... }, "pairKey2": {...}, ... }
-    Requires _atom_pairs.csv and _metadata.json (no fallback).
+    Requires _atom_pairs.csv and _metadata.json. Reads CSV once for all requested pairs.
     """
     from flask import request
 
@@ -490,21 +518,30 @@ def get_atom_pairs_batch(system_id):
         if not metadata_file.exists():
             return jsonify({'error': 'Metadata not found. Run the pipeline to generate _metadata.json.'}), 404
 
-        import json
         with open(metadata_file, 'r', encoding='utf-8') as f:
             metadata = json.load(f)
         total_frames = metadata.get('totalFrames', 0)
         if total_frames <= 0:
             return jsonify({'error': 'Invalid totalFrames in _metadata.json.'}), 404
 
-        result = {}
+        requested_keys = set()
+        valid_pairs = []
         for pair in pairs:
             r1, n1, c1 = pair.get('resName1'), str(pair.get('resNum1')), pair.get('chain1')
             r2, n2, c2 = pair.get('resName2'), str(pair.get('resNum2')), pair.get('chain2')
             if not all([r1, n1, c1, r2, n2, c2]):
                 continue
+            requested_keys.add(_canonical_pair_key(r1, n1, c1, r2, n2, c2))
+            valid_pairs.append((r1, n1, c1, r2, n2, c2))
+
+        grouped = _read_atom_pairs_grouped(system_path, requested_keys)
+
+        result = {}
+        for (r1, n1, c1, r2, n2, c2) in valid_pairs:
             pair_key = f"{c1}-{r1}{n1}_{c2}-{r2}{n2}"
-            full = _get_atom_pairs_response_from_csv(system_path, r1, n1, c1, r2, n2, c2, total_frames)
+            canonical = _canonical_pair_key(r1, n1, c1, r2, n2, c2)
+            rows = grouped.get(canonical, [])
+            full = _build_atom_pairs_response_from_rows(rows, r1, n1, c1, r2, n2, c2, total_frames)
             result[pair_key] = {
                 'residuePair': full['residuePair'],
                 'totalFrames': full['totalFrames'],
