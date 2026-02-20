@@ -35,8 +35,10 @@
         </p>
 
         <ChartSelector />
-        <ControlsPanel />
-        <ChartContainer />
+        <div class="analysis-card">
+          <ChartContainer />
+          <ControlsPanel />
+        </div>
         <StatsPanel v-if="dataStore.currentSystem" />
         <ConservationAnalysis v-if="dataStore.currentSystem" />
       </div>
@@ -242,6 +244,14 @@ h1 {
   text-align: center;
   color: #6e6e73;
   margin-bottom: 40px;
+}
+
+.analysis-card {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  margin-bottom: 32px;
 }
 
 @media (max-width: 768px) {

@@ -1,5 +1,6 @@
 <template>
   <div class="chart-wrapper">
+    <div ref="chartContainer" class="chart-container"></div>
     <div class="chart-toolbar">
       <!-- Interaction Type Chips -->
       <div class="control-group">
@@ -63,7 +64,6 @@
         <p class="slider-description">Show pairs with conservation ≥ {{ minConsistency }}%</p>
       </div>
     </div>
-    <div ref="chartContainer" class="chart-container"></div>
   </div>
 </template>
 
@@ -524,11 +524,9 @@ watch([
 }
 
 .chart-toolbar {
-  background: #fbfbfd;
-  border-radius: 18px;
-  padding: 24px 32px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+  padding: 24px 32px 0;
+  margin-top: 8px;
+  border-top: 1px solid #e8e8ed;
 }
 
 .control-group {

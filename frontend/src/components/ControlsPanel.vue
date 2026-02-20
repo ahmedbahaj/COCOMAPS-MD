@@ -1,59 +1,11 @@
 <template>
-  <div class="controls-panel">
-    <!-- Interaction Type Filter -->
-    <div
-      v-if="showInteractionFilter"
-      class="control-group slider-container-wrapper"
-    >
-      <label>Filter Interaction Types</label>
-      <div class="filter-buttons">
-        <button
-          type="button"
-          @click="selectAllTypes"
-          class="filter-btn secondary"
-        >
-          Select All
-        </button>
-        <button
-          type="button"
-          @click="deselectAllTypes"
-          class="filter-btn secondary"
-        >
-          Deselect All
-        </button>
-      </div>
-      <div class="interaction-checkboxes">
-        <label
-          v-for="type in INTERACTION_TYPES"
-          :key="type.id"
-          class="checkbox-label"
-        >
-          <input
-            type="checkbox"
-            :checked="dataStore.selectedInteractionTypes.has(type.id)"
-            @change="toggleInteractionType(type.id)"
-            class="interaction-checkbox-input"
-          />
-          <span 
-            class="custom-checkbox"
-            :style="{ 
-              borderColor: getTypeColor(type),
-              backgroundColor: dataStore.selectedInteractionTypes.has(type.id) ? getTypeColor(type) : 'transparent'
-            }"
-          >
-            <svg v-if="dataStore.selectedInteractionTypes.has(type.id)" viewBox="0 0 12 12" class="checkmark">
-              <path d="M2 6l3 3 5-5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          <span>{{ type.label }}</span>
-        </label>
-      </div>
-    </div>
+  <div class="controls-panel" v-if="hasAnyControls">
+    <div class="controls-divider"></div>
 
     <!-- Conservation Threshold Slider -->
     <div
       v-if="showSlider"
-      class="control-group slider-container-wrapper"
+      class="control-section"
     >
       <label for="consistencySlider">Conservation Threshold</label>
       <div class="slider-container">
@@ -99,7 +51,7 @@
     <!-- Log Scale Toggle -->
     <div
       v-if="showLogScale"
-      class="control-group slider-container-wrapper"
+      class="control-section"
     >
       <label for="logScaleToggle">Chart Scale</label>
       <div style="display: flex; gap: 12px; align-items: center;">
@@ -119,7 +71,7 @@
     <!-- Time Unit Selector (for charts with time axis) -->
     <div
       v-if="showTimeUnit"
-      class="control-group slider-container-wrapper"
+      class="control-section"
     >
       <label>Time Axis Label</label>
       <div class="time-unit-chips">
@@ -151,6 +103,79 @@
       </div>
     </div>
 
+    <!-- Interaction Type Filter (expandable, always visible when applicable) -->
+    <div
+      v-if="showInteractionFilter"
+      class="control-section filter-section"
+    >
+      <div class="filter-header" @click="interactionFilterExpanded = !interactionFilterExpanded">
+        <div class="filter-header-left">
+          <label style="cursor: pointer; margin-bottom: 0;">Interaction Type Filter</label>
+          <span class="filter-badge">{{ selectedCount }}/{{ totalCount }} selected</span>
+        </div>
+        <div class="filter-header-right">
+          <!-- Compact color dots preview when collapsed -->
+          <div v-if="!interactionFilterExpanded" class="filter-dots-preview">
+            <span
+              v-for="type in INTERACTION_TYPES"
+              :key="type.id"
+              class="filter-dot"
+              :class="{ inactive: !dataStore.selectedInteractionTypes.has(type.id) }"
+              :style="{ backgroundColor: getTypeColor(type) }"
+              :title="type.label"
+            ></span>
+          </div>
+          <span class="expand-icon" :class="{ expanded: interactionFilterExpanded }">
+            <svg viewBox="0 0 12 12" width="14" height="14"><path d="M3 5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </div>
+      <div v-show="interactionFilterExpanded" class="filter-body">
+        <div class="filter-buttons">
+          <button
+            type="button"
+            @click="selectAllTypes"
+            class="filter-btn secondary"
+          >
+            Select All
+          </button>
+          <button
+            type="button"
+            @click="deselectAllTypes"
+            class="filter-btn secondary"
+          >
+            Deselect All
+          </button>
+        </div>
+        <div class="interaction-checkboxes">
+          <label
+            v-for="type in INTERACTION_TYPES"
+            :key="type.id"
+            class="checkbox-label"
+          >
+            <input
+              type="checkbox"
+              :checked="dataStore.selectedInteractionTypes.has(type.id)"
+              @change="toggleInteractionType(type.id)"
+              class="interaction-checkbox-input"
+            />
+            <span 
+              class="custom-checkbox"
+              :style="{ 
+                borderColor: getTypeColor(type),
+                backgroundColor: dataStore.selectedInteractionTypes.has(type.id) ? getTypeColor(type) : 'transparent'
+              }"
+            >
+              <svg v-if="dataStore.selectedInteractionTypes.has(type.id)" viewBox="0 0 12 12" class="checkmark">
+                <path d="M2 6l3 3 5-5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span>{{ type.label }}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -161,6 +186,8 @@ import { INTERACTION_TYPES } from '../utils/constants'
 import { getInteractionBaseColor } from '../utils/chartHelpers'
 
 const dataStore = useDataStore()
+
+const interactionFilterExpanded = ref(false)
 
 // Common MD time units
 const TIME_UNITS = [
@@ -231,6 +258,13 @@ const showTimeUnit = computed(() => {
   return ['line', 'area', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
 })
 
+const hasAnyControls = computed(() => {
+  return showSlider.value || showLogScale.value || showInteractionFilter.value || showTimeUnit.value
+})
+
+const selectedCount = computed(() => dataStore.selectedInteractionTypes.size)
+const totalCount = computed(() => INTERACTION_TYPES.length)
+
 const thresholdPercent = computed(() => {
   return Math.round(dataStore.currentThreshold * 100)
 })
@@ -288,18 +322,20 @@ const deselectAllTypes = () => {
 
 <style scoped>
 .controls-panel {
-  background: #fbfbfd;
-  border-radius: 18px;
-  padding: 32px;
-  margin-bottom: 32px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+  padding: 0 32px 32px;
 }
 
-.control-group {
+.controls-divider {
+  height: 1px;
+  background: #e8e8ed;
+  margin-bottom: 28px;
+}
+
+.control-section {
   margin-bottom: 24px;
 }
 
-.control-group:last-child {
+.control-section:last-child {
   margin-bottom: 0;
 }
 
@@ -312,6 +348,7 @@ label {
   letter-spacing: -0.022em;
 }
 
+/* Slider */
 .slider-container {
   display: flex;
   align-items: center;
@@ -351,13 +388,12 @@ label {
   font-weight: 600;
   color: #6e6e73;
 }
-/* Ensure labels don't shift left/right per tick */
 
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   position: relative;
-  z-index: 2; /* Slider thumb above tick marks */
+  z-index: 2;
   width: 100%;
   height: 4px;
   border-radius: 2px;
@@ -430,6 +466,85 @@ input[type="range"]::-webkit-slider-thumb:hover {
   margin-top: 8px;
 }
 
+/* Interaction Filter Section */
+.filter-section {
+  background: #f8f8fa;
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 1px solid #e8e8ed;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+
+.filter-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.filter-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6e6e73;
+  background: #e8e8ed;
+  padding: 3px 10px;
+  border-radius: 980px;
+  white-space: nowrap;
+}
+
+.filter-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-dots-preview {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.filter-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.filter-dot.inactive {
+  opacity: 0.15;
+}
+
+.expand-icon {
+  color: #8e8e93;
+  transition: transform 0.2s ease, color 0.15s ease;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.filter-header:hover .expand-icon {
+  color: #1d1d1f;
+}
+
+.filter-body {
+  margin-top: 16px;
+}
+
 .filter-buttons {
   display: flex;
   gap: 8px;
@@ -447,8 +562,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .filter-btn.secondary {
-  background: #f5f5f7;
+  background: #ffffff;
   color: #1d1d1f;
+  border: 1px solid #d2d2d7;
 }
 
 .filter-btn.secondary:hover {
@@ -462,8 +578,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
   max-height: 200px;
   overflow-y: auto;
   padding: 12px;
-  background: #f5f5f7;
+  background: #ffffff;
   border-radius: 12px;
+  border: 1px solid #e8e8ed;
 }
 
 .checkbox-label {
@@ -506,6 +623,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.05);
 }
 
+/* Time Unit Chips */
 .time-unit-chips {
   display: flex;
   flex-wrap: wrap;
@@ -560,4 +678,3 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-weight: 400;
 }
 </style>
-

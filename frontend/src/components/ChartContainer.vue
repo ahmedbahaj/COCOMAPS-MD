@@ -74,11 +74,7 @@ watch([
 
 <style scoped>
 .chart-container {
-  background: #ffffff;
-  border-radius: 18px;
   padding: 32px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
-  min-height: 850px;
 }
 
 .loading,
