@@ -506,10 +506,16 @@ def generate_interaction_heatmap(
     def fmt_res(entry, suffix):
         return f"{entry[f'resName{suffix}']}{entry[f'resNum{suffix}']}_{entry[f'chain{suffix}']}"
 
-    res1_set = sorted(set(fmt_res(e, '1') for e in interactions))
-    res2_set = sorted(set(fmt_res(e, '2') for e in interactions))
+    # Build residue ID sets — sort numerically by residue number
+    def sort_key(res_id):
+        import re
+        match = re.search(r'\d+', res_id)
+        return int(match.group()) if match else 0
 
-    # Build heatmap data
+    res1_set = sorted(set(fmt_res(e, '1') for e in interactions), key=sort_key)
+    res2_set = sorted(set(fmt_res(e, '2') for e in interactions), key=sort_key)
+
+    # Build heatmap data — value is 0-1 (consistency) like the GUI
     heatmap_data = []
     for entry in interactions:
         r1 = fmt_res(entry, '1')
@@ -517,65 +523,135 @@ def generate_interaction_heatmap(
         c = entry['consistency']
         x = res1_set.index(r1)
         y = res2_set.index(r2)
-        # Use the color of the most persistent type
-        types_list = list(entry['types'])
-        main_type = types_list[0] if types_list else ''
-        color_rgb = find_interaction_color(main_type)
         heatmap_data.append({
             'x': x,
             'y': y,
-            'value': round(c * 100, 1),
-            'color': f'rgba({color_rgb[0]},{color_rgb[1]},{color_rgb[2]},{0.3 + c * 0.6})',
+            'value': round(c, 4),
         })
 
-    chart_height = max(600, len(res2_set) * 25 + 200)
+    # ── Dynamic label sizing (mirrors FilteredHeatmap.vue) ──
+    x_count = len(res1_set)
+    y_count = len(res2_set)
+
+    if x_count <= 10:
+        x_font, x_rot = '14px', 0
+    elif x_count <= 25:
+        x_font, x_rot = '12px', -30
+    elif x_count <= 50:
+        x_font, x_rot = '10px', -45
+    elif x_count <= 80:
+        x_font, x_rot = '9px', -60
+    else:
+        x_font, x_rot = '8px', -90
+
+    if y_count <= 15:
+        y_font = '14px'
+    elif y_count <= 35:
+        y_font = '12px'
+    elif y_count <= 60:
+        y_font = '10px'
+    elif y_count <= 100:
+        y_font = '9px'
+    else:
+        y_font = '8px'
+
+    y_font_val = int(y_font.replace('px', ''))
+    row_height = max(12, y_font_val + 4)
+    chart_height = max(500, y_count * row_height + 250)
 
     chart_options = {
         'chart': {
             'type': 'heatmap',
             'backgroundColor': '#ffffff',
             'height': chart_height,
-            'width': max(1200, len(res1_set) * 25 + 400),
+            'width': max(1200, x_count * 25 + 400),
         },
         'title': {
-            'text': f'{system_name} - Interaction Heatmap',
+            'text': f'{system_name} - Residue Interaction Heatmap ({len(heatmap_data)} interactions)',
             'style': {'fontSize': '24px', 'fontWeight': '600', 'color': '#1d1d1f'},
         },
+        'subtitle': {'text': None},
         'credits': {'enabled': False},
         'xAxis': {
             'categories': res1_set if show_labels else [],
-            'title': {'text': 'Residue (Chain A side)'},
-            'labels': {
-                'rotation': -45 if len(res1_set) > 20 else 0,
-                'style': {'fontSize': '10px' if len(res1_set) > 40 else '12px'},
+            'title': {
+                'text': f'Chain 1 Residues',
+                'style': {'fontSize': '18px', 'fontWeight': '600', 'color': '#1d1d1f'},
             },
+            'labels': {
+                'rotation': x_rot,
+                'step': 1,
+                'overflow': 'allow',
+                'style': {
+                    'fontSize': x_font,
+                    'fontWeight': '700',
+                    'color': '#1d1d1f',
+                },
+            },
+            'gridLineWidth': 1,
+            'gridLineColor': '#e5e7eb',
+            'tickWidth': 1,
+            'tickColor': '#d1d5db',
         },
         'yAxis': {
             'categories': res2_set if show_labels else [],
-            'title': {'text': 'Residue (Chain B side)'},
+            'title': {
+                'text': f'Chain 2 Residues',
+                'style': {'fontSize': '18px', 'fontWeight': '600', 'color': '#1d1d1f'},
+            },
             'labels': {
-                'style': {'fontSize': '10px' if len(res2_set) > 40 else '12px'},
+                'step': 1,
+                'overflow': 'allow',
+                'style': {
+                    'fontSize': y_font,
+                    'fontWeight': '700',
+                    'color': '#1d1d1f',
+                },
             },
             'reversed': True,
         },
         'colorAxis': {
             'min': 0,
-            'max': 100,
+            'max': 1,
+            'reversed': False,
             'stops': [
-                [0, '#ffffff'],
-                [0.5, '#4b0082'],
-                [1, '#4b0082'],
+                [0, '#f5f5f7'],
+                [0.3, '#90CAF9'],
+                [0.5, '#42A5F5'],
+                [0.7, '#1E88E5'],
+                [1, '#0D47A1'],
             ],
+            'labels': {
+                'format': '{value:%,.0f}',
+                'style': {
+                    'fontSize': '12px',
+                    'fontWeight': '500',
+                    'color': '#1d1d1f',
+                },
+            },
+        },
+        'legend': {
+            'align': 'right',
+            'layout': 'vertical',
+            'verticalAlign': 'middle',
+            'symbolHeight': 300,
+            'symbolWidth': 20,
+            'reversed': False,
+            'title': {
+                'text': 'Conservation',
+                'style': {
+                    'fontSize': '14px',
+                    'fontWeight': '600',
+                    'color': '#1d1d1f',
+                },
+            },
         },
         'series': [{
-            'name': 'Conservation %',
-            'borderWidth': 1,
-            'borderColor': '#ffffff',
+            'name': 'Interaction Conservation',
             'data': heatmap_data,
-            'dataLabels': {
-                'enabled': len(heatmap_data) < 200,
-                'style': {'fontSize': '9px', 'color': '#ffffff', 'textOutline': 'none'},
-            },
+            'turboThreshold': 10000,
+            'borderWidth': 1,
+            'borderColor': '#93c5fd',
         }],
     }
 
@@ -592,57 +668,138 @@ def generate_conservation_matrix(
     type_threshold: float = 0.5,
     atom_change_mode: str = 'previous',
 ) -> bool:
-    """Generate Conservation Matrix chart PNG."""
+    """
+    Generate Conservation Matrix chart PNG.
+
+    Mirrors InteractionConservationMatrix.vue: a timeline heatmap where
+    X = frame number, Y = pair-type combination rows, and each interaction
+    type has its own colored series.
+    """
+    interactions_file = Path(system_dir) / '_interactions.csv'
+    metadata_file = Path(system_dir) / '_metadata.json'
+
+    if not interactions_file.exists():
+        console.print("  [yellow]Warning: _interactions.csv not found, skipping conservation matrix[/yellow]")
+        return False
+
     if excluded_types is None:
         excluded_types = {'proximal'}
 
-    # Aggregate raw per-frame data
+    metadata = _read_json(str(metadata_file)) if metadata_file.exists() else {}
+    total_frames = metadata.get('totalFrames', 1)
+
+    # Aggregate to get per-pair consistency and type persistence
     aggregated = _aggregate_interactions(system_dir)
     if not aggregated:
-        console.print("  [yellow]Warning: _interactions.csv not found or empty, skipping conservation matrix[/yellow]")
+        console.print("  [yellow]Warning: _interactions.csv empty, skipping conservation matrix[/yellow]")
         return False
 
-    # Filter by pair threshold and excluded types, using typePersistence for per-type thresholds
-    filtered_pairs = []
-    for entry in aggregated:
-        if entry['consistency'] < pair_threshold:
-            continue
-        # Filter types by type_threshold and excluded
-        included_types = {}
-        for t, persistence in entry['typePersistence'].items():
-            if persistence >= type_threshold and _matches_selected_types(t, excluded_types):
-                included_types[t] = persistence
-        if included_types:
-            entry['filtered_types'] = included_types
-            filtered_pairs.append(entry)
+    # Read raw per-frame rows to build the timeline
+    raw_rows = _read_csv(str(interactions_file))
 
-    if not filtered_pairs:
-        console.print("  [yellow]Warning: No interactions pass filters for conservation matrix[/yellow]")
+    # LEVEL 1: Filter pairs by pair conservation threshold
+    stable_pairs = [e for e in aggregated if e['consistency'] >= pair_threshold]
+    if not stable_pairs:
+        console.print("  [yellow]Warning: No pairs pass pair threshold for conservation matrix[/yellow]")
         return False
 
-    # Build heatmap: x = residue pair, y = interaction type
+    # Build pair-type combinations (Y-axis rows)
     def fmt_res(e, s):
         return f"{e[f'resName{s}']}{e[f'resNum{s}']}_{e[f'chain{s}']}"
 
-    pair_labels = [f"{fmt_res(p, '1')} ↔ {fmt_res(p, '2')}" for p in filtered_pairs]
-    all_types = sorted(set(t for p in filtered_pairs for t in p['filtered_types']))
+    def fmt_pair(e):
+        return f"{fmt_res(e, '1')} - {fmt_res(e, '2')}"
 
-    heatmap_data = []
-    for xi, pair in enumerate(filtered_pairs):
-        for yi, itype in enumerate(all_types):
-            c = pair['filtered_types'].get(itype, 0)
-            if c > 0:
-                color_rgb = find_interaction_color(itype)
-                opacity = 0.3 + c * 0.6
-                heatmap_data.append({
-                    'x': xi,
-                    'y': yi,
-                    'value': round(c * 100, 1),
-                    'color': f'rgba({color_rgb[0]},{color_rgb[1]},{color_rgb[2]},{opacity})',
-                })
+    # Sort pairs by residue number
+    import re
+    def pair_sort_key(e):
+        num1 = int(re.search(r'\d+', e.get('resNum1', '0')).group()) if re.search(r'\d+', e.get('resNum1', '0')) else 0
+        num2 = int(re.search(r'\d+', e.get('resNum2', '0')).group()) if re.search(r'\d+', e.get('resNum2', '0')) else 0
+        return (num1, num2)
 
-    chart_height = max(600, len(all_types) * 40 + 300)
-    chart_width = max(1200, len(filtered_pairs) * 60 + 400)
+    stable_pairs.sort(key=pair_sort_key)
+
+    pair_type_combos = []  # list of {'pair': str, 'type': str}
+    pair_type_to_row = {}  # "pair__type" -> row index
+
+    for entry in stable_pairs:
+        pair_label = fmt_pair(entry)
+        # LEVEL 2: filter types by type conservation threshold + excluded
+        for t in sorted(entry.get('typePersistence', {}).keys()):
+            persistence = entry['typePersistence'][t]
+            if persistence < type_threshold:
+                continue
+            if not _matches_selected_types(t, excluded_types):
+                continue
+            row_key = f"{pair_label}__{t}"
+            if row_key not in pair_type_to_row:
+                pair_type_to_row[row_key] = len(pair_type_combos)
+                pair_type_combos.append({'pair': pair_label, 'type': t})
+
+    if not pair_type_combos:
+        console.print("  [yellow]Warning: No pair-type combinations pass thresholds for conservation matrix[/yellow]")
+        return False
+
+    # Build a lookup: pair_key -> { type -> set of frame numbers }
+    pair_type_frames = {}
+    for row in raw_rows:
+        r1 = f"{row.get('resName1','')}{row.get('resNum1','')}_{row.get('chain1','')}"
+        r2 = f"{row.get('resName2','')}{row.get('resNum2','')}_{row.get('chain2','')}"
+        pair_label = f"{r1} - {r2}"
+        frame_num = int(row.get('frame', 0))
+        for t in (row.get('types') or '').split(';'):
+            t = t.strip()
+            if not t:
+                continue
+            pt_key = f"{pair_label}__{t}"
+            if pt_key in pair_type_to_row:
+                if pt_key not in pair_type_frames:
+                    pair_type_frames[pt_key] = set()
+                pair_type_frames[pt_key].add(frame_num)
+
+    # Build separate heatmap series per interaction type (like GUI)
+    series_map = {}  # type -> list of data points
+    for pt_key, frames in pair_type_frames.items():
+        row_idx = pair_type_to_row.get(pt_key)
+        if row_idx is None:
+            continue
+        itype = pair_type_combos[row_idx]['type']
+        if itype not in series_map:
+            series_map[itype] = []
+        for frame_num in frames:
+            series_map[itype].append({
+                'x': frame_num,
+                'y': row_idx,
+                'value': 1,
+            })
+
+    # Build series list — each type gets its own colored series
+    series = []
+    for itype in sorted(series_map.keys()):
+        color = get_interaction_color_hex(itype)
+        series.append({
+            'type': 'heatmap',
+            'name': itype,
+            'data': series_map[itype],
+            'color': color,
+            'borderWidth': 1,
+            'borderColor': '#e8e8ed',
+            'nullColor': 'transparent',
+            'colsize': 1,
+            'rowsize': 1,
+            'dataLabels': {'enabled': False},
+            'showInLegend': True,
+        })
+
+    # Y-axis labels: pair labels (one per row)
+    y_labels = [pt['pair'] for pt in pair_type_combos]
+
+    unique_pairs = len(set(pt['pair'] for pt in pair_type_combos))
+    x_title = f'Time ({time_unit})' if time_unit else 'Frame Number'
+    tick_interval = max(1, total_frames // 20)
+
+    chart_height = max(600, len(pair_type_combos) * 25 + 200)
+    chart_width = max(1200, total_frames * 12 + 450)
 
     chart_options = {
         'chart': {
@@ -650,51 +807,89 @@ def generate_conservation_matrix(
             'backgroundColor': '#ffffff',
             'height': chart_height,
             'width': chart_width,
+            'zoomType': 'xy',
+            'marginLeft': 250,
+            'marginRight': 200,
         },
         'title': {
-            'text': f'{system_name} - Interaction Conservation Matrix',
+            'text': f'{system_name} - Interaction Conservation Timeline ({len(pair_type_combos)} pair-type combinations, {unique_pairs} unique pairs)',
             'style': {'fontSize': '24px', 'fontWeight': '600', 'color': '#1d1d1f'},
         },
-        'subtitle': {
-            'text': f'Pair threshold: {int(pair_threshold*100)}% | Type threshold: {int(type_threshold*100)}% | Mode: {atom_change_mode}',
-            'style': {'fontSize': '14px', 'color': '#6e6e73'},
-        },
+        'subtitle': {'text': None},
         'credits': {'enabled': False},
+        'colors': None,
+        'colorAxis': None,
         'xAxis': {
-            'categories': pair_labels,
-            'title': {'text': 'Residue Pairs'},
-            'labels': {
-                'rotation': -45,
-                'style': {'fontSize': '10px' if len(pair_labels) > 30 else '12px'},
+            'title': {
+                'text': x_title,
+                'style': {'fontSize': '15px', 'fontWeight': '600', 'color': '#1d1d1f'},
             },
+            'min': 0.5,
+            'max': total_frames + 0.5,
+            'tickInterval': tick_interval,
+            'labels': {
+                'style': {'fontSize': '12px', 'fontWeight': '500', 'color': '#6e6e73'},
+            },
+            'gridLineWidth': 0,
+            'lineWidth': 1,
+            'lineColor': '#d2d2d7',
+            'tickWidth': 1,
+            'tickColor': '#d2d2d7',
+            'plotLines': [{'value': i + 0.5, 'color': '#e8e8ed', 'width': 1, 'zIndex': 1} for i in range(total_frames + 1)],
         },
         'yAxis': {
-            'categories': all_types,
-            'title': {'text': 'Interaction Type'},
+            'title': {'text': ''},
+            'min': -0.5,
+            'max': len(pair_type_combos) - 0.5,
+            'tickPositions': list(range(len(pair_type_combos))),
+            'categories': y_labels,
             'labels': {
-                'style': {'fontSize': '12px'},
+                'align': 'right',
+                'x': -10,
+                'style': {
+                    'fontSize': '12px',
+                    'fontWeight': '600',
+                    'color': '#1d1d1f',
+                    'textAlign': 'right',
+                    'width': '220px',
+                    'whiteSpace': 'nowrap',
+                    'overflow': 'visible',
+                },
+            },
+            'gridLineWidth': 0,
+            'lineWidth': 1,
+            'lineColor': '#d2d2d7',
+            'tickWidth': 1,
+            'tickColor': '#d2d2d7',
+            'reversed': False,
+            'startOnTick': False,
+            'endOnTick': False,
+            'plotLines': [{'value': i - 0.5, 'color': '#e8e8ed', 'width': 1, 'zIndex': 1} for i in range(len(pair_type_combos) + 1)],
+        },
+        'plotOptions': {
+            'heatmap': {
+                'borderWidth': 1,
+                'borderColor': '#e8e8ed',
             },
         },
-        'colorAxis': {
-            'min': 0,
-            'max': 100,
-            'stops': [
-                [0, '#f5f5f7'],
-                [0.5, '#4b0082'],
-                [1, '#1d1d1f'],
-            ],
-        },
-        'series': [{
-            'name': 'Conservation %',
-            'borderWidth': 1,
-            'borderColor': '#ffffff',
-            'data': heatmap_data,
-            'dataLabels': {
-                'enabled': len(heatmap_data) < 300,
-                'format': '{point.value}%',
-                'style': {'fontSize': '9px', 'color': '#ffffff', 'textOutline': 'none'},
+        'legend': {
+            'enabled': True,
+            'align': 'right',
+            'verticalAlign': 'top',
+            'layout': 'vertical',
+            'y': 60,
+            'itemStyle': {
+                'fontSize': '12px',
+                'fontWeight': '500',
+                'color': '#1d1d1f',
             },
-        }],
+            'maxHeight': 400,
+            'navigation': {
+                'activeColor': '#3B6EF5',
+                'inactiveColor': '#6e6e73',
+            },
+        },
+        'series': series,
     }
 
     return _export_highcharts_png(chart_options, output_path, width=chart_width)
