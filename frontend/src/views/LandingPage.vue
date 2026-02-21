@@ -150,7 +150,7 @@
           <!-- Processing Status -->
           <div v-if="processingStatus" class="status-card">
             <div class="status-header">
-              <span class="status-label">{{ processingStatus.status | capitalize }}</span>
+              <span class="status-label">{{ processingStatus.step_label || processingStatus.status }}</span>
               <span class="status-progress">{{ processingStatus.progress }}%</span>
             </div>
             <div class="progress-bar">
@@ -173,8 +173,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import ChainSelector from '../components/ChainSelector.vue'
 import AdvancedSettings from '../components/AdvancedSettings.vue'
 import AppFooter from '../components/AppFooter.vue'
@@ -182,6 +182,7 @@ import api from '../services/api'
 import { useDataStore } from '../stores/dataStore'
 
 const router = useRouter()
+const route = useRoute()
 const dataStore = useDataStore()
 const fileInput = ref(null)
 
@@ -223,12 +224,30 @@ const effectiveFrameCount = computed(() => {
 // Processing state
 const isProcessing = ref(false)
 const processingStatus = ref(null)
+const activeJobId = ref(null)
 let statusPollInterval = null
 
 const canStartAnalysis = computed(() => {
   return uploadedFile.value && 
          chainSelection.value.isValid && 
          detectedChains.value.length >= 2
+})
+
+// On mount: check for active job in localStorage or query param
+onMounted(() => {
+  const jobIdFromQuery = route.query.job
+  const savedJobId = localStorage.getItem('activeJobId')
+  const jobId = jobIdFromQuery || savedJobId
+
+  if (jobId) {
+    activeJobId.value = jobId
+    isProcessing.value = true
+    // Show a minimal status card while we wait for the first poll
+    processingStatus.value = { status: 'resuming', progress: 0, step_label: 'Resuming job…' }
+    // We set uploadedFile to a placeholder so the config section shows
+    uploadedFile.value = { name: jobId, size: 0 }
+    pollStatus(jobId)
+  }
 })
 
 const triggerFileInput = () => {
@@ -334,6 +353,8 @@ const resetUpload = () => {
     endFrame: 50
   }
   processingStatus.value = null
+  activeJobId.value = null
+  localStorage.removeItem('activeJobId')
   if (fileInput.value) {
     fileInput.value.value = ''
   }
@@ -349,7 +370,7 @@ const startAnalysis = async () => {
   if (!canStartAnalysis.value) return
 
   isProcessing.value = true
-  processingStatus.value = { status: 'uploading', progress: 0 }
+  processingStatus.value = { status: 'uploading', progress: 0, step_label: 'Uploading file…' }
 
   try {
     // Build options object
@@ -380,14 +401,17 @@ const startAnalysis = async () => {
       uploadedFile.value,
       options,
       (percent) => {
-        processingStatus.value = { status: 'uploading', progress: percent }
+        processingStatus.value = { status: 'uploading', progress: percent, step_label: 'Uploading file…' }
       }
     )
 
     if (result.success) {
-      const pdbId = result.id
+      const jobId = result.job_id
+      activeJobId.value = jobId
+      // Persist job ID so we can resume on refresh
+      localStorage.setItem('activeJobId', jobId)
       // Start polling for status
-      pollStatus(pdbId)
+      pollStatus(jobId)
     } else {
       throw new Error(result.error || 'Upload failed')
     }
@@ -396,28 +420,34 @@ const startAnalysis = async () => {
     processingStatus.value = { 
       status: 'failed', 
       progress: 0,
+      step_label: 'Failed',
       error: error.message || 'Failed to upload file'
     }
     isProcessing.value = false
   }
 }
 
-const pollStatus = (pdbId) => {
+const pollStatus = (jobId) => {
   statusPollInterval = setInterval(async () => {
     try {
-      const status = await api.getStatus(pdbId)
+      const status = await api.getStatus(jobId)
       processingStatus.value = status
 
       if (status.status === 'completed') {
         clearInterval(statusPollInterval)
         isProcessing.value = false
+        activeJobId.value = null
+        localStorage.removeItem('activeJobId')
         // Store timeUnit in dataStore for charts to use
         dataStore.setTimeUnit(advancedSettings.value.timeUnit)
-        // Navigate to analysis page
-        router.push({ name: 'Analysis', query: { system: pdbId } })
+        // Navigate to analysis page using pdb_name
+        const systemId = status.pdb_name || jobId
+        router.push({ name: 'Analysis', query: { system: systemId } })
       } else if (status.status === 'failed') {
         clearInterval(statusPollInterval)
         isProcessing.value = false
+        activeJobId.value = null
+        localStorage.removeItem('activeJobId')
       }
     } catch (error) {
       console.error('Status poll error:', error)

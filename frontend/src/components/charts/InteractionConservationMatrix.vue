@@ -1,5 +1,7 @@
 <template>
   <div class="chart-wrapper">
+    <div ref="chartContainer" class="chart-container"></div>
+    
     <div class="chart-toolbar">
       <!-- Pair Conservation Threshold (like FilteredHeatmap) -->
       <div class="slider-group">
@@ -113,8 +115,6 @@
         </p>
       </div>
     </div>
-    
-    <div ref="chartContainer" class="chart-container"></div>
     
     <!-- Global Tooltip for slider info icons -->
     <Teleport to="body">
@@ -1372,10 +1372,9 @@ watch([
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 24px;
-  padding: 20px;
-  background: #f5f5f7;
-  border-radius: 12px;
+  padding: 20px 32px 0;
+  margin-top: 8px;
+  border-top: 1px solid #e8e8ed;
 }
 
 .slider-group {

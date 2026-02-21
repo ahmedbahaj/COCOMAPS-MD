@@ -23,7 +23,7 @@ export const useDataStore = defineStore('data', {
     currentChartType: 'conservedIslandsList',
     currentThreshold: 0.5,
     useLogScale: false,
-    selectedInteractionTypes: new Set(INTERACTION_TYPES.map(t => t.id)), // Select all by default
+    selectedInteractionTypes: new Set(INTERACTION_TYPES.filter(t => t.id !== 'proximal').map(t => t.id)), // All except proximal by default
     timeUnit: null, // User-defined time unit label (e.g., 'ns', 'ps', 'μs'); null means use 'Frame'
 
     // Loading states

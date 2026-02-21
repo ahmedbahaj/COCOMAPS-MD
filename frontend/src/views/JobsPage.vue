@@ -39,7 +39,7 @@
       </div>
 
       <!-- Empty State (no jobs at all) -->
-      <div v-else-if="systems.length === 0" class="empty-state">
+      <div v-else-if="allJobs.length === 0" class="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="6" y="10" width="36" height="28" rx="3"/>
@@ -74,7 +74,7 @@
         </div>
 
         <!-- No Results State -->
-        <div v-if="filteredSystems.length === 0" class="no-results-state">
+        <div v-if="filteredJobs.length === 0" class="no-results-state">
           <div class="no-results-icon">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="20" cy="20" r="14"/>
@@ -114,16 +114,23 @@
           </thead>
           <tbody>
             <tr 
-              v-for="system in sortedSystems" 
-              :key="system.id"
-              @click="openJob(system)"
+              v-for="job in sortedJobs" 
+              :key="job.id"
+              @click="openJob(job)"
               class="job-row"
+              :class="{ 'is-active': isActiveJob(job) }"
             >
               <td class="status-cell">
-                <span class="status-badge" :class="system.status">
-                  <svg v-if="system.status === 'ready'" class="status-icon ready" viewBox="0 0 16 16">
+                <span class="status-badge" :class="job.status">
+                  <!-- Completed -->
+                  <svg v-if="job.status === 'ready' || job.status === 'completed'" class="status-icon ready" viewBox="0 0 16 16">
                     <path d="M8 0a8 8 0 1 0 8 8A8 8 0 0 0 8 0zm3.78 5.28l-4.5 5.5a.75.75 0 0 1-1.14.06l-2.25-2.25a.75.75 0 1 1 1.06-1.06l1.64 1.64 3.97-4.86a.75.75 0 0 1 1.22.97z" fill="currentColor"/>
                   </svg>
+                  <!-- Failed -->
+                  <svg v-else-if="job.status === 'failed'" class="status-icon failed" viewBox="0 0 16 16">
+                    <path d="M8 0a8 8 0 1 0 8 8A8 8 0 0 0 8 0zm3.5 10.44a.75.75 0 1 1-1.06 1.06L8 9.06 5.56 11.5A.75.75 0 1 1 4.5 10.44L6.94 8 4.5 5.56A.75.75 0 0 1 5.56 4.5L8 6.94l2.44-2.44a.75.75 0 0 1 1.06 1.06L9.06 8z" fill="currentColor"/>
+                  </svg>
+                  <!-- Processing (spinner) -->
                   <svg v-else class="status-icon processing" viewBox="0 0 16 16">
                     <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="22" stroke-dashoffset="0">
                       <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="1s" repeatCount="indefinite"/>
@@ -133,19 +140,26 @@
               </td>
               <td class="name-cell">
                 <div class="name-wrapper">
-                  <span class="job-name">{{ system.name }}</span>
-                  <span v-if="system.name !== system.id" class="job-id">{{ system.id }}</span>
+                  <span class="job-name">{{ job.name }}</span>
+                  <span v-if="job.name !== job.id" class="job-id">{{ job.id }}</span>
+                  <!-- Progress bar for active jobs -->
+                  <div v-if="isActiveJob(job)" class="inline-progress">
+                    <div class="inline-progress-bar">
+                      <div class="inline-progress-fill" :style="{ width: (job.progress || 0) + '%' }"></div>
+                    </div>
+                    <span class="inline-progress-label">{{ job.step_label || job.status }}</span>
+                  </div>
                 </div>
               </td>
-              <td class="date-cell">{{ formatDate(system.dateCreated) }}</td>
-              <td class="frames-cell">{{ system.frames }}</td>
+              <td class="date-cell">{{ formatDate(job.dateCreated) }}</td>
+              <td class="frames-cell">{{ job.frames || '—' }}</td>
               <td class="actions-cell" @click.stop>
-                <button class="action-btn" @click="openRenameModal(system)" title="Rename">
+                <button class="action-btn" @click="openRenameModal(job)" title="Rename" v-if="!isActiveJob(job)">
                   <svg viewBox="0 0 16 16" fill="currentColor">
                     <path d="M11.498 2.002a1.5 1.5 0 0 1 2.121 0l.379.379a1.5 1.5 0 0 1 0 2.121l-7.5 7.5a.5.5 0 0 1-.177.118l-3.5 1.5a.5.5 0 0 1-.638-.638l1.5-3.5a.5.5 0 0 1 .118-.177l7.697-7.303zM11.85 3.85l-6.5 6.5-.897 2.093 2.093-.897 6.5-6.5-.696-.696-.5-.5z"/>
                   </svg>
                 </button>
-                <button class="action-btn open-btn" @click="openJob(system)" title="Open">
+                <button class="action-btn open-btn" @click="openJob(job)" :title="isActiveJob(job) ? 'Track Progress' : 'Open'">
                   <svg viewBox="0 0 16 16" fill="currentColor">
                     <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
                     <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
@@ -157,7 +171,7 @@
         </table>
         
         <div class="table-footer">
-          <span class="job-count">Showing {{ filteredSystems.length }} of {{ systems.length }} jobs</span>
+          <span class="job-count">Showing {{ filteredJobs.length }} of {{ allJobs.length }} jobs</span>
         </div>
         </div>
       </div>
@@ -199,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataStore } from '../stores/dataStore'
 import api from '../services/api'
@@ -208,11 +222,12 @@ import AppFooter from '../components/AppFooter.vue'
 const router = useRouter()
 const dataStore = useDataStore()
 
-const systems = ref([])
+const allJobs = ref([])
 const loading = ref(true)
 const searchQuery = ref('')
 const sortColumn = ref('dateCreated')
 const sortDirection = ref('desc')
+let jobsPollInterval = null
 
 // Rename modal state
 const renameModal = ref({
@@ -222,52 +237,138 @@ const renameModal = ref({
 })
 const renameInput = ref(null)
 
-// Load systems on mount
+// Load on mount
 onMounted(async () => {
-  await loadSystems()
+  await loadAllJobs()
+  // Poll for updates if there are active jobs
+  startPollingIfNeeded()
 })
 
-const loadSystems = async () => {
+onUnmounted(() => {
+  if (jobsPollInterval) {
+    clearInterval(jobsPollInterval)
+  }
+})
+
+const loadAllJobs = async () => {
   loading.value = true
   try {
-    systems.value = await api.getSystems()
+    // Fetch both completed systems and active jobs in parallel
+    const [systems, jobs] = await Promise.all([
+      api.getSystems(),
+      api.getJobs().catch(() => [])  // graceful fallback if endpoint not ready
+    ])
+
+    // Build a merged list
+    // Start with completed systems (these have full metadata)
+    const merged = new Map()
+
+    for (const system of systems) {
+      merged.set(system.id, {
+        id: system.id,
+        name: system.name,
+        dateCreated: system.dateCreated,
+        frames: system.frames,
+        status: system.status || 'ready',
+        // No job-specific fields for completed systems
+        job_id: null,
+        step_label: null,
+        progress: 100
+      })
+    }
+
+    // Overlay active/recent jobs (these have progress info)
+    for (const job of jobs) {
+      const pdbName = job.pdb_name
+      const isActive = !['completed', 'failed'].includes(job.status)
+
+      if (isActive) {
+        // Active jobs always show
+        merged.set(job.job_id, {
+          id: job.job_id,
+          name: pdbName,
+          dateCreated: job.created_at,
+          frames: job.frames || 0,
+          status: job.status,
+          job_id: job.job_id,
+          step_label: job.step_label,
+          progress: job.progress || 0
+        })
+      } else if (job.status === 'failed') {
+        // Failed jobs show only if not already in systems
+        if (!merged.has(pdbName)) {
+          merged.set(job.job_id, {
+            id: job.job_id,
+            name: pdbName,
+            dateCreated: job.created_at,
+            frames: job.frames || 0,
+            status: 'failed',
+            job_id: job.job_id,
+            step_label: job.step_label,
+            progress: job.progress || 0
+          })
+        }
+      }
+      // completed jobs are already covered by the systems list
+    }
+
+    allJobs.value = Array.from(merged.values())
   } catch (error) {
-    console.error('Failed to load systems:', error)
-    systems.value = []
+    console.error('Failed to load jobs:', error)
+    allJobs.value = []
   } finally {
     loading.value = false
   }
 }
 
-// Filter systems by search query
-const filteredSystems = computed(() => {
+const startPollingIfNeeded = () => {
+  if (jobsPollInterval) clearInterval(jobsPollInterval)
+
+  const hasActive = allJobs.value.some(j => isActiveJob(j))
+  if (hasActive) {
+    jobsPollInterval = setInterval(async () => {
+      await loadAllJobs()
+      // Stop polling if no more active jobs
+      const stillActive = allJobs.value.some(j => isActiveJob(j))
+      if (!stillActive && jobsPollInterval) {
+        clearInterval(jobsPollInterval)
+        jobsPollInterval = null
+      }
+    }, 5000)
+  }
+}
+
+const isActiveJob = (job) => {
+  return ['queued', 'splitting', 'analyzing', 'resuming'].includes(job.status)
+}
+
+// Filter by search query
+const filteredJobs = computed(() => {
   if (!searchQuery.value.trim()) {
-    return systems.value
+    return allJobs.value
   }
   const query = searchQuery.value.toLowerCase()
-  return systems.value.filter(system => 
-    system.name.toLowerCase().includes(query) ||
-    system.id.toLowerCase().includes(query)
+  return allJobs.value.filter(job => 
+    job.name.toLowerCase().includes(query) ||
+    job.id.toLowerCase().includes(query)
   )
 })
 
-// Sort systems
-const sortedSystems = computed(() => {
-  const sorted = [...filteredSystems.value]
+// Sort
+const sortedJobs = computed(() => {
+  const sorted = [...filteredJobs.value]
   sorted.sort((a, b) => {
     let aVal = a[sortColumn.value]
     let bVal = b[sortColumn.value]
     
-    // Handle date comparison
     if (sortColumn.value === 'dateCreated') {
-      aVal = new Date(aVal).getTime()
-      bVal = new Date(bVal).getTime()
+      aVal = new Date(aVal || 0).getTime()
+      bVal = new Date(bVal || 0).getTime()
     }
     
-    // Handle string comparison
     if (typeof aVal === 'string') {
       aVal = aVal.toLowerCase()
-      bVal = bVal.toLowerCase()
+      bVal = (bVal || '').toLowerCase()
     }
     
     if (aVal < bVal) return sortDirection.value === 'asc' ? -1 : 1
@@ -277,7 +378,6 @@ const sortedSystems = computed(() => {
   return sorted
 })
 
-// Sort by column
 const sortBy = (column) => {
   if (sortColumn.value === column) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
@@ -287,9 +387,8 @@ const sortBy = (column) => {
   }
 }
 
-// Format date
 const formatDate = (isoDate) => {
-  if (!isoDate) return '-'
+  if (!isoDate) return '—'
   const date = new Date(isoDate)
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -300,19 +399,29 @@ const formatDate = (isoDate) => {
   })
 }
 
-// Open job (navigate to Analysis page with system selected)
-const openJob = async (system) => {
-  await dataStore.loadSystems()
-  await dataStore.setCurrentSystem(system.id)
-  router.push('/analysis')
+// Open job: active jobs go to LandingPage with job tracking, completed go to Analysis
+const openJob = async (job) => {
+  if (isActiveJob(job)) {
+    // Navigate to landing page with job query param to track progress
+    router.push({ name: 'Landing', query: { job: job.job_id } })
+  } else if (job.status === 'failed') {
+    // Nothing to open for failed jobs
+    return
+  } else {
+    // Completed system - navigate to analysis
+    await dataStore.loadSystems()
+    const systemId = job.id
+    await dataStore.setCurrentSystem(systemId)
+    router.push('/analysis')
+  }
 }
 
 // Rename modal functions
-const openRenameModal = async (system) => {
+const openRenameModal = async (job) => {
   renameModal.value = {
     visible: true,
-    system: system,
-    newName: system.name
+    system: job,
+    newName: job.name
   }
   await nextTick()
   renameInput.value?.focus()
@@ -333,10 +442,9 @@ const confirmRename = async () => {
   
   try {
     await api.renameSystem(system.id, newName.trim())
-    // Update local state
-    const idx = systems.value.findIndex(s => s.id === system.id)
+    const idx = allJobs.value.findIndex(s => s.id === system.id)
     if (idx !== -1) {
-      systems.value[idx].name = newName.trim()
+      allJobs.value[idx].name = newName.trim()
     }
     closeRenameModal()
   } catch (error) {
@@ -740,6 +848,14 @@ const confirmRename = async () => {
   background: #f5f5f7;
 }
 
+.job-row.is-active {
+  background: #f8faff;
+}
+
+.job-row.is-active:hover {
+  background: #f0f5ff;
+}
+
 .jobs-table td {
   padding: 16px 20px;
   border-bottom: 1px solid #e8e8ed;
@@ -775,6 +891,10 @@ const confirmRename = async () => {
   color: #ff9500;
 }
 
+.status-icon.failed {
+  color: #ff3b30;
+}
+
 /* Name Cell */
 .name-wrapper {
   display: flex;
@@ -789,6 +909,36 @@ const confirmRename = async () => {
 .job-id {
   font-size: 12px;
   color: #8e8e93;
+}
+
+/* Inline Progress (for active jobs) */
+.inline-progress {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inline-progress-bar {
+  height: 4px;
+  background: #e8e8ed;
+  border-radius: 2px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 200px;
+}
+
+.inline-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007aff 0%, #00a2ff 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.inline-progress-label {
+  font-size: 12px;
+  color: #6e6e73;
+  font-weight: 500;
 }
 
 /* Date Cell */
