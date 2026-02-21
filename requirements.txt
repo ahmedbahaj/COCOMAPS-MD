@@ -4,3 +4,8 @@ MDAnalysis==2.6.1
 werkzeug==3.0.1
 setuptools
 python-dotenv
+
+# CLI dependencies
+rich>=13.0
+plotly>=5.0
+kaleido>=0.2
