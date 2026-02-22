@@ -319,25 +319,11 @@ def count_conserved_islands(
         chains = sorted(set(ch for ch, _ in residues))
         chains_str = ", ".join(chains)
 
-        # Average pairwise consistency within this island
-        res_list = list(component)
-        pair_consistencies = []
-        for i in range(len(res_list)):
-            for j in range(i + 1, len(res_list)):
-                pair = frozenset({res_list[i], res_list[j]})
-                pair_consistencies.append(co_island_counts.get(pair, 0) / total_frames)
-
-        avg_consistency = (
-            sum(pair_consistencies) / len(pair_consistencies)
-            if pair_consistencies else 0.0
-        )
-
         islands_out.append({
             "Island_id": island_id,
             "Island_size": len(component),
             "Residues": residue_str,
             "Chains": chains_str,
-            "Avg_consistency": round(avg_consistency * 100, 1),
         })
 
     return islands_out
