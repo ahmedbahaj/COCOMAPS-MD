@@ -20,7 +20,7 @@ export const useDataStore = defineStore('data', {
     conservedIslands: [],
 
     // UI State
-    currentChartType: 'conservedIslandsList',
+    currentChartType: 'interactionConservationMatrix',
     currentThreshold: 0.5,
     useLogScale: false,
     selectedInteractionTypes: new Set(INTERACTION_TYPES.filter(t => t.id !== 'proximal').map(t => t.id)), // All except proximal by default
