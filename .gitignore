@@ -7,5 +7,16 @@ theAtomProblem.md
 # Systems folder contains large PDB files and analysis data
 systems/
 
+# Python build artifacts
 __pycache__/
+*.pyc
 *.pyx
+*.egg-info/
+dist/
+build/
+
+# CLI temp files
+temp/
+
+# Environment
+.env
