@@ -20,34 +20,38 @@ import networkx as nx
 # ---------------------------------------------------------------------------
 
 def _get_residue_names(system_dir: Path) -> dict[tuple, str]:
-    """Build (chain, resNum) -> resName lookup from the first final_file.csv."""
+    """
+    Build (chain, resNum) -> resName lookup by scanning all final_file.csv frames.
+    Residues that only appear in later frames (e.g. A:9 in frame 2+) would otherwise be UNK.
+    """
     csv_paths = _find_final_files(system_dir)
     if not csv_paths:
         return {}
 
-    df = pd.read_csv(csv_paths[0], low_memory=False)
-    if df is None or df.empty:
-        return {}
-
-    lookup = {}
-    cols = {c.strip(): c for c in df.columns}
-
-    pairs = [
-        ("Res. Name 1", "Res. Number 1", cols.get("Chain 1") or cols.get("Res. Chain 1")),
-        ("Res. Name 2", "Res. Number 2", cols.get("Chain 2") or cols.get("Res. Chain 2")),
-    ]
-    for res_name_key, res_num_key, chain_col in pairs:
-        rn = cols.get(res_name_key)
-        rnum = cols.get(res_num_key)
-        if not (rn and rnum and chain_col):
+    lookup: dict[tuple, str] = {}
+    for csv_path in csv_paths:
+        df = pd.read_csv(csv_path, low_memory=False)
+        if df is None or df.empty:
             continue
-        for _, row in df.iterrows():
-            chain = str(row[chain_col]).strip() if pd.notna(row.get(chain_col)) else "?"
-            res_num = row[rnum]
-            res_name = str(row[rn]).strip() if pd.notna(row.get(rn)) else "UNK"
-            key = (chain, res_num)
-            if key not in lookup:
-                lookup[key] = res_name
+        cols = {c.strip(): c for c in df.columns}
+        pairs = [
+            ("Res. Name 1", "Res. Number 1", cols.get("Chain 1") or cols.get("Res. Chain 1")),
+            ("Res. Name 2", "Res. Number 2", cols.get("Chain 2") or cols.get("Res. Chain 2")),
+        ]
+        for res_name_key, res_num_key, chain_col in pairs:
+            rn = cols.get(res_name_key)
+            rnum = cols.get(res_num_key)
+            if not (rn and rnum and chain_col):
+                continue
+            for _, row in df.iterrows():
+                chain = str(row[chain_col]).strip() if pd.notna(row.get(chain_col)) else "?"
+                res_num = row[rnum]
+                res_name = str(row[rn]).strip() if pd.notna(row.get(rn)) else ""
+                if not res_name:
+                    continue
+                key = (chain, res_num)
+                if key not in lookup:
+                    lookup[key] = res_name
 
     return lookup
 
@@ -244,30 +248,22 @@ def count_conserved_islands(
     min_consistency: float = 0.70,
     min_island_size: int = 2,
     debug: bool = False,
-) -> list[dict]:
+) -> tuple[list[dict], dict[frozenset, int], int]:
     """
-    Find residue islands that are conserved across a multi-frame trajectory.
+    Find conserved islands as connected components of the *direct* A–B interaction graph.
+
+    Island = largest paths of residues connected by direct interactions (A↔B only)
+    that are conserved in >= min_consistency of frames. Every residue in an island
+    has at least one direct conserved partner (so connectedTo is never empty).
 
     Algorithm:
-        1. For each frame's final_file.csv, build a graph and find connected
-           components (islands).
-        2. For every pair of residues that land in the same island in a frame,
-           increment a co-island counter.
-        3. Build a conserved graph: two residues get an edge only if their
-           co-island count / total_frames >= min_consistency.
-        4. The connected components of the conserved graph are the conserved
-           islands.
-
-    Args:
-        system_dir:       Path to a system folder containing frame_N/ sub-dirs.
-        min_consistency:  Fraction of frames two residues must share an island
-                          to be considered conserved partners (default 0.70).
-        min_island_size:  Minimum number of residues in a reported island.
-        debug:            Print per-frame progress.
+        1. Count how many frames each direct A–B pair appears in (final_file edges).
+        2. Build graph with only edges where count/total_frames >= min_consistency.
+        3. Islands = connected components of this graph (each is an A–B–A–B… path).
+        4. For each residue, connectedTo = neighbors in this graph.
 
     Returns:
-        List of dicts, each with keys:
-            Island_id, Island_size, Residues, Chains, Avg_consistency
+        (islands_out, direct_pair_counts, total_frames)
     """
     system_dir = Path(system_dir)
     if not system_dir.is_dir():
@@ -278,55 +274,45 @@ def count_conserved_islands(
         raise FileNotFoundError(f"No final_file.csv found in {system_dir}")
 
     total_frames = len(csv_paths)
-    co_island_counts: dict[frozenset, int] = defaultdict(int)
+    co_direct_edges: dict[frozenset, int] = defaultdict(int)
 
-    # --- Step 1 & 2: per-frame islands + co-island counting ---
     for idx, csv_path in enumerate(csv_paths, 1):
         G = _build_frame_graph(csv_path)
         if G is None:
             continue
-
         if debug:
             print(f"  Frame {idx}/{total_frames}: {G.number_of_nodes()} nodes, "
                   f"{G.number_of_edges()} edges  ({csv_path.parent.name})")
+        for u, v in G.edges():
+            co_direct_edges[frozenset({u, v})] += 1
 
-        for component in nx.connected_components(G):
-            members = list(component)
-            for i in range(len(members)):
-                for j in range(i + 1, len(members)):
-                    pair = frozenset({members[i], members[j]})
-                    co_island_counts[pair] += 1
-
-    # --- Step 3: build conserved graph ---
-    conserved_G = nx.Graph()
-    for pair, count in co_island_counts.items():
+    # Graph with only direct A–B edges that meet the conservation threshold
+    direct_conserved_G = nx.Graph()
+    for pair, count in co_direct_edges.items():
         if count / total_frames >= min_consistency:
             n1, n2 = pair
-            conserved_G.add_edge(n1, n2, weight=count / total_frames)
+            direct_conserved_G.add_edge(n1, n2, weight=count / total_frames)
 
-    # --- Step 4: extract conserved islands ---
-    components = sorted(nx.connected_components(conserved_G), key=len, reverse=True)
-
+    components = sorted(nx.connected_components(direct_conserved_G), key=len, reverse=True)
     islands_out = []
     island_id = 0
     for component in components:
         if len(component) < min_island_size:
             continue
         island_id += 1
-
         residues = sorted(component, key=lambda x: (str(x[0]), x[1]))
         residue_str = ", ".join(f"{ch}:{res}" for ch, res in residues)
         chains = sorted(set(ch for ch, _ in residues))
         chains_str = ", ".join(chains)
-
         islands_out.append({
             "Island_id": island_id,
             "Island_size": len(component),
             "Residues": residue_str,
             "Chains": chains_str,
+            "component": component,
         })
 
-    return islands_out
+    return islands_out, co_direct_edges, total_frames
 
 
 def run_conserved_islands(
@@ -357,7 +343,7 @@ def run_conserved_islands(
         print(f"{'='*80}\n")
 
     try:
-        islands = count_conserved_islands(
+        islands, direct_pair_counts, total_frames = count_conserved_islands(
             system_dir=output_dir,
             min_consistency=min_consistency,
             min_island_size=min_island_size,
@@ -368,27 +354,52 @@ def run_conserved_islands(
             print(f"  Conserved island analysis skipped: {e}")
         return []
 
-    # Build JSON output for Mol* (id, size, chains, residues with chain/resNum/resName)
+    # Build JSON output for Mol* (id, size, chains, residues with chain/resNum/resName and connectedTo within island)
+    # connectedTo = only residues in this island that have a *direct* interaction (edge in final_file; A–B only)
     residue_names = _get_residue_names(output_dir)
     json_islands = []
     for island in islands:
-        # Parse residue string "A:1, A:2, B:5" into (chain, res_num) tuples
+        component = island["component"]
         residues_list = []
         for part in island["Residues"].split(", "):
             part = part.strip()
-            if ":" in part:
-                ch, rnum = part.split(":", 1)
-                ch = ch.strip()
-                try:
-                    rnum = int(rnum)
-                except ValueError:
-                    rnum = rnum
-                res_name = residue_names.get((ch, rnum), "UNK")
-                residues_list.append({"chain": ch, "resNum": rnum, "resName": res_name})
+            if ":" not in part:
+                continue
+            ch, rnum = part.split(":", 1)
+            ch = ch.strip()
+            try:
+                rnum = int(rnum)
+            except ValueError:
+                pass
+            node = (ch, rnum)
+            res_name = residue_names.get(node, "UNK")
+            # Only residues in this island that are *direct* interaction partners (edge in final_file; cross-chain only),
+            # and only if the direct interaction meets the conservation threshold.
+            connected_to = []
+            for other in component:
+                if other == node:
+                    continue
+                pair = frozenset({node, other})
+                count = direct_pair_counts.get(pair, 0)
+                if count / total_frames >= min_consistency:
+                    c, n = other
+                    connected_to.append({
+                        "chain": c,
+                        "resNum": n,
+                        "resName": residue_names.get((c, n), "UNK"),
+                    })
+            connected_to.sort(key=lambda x: (x["chain"], x["resNum"]))
+            # Include every island residue (for Mol* highlighting). Table can filter to rows with connectedTo.
+            residues_list.append({
+                "chain": ch,
+                "resNum": rnum,
+                "resName": res_name,
+                "connectedTo": connected_to,
+            })
 
         json_islands.append({
             "id": island["Island_id"],
-            "size": island["Island_size"],
+            "size": len(residues_list),
             "chains": [c.strip() for c in island["Chains"].split(",")],
             "residues": residues_list,
         })

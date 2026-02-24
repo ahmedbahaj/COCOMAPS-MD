@@ -51,6 +51,7 @@
                   <th>Chain</th>
                   <th>Res #</th>
                   <th>Res Name</th>
+                  <th>Connected to (in island)</th>
                 </tr>
               </thead>
               <tbody>
@@ -58,6 +59,18 @@
                   <td>{{ res.chain }}</td>
                   <td>{{ res.resNum }}</td>
                   <td>{{ res.resName || '—' }}</td>
+                  <td class="connected-cell">
+                    <span v-if="!res.connectedTo || res.connectedTo.length === 0" class="muted">—</span>
+                    <span v-else class="connected-list">
+                      <span
+                        v-for="(conn, i) in res.connectedTo"
+                        :key="`${conn.chain}-${conn.resNum}-${i}`"
+                        class="connected-tag"
+                      >
+                        {{ conn.chain }}:{{ conn.resNum }} {{ conn.resName }}
+                      </span>
+                    </span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -270,5 +283,29 @@ const selectedIslandResidues = computed(() => {
 
 .residues-table tbody tr:hover {
   background: #fafafa;
+}
+
+.connected-cell {
+  max-width: 280px;
+}
+
+.muted {
+  color: #86868b;
+}
+
+.connected-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.connected-tag {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 8px;
+  background: #e8f4fc;
+  color: #1d1d1f;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 </style>
