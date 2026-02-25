@@ -244,11 +244,11 @@ const edges = computed(() => {
 .node-circle {
   stroke: #ffffff;
   stroke-width: 2;
-  fill: #007aff;
+  fill: #ff9500; /* default: non-A chains */
 }
 
-.node-circle[data-chain='B'] {
-  fill: #ff9500;
+.node-circle[data-chain='A'] {
+  fill: #007aff; /* chain A always blue */
 }
 
 .node-label {
