@@ -218,6 +218,7 @@ const edges = computed(() => {
   width: 100%;
   padding: 12px 20px 20px;
   box-sizing: border-box;
+  position: relative;
 }
 
 .graph-svg {
@@ -252,7 +253,8 @@ const edges = computed(() => {
 }
 
 .node-label {
-  font-size: 12px;
+  font-size: 16px;
+  font-weight: bold;
   fill: #1d1d1f;
 }
 

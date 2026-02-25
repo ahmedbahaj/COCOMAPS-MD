@@ -729,7 +729,6 @@ const updateChart = async () => {
       type: 'heatmap',
       backgroundColor: 'transparent',
       height: Math.max(600, pairTypeCombinations.length * 25 + 200),
-      zoomType: 'xy',
       marginLeft: 250,
       marginRight: 200
     },
