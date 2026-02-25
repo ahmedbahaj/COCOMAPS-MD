@@ -43,37 +43,76 @@
             <span class="island-id">Island {{ island.id }}</span>
             <span class="island-size">{{ island.size }} residues</span>
             <span class="island-chains">Chains: {{ island.chains?.join(', ') || '—' }}</span>
+            <div class="view-toggle" @click.stop>
+              <button
+                type="button"
+                class="view-toggle-btn"
+                :class="{ active: getIslandViewMode(island.id) === 'graph' }"
+                @click="setIslandViewMode(island.id, 'graph')"
+              >
+                Graph
+              </button>
+              <button
+                type="button"
+                class="view-toggle-btn"
+                :class="{ active: getIslandViewMode(island.id) === 'table' }"
+                @click="setIslandViewMode(island.id, 'table')"
+              >
+                Table
+              </button>
+            </div>
           </div>
-          <div class="residues-table-wrap">
-            <table class="residues-table">
-              <thead>
-                <tr>
-                  <th>Chain</th>
-                  <th>Res #</th>
-                  <th>Res Name</th>
-                  <th>Connected to (in island)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(res, idx) in island.residues" :key="`${res.chain}-${res.resNum}-${idx}`">
-                  <td>{{ res.chain }}</td>
-                  <td>{{ res.resNum }}</td>
-                  <td>{{ res.resName || '—' }}</td>
-                  <td class="connected-cell">
-                    <span v-if="!res.connectedTo || res.connectedTo.length === 0" class="muted">—</span>
-                    <span v-else class="connected-list">
-                      <span
-                        v-for="(conn, i) in res.connectedTo"
-                        :key="`${conn.chain}-${conn.resNum}-${i}`"
-                        class="connected-tag"
-                      >
-                        {{ conn.chain }}:{{ conn.resNum }} {{ conn.resName }}
+          <div class="island-body">
+            <div
+              v-if="getIslandViewMode(island.id) === 'graph'"
+              class="graph-wrapper"
+            >
+              <IslandGraph
+                :island="island"
+                :expanded="expandedIslandId === island.id"
+              />
+              <button
+                type="button"
+                class="expand-btn graph-expand-btn"
+                :class="{ expanded: expandedIslandId === island.id }"
+                @click.stop="toggleExpandedIsland(island.id)"
+                aria-label="Expand or collapse graph height"
+              >
+                <span v-if="expandedIslandId === island.id">▴</span>
+                <span v-else>▾</span>
+              </button>
+            </div>
+            <div v-else class="residues-table-wrap">
+              <table class="residues-table">
+                <thead>
+                  <tr>
+                    <th>Chain</th>
+                    <th>Res #</th>
+                    <th>Res Name</th>
+                    <th>Connected to (in island)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(res, idx) in island.residues" :key="`${res.chain}-${res.resNum}-${idx}`">
+                    <td>{{ res.chain }}</td>
+                    <td>{{ res.resNum }}</td>
+                    <td>{{ res.resName || '—' }}</td>
+                    <td class="connected-cell">
+                      <span v-if="!res.connectedTo || res.connectedTo.length === 0" class="muted">—</span>
+                      <span v-else class="connected-list">
+                        <span
+                          v-for="(conn, i) in res.connectedTo"
+                          :key="`${conn.chain}-${conn.resNum}-${i}`"
+                          class="connected-tag"
+                        >
+                          {{ conn.chain }}:{{ conn.resNum }} {{ conn.resName }}
+                        </span>
                       </span>
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -85,12 +124,31 @@
 import { ref, computed } from 'vue'
 import { useDataStore } from '../../stores/dataStore'
 import MolStarViewer from '../MolStarViewer.vue'
+import IslandGraph from './IslandGraph.vue'
 
 const dataStore = useDataStore()
 const selectedIslandId = ref(null)
+const islandViewMode = ref({}) // { [islandId]: 'graph' | 'table' }
+const expandedIslandId = ref(null)
 
 function selectIsland(id) {
   selectedIslandId.value = selectedIslandId.value === id ? null : id
+}
+
+function getIslandViewMode(id) {
+  const current = islandViewMode.value[id]
+  return current === 'table' ? 'table' : 'graph'
+}
+
+function setIslandViewMode(id, mode) {
+  islandViewMode.value = {
+    ...islandViewMode.value,
+    [id]: mode
+  }
+}
+
+function toggleExpandedIsland(id) {
+  expandedIslandId.value = expandedIslandId.value === id ? null : id
 }
 
 const selectedIslandResidues = computed(() => {
@@ -250,9 +308,73 @@ const selectedIslandResidues = computed(() => {
   font-weight: 500;
 }
 
+.island-body {
+  background: #f5f5f7;
+}
+
+.view-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.view-toggle-btn {
+  border: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #f5f5f7;
+  color: #6e6e73;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.view-toggle-btn.active {
+  background: #007aff;
+  color: #ffffff;
+}
+
+.graph-wrapper {
+  position: relative;
+}
+
+.graph-expand-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  background: #ffffff;
+  color: #6e6e73;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.graph-expand-btn:hover {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.graph-expand-btn.expanded {
+  background: #e5e5ea;
+  color: #1d1d1f;
+}
+
 .residues-table-wrap {
   max-height: 280px;
   overflow-y: auto;
+  padding: 8px 20px 20px;
 }
 
 .residues-table {
