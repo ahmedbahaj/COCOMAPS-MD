@@ -48,7 +48,7 @@ def run_pipeline(
     end_frame: int = -1,
     frame_step: int = 1,
     use_reduce: bool = False,
-    select_interface: bool = False,
+    select_interface: bool = True,
     interface_cutoff: float = 5.0,
     water_cutoff: float = 5.0,
     cocomaps_params: dict | None = None,

@@ -5,12 +5,18 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from pathlib import Path
 import os
+import sys
 import uuid
 import json
 import threading
 from datetime import datetime
 from distutils.util import strtobool
 import subprocess
+
+# Ensure project root is on path for interface_selector and analyze_pdb
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 # Processing functions (previously in upload_server.py, now integrated here)
 try:
@@ -85,10 +91,13 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def split_pdb(app, job_id, pdb_file, pdb_name, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1, frame_step=1):
-    """Split PDB file into frames"""
+def split_pdb(app, job_id, pdb_file, pdb_name, chain1='A', chain2='B', interface_cutoff=5.0, water_cutoff=None, start_frame=0, end_frame=-1, frame_step=1):
+    """Split PDB file into frames with per-frame interface selection (always on)."""
     if not HAS_MDA:
         raise Exception("MDAnalysis not available")
+
+    if water_cutoff is None:
+        water_cutoff = interface_cutoff
 
     try:
         u = mda.Universe(pdb_file)
@@ -98,6 +107,11 @@ def split_pdb(app, job_id, pdb_file, pdb_name, chain1='A', chain2='B', interface
 
         os.makedirs(systems_folder, exist_ok=True)
         os.makedirs(main_folder, exist_ok=True)
+
+        # Per-frame interface selection (always on)
+        from interface_selector import get_atom_selections, select_interface_atoms
+        from analyze_pdb import rename_waters_to_hoh
+        selections = get_atom_selections(u, chain1, chain2)
 
         # Determine frame range
         total_frames = len(u.trajectory)
@@ -116,13 +130,20 @@ def split_pdb(app, job_id, pdb_file, pdb_name, chain1='A', chain2='B', interface
         for idx, frame_idx in enumerate(frames_to_process):
             u.trajectory[frame_idx]
 
+            result = select_interface_atoms(u, selections, chain1, chain2, interface_cutoff, water_cutoff)
+            output_atoms = result['atoms']
+            rename_waters_to_hoh(output_atoms)
+
             output_frame_num = idx + 1
             frame_folder = os.path.join(main_folder, f"frame_{output_frame_num}")
             os.makedirs(frame_folder, exist_ok=True)
 
             frame_file = os.path.join(frame_folder, f"frame_{output_frame_num}.pdb")
-            with PDB.PDBWriter(frame_file) as W:
-                W.write(u.atoms)
+            if len(output_atoms) > 0:
+                output_atoms.write(frame_file)
+            else:
+                with open(frame_file, 'w') as f:
+                    f.write("REMARK   Empty frame - no interface atoms found\nEND\n")
 
             create_example_input(frame_folder, f"frame_{output_frame_num}.pdb", chain1, chain2, interface_cutoff)
 

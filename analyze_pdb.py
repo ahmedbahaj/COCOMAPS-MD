@@ -42,7 +42,7 @@ INPUT_FILE_NAME = os.environ.get("INPUT_FILE_NAME", "example_input.json")
 
 # Default parameters (loaded from .env or defaults)
 DEFAULT_INTERFACE_CUTOFF = float(os.environ.get("DEFAULT_INTERFACE_CUTOFF", "5.0"))
-SELECT_INTERFACE = bool(strtobool(os.environ.get("SELECT_INTERFACE", "false")))
+SELECT_INTERFACE = bool(strtobool(os.environ.get("SELECT_INTERFACE", "true")))
 _chains_env = os.environ.get("DEFAULT_CHAINS", "A,B")
 DEFAULT_CHAINS = [c.strip() for c in _chains_env.split(',')]
 
@@ -428,17 +428,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Full pipeline (interface selection OFF by default)
+  # Full pipeline (interface selection is always on)
   python analyze_pdb.py systems/my_protein.pdb
   
-  # Enable per-frame interface selection
-  python analyze_pdb.py systems/my_protein.pdb --interface
-  
   # Interface selection with custom cutoff (default: 5Å)
-  python analyze_pdb.py systems/my_protein.pdb --interface --interface-cutoff 7.0
+  python analyze_pdb.py systems/my_protein.pdb --interface-cutoff 7.0
   
   # Separate cutoffs for protein interface and water bridges
-  python analyze_pdb.py systems/my_protein.pdb --interface --interface-cutoff 5.0 --water-cutoff 3.5
+  python analyze_pdb.py systems/my_protein.pdb --interface-cutoff 5.0 --water-cutoff 3.5
   
   # Enable reduce (adds hydrogens, slower)
   python analyze_pdb.py systems/my_protein.pdb --use-reduce
@@ -446,17 +443,16 @@ Examples:
   # Custom output directory
   python analyze_pdb.py systems/my_protein.pdb -o systems/my_output
 
-Interface Selection Mode:
-  When --interface is enabled, each frame is processed independently:
+Interface Selection (always on):
+  Each frame is processed with per-frame interface selection:
   - Only residues within cutoff distance of the partner chain IN THAT FRAME are kept
-  - Atom counts may vary between frames (dynamic interface)
   - Bridging waters (within cutoff of BOTH chains) are also kept per-frame
 
 Note: All water residues (SOL, WAT, TIP3, etc.) are automatically renamed to HOH
 for CoCoMaps compatibility.
 
 Environment Variables:
-  SELECT_INTERFACE=true/false    - Enable/disable interface selection (default: false)
+  SELECT_INTERFACE=true/false    - Enable/disable interface selection (default: true)
   COCOMAPS_USE_REDUCE=true/false - Enable/disable reduce (default: false)
   COCOMAPS_IMAGE_REDUCE          - Docker image for reduce mode
   COCOMAPS_IMAGE_NO_REDUCE       - Docker image for no-reduce mode
@@ -473,18 +469,14 @@ Environment Variables:
     parser.add_argument('-c', '--chains', nargs='+', default=DEFAULT_CHAINS,
                        help='Chain IDs to analyze (default: A B)')
     
-    # Interface selection options
-    parser.add_argument('--interface', dest='select_interface', action='store_true',
-                       help='Enable per-frame interface selection')
-    parser.add_argument('--no-interface', dest='select_interface', action='store_false',
-                       help='Disable interface selection (keep all atoms)')
+    # Interface selection (always on; cutoff is configurable)
     parser.add_argument('--interface-cutoff', type=float, default=DEFAULT_INTERFACE_CUTOFF,
                        help=f'Interface selection cutoff in Angstroms (default: {DEFAULT_INTERFACE_CUTOFF})')
     parser.add_argument('--water-cutoff', type=float, default=None,
                        help=f'Bridging water cutoff in Angstroms (default: same as interface-cutoff)')
     
-    # Set defaults from environment variables
-    parser.set_defaults(use_reduce=USE_REDUCE, select_interface=SELECT_INTERFACE)
+    # Set defaults from environment variables (interface selection always on)
+    parser.set_defaults(use_reduce=USE_REDUCE, select_interface=True)
     
     args = parser.parse_args()
     

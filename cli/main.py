@@ -50,7 +50,7 @@ Examples:
   pdb-cli                                          # interactive mode
   pdb-cli systems/my_protein.pdb
   pdb-cli systems/my_protein.pdb -c A B
-  pdb-cli systems/my_protein.pdb --interface --interface-cutoff 7.0
+  pdb-cli systems/my_protein.pdb --interface-cutoff 7.0
   pdb-cli systems/my_protein.pdb --no-interactive --no-charts
   pdb-cli systems/my_protein.pdb -p custom_params.json
         """,
@@ -63,8 +63,6 @@ Examples:
     parser.add_argument('-o', '--output', help='Output directory (default: systems/<pdb_name>)')
     parser.add_argument('--use-reduce', action='store_true', default=False,
                         help='Use reduce version of CoCoMaps')
-    parser.add_argument('--interface', action='store_true', default=False,
-                        help='Enable per-frame interface selection')
     parser.add_argument('--interface-cutoff', type=float, default=5.0,
                         help='Interface selection cutoff in Å (default: 5.0)')
     parser.add_argument('--water-cutoff', type=float, default=None,
@@ -184,7 +182,7 @@ def main():
             'chain_b': chain_b,
             'scope': scope,
             'use_reduce': args.use_reduce,
-            'select_interface': args.interface,
+            'select_interface': True,  # always on
             'interface_cutoff': args.interface_cutoff,
             'water_cutoff': water_cutoff,
             'cocomaps_params': cocomaps_params,
@@ -192,7 +190,7 @@ def main():
     else:
         params = prompt_parameters(
             chain_a, chain_b, scope,
-            args.use_reduce, args.interface,
+            args.use_reduce, True,  # select_interface always on
             args.interface_cutoff, water_cutoff,
             cocomaps_params,
         )

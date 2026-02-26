@@ -139,12 +139,12 @@ def prompt_parameters(
     if cocomaps_params is None:
         cocomaps_params = dict(DEFAULT_COCOMAPS_PARAMS)
 
-    # Mutable pipeline params dict for inline editing
+    # Mutable pipeline params dict for inline editing (interface selection always on)
     pipeline = {
         'chain_1': chain_a,
         'chain_2': chain_b,
         'use_reduce': use_reduce,
-        'select_interface': select_interface,
+        'select_interface': True,
         'interface_cutoff': interface_cutoff,
         'water_cutoff': water_cutoff,
     }
@@ -216,7 +216,7 @@ def prompt_parameters(
             console.print(f"  [green]Loaded {len(overrides)} override(s) from {json_path}[/green]")
         elif json_path == "inline":
             console.print("  [dim]Editable pipeline keys: chain_1, chain_2, use_reduce (yes/no),[/dim]")
-            console.print("  [dim]  select_interface (yes/no), interface_cutoff, water_cutoff[/dim]")
+            console.print("  [dim]  interface_cutoff, water_cutoff (interface selection is always on)[/dim]")
             console.print("  [dim]Editable CoCoMaps keys: any key shown above (e.g. HBOND_DIST=3.5)[/dim]")
             console.print("  [dim]Enter changes as key=value. Type 'done' when finished.[/dim]")
             while True:
@@ -231,8 +231,10 @@ def prompt_parameters(
                 value = value.strip()
 
                 if key in pipeline:
-                    # Handle booleans
-                    if key in ('use_reduce', 'select_interface'):
+                    # Handle booleans (select_interface is always on and not editable)
+                    if key == 'select_interface':
+                        console.print("  [dim]Interface selection is always on; change ignored.[/dim]")
+                    elif key == 'use_reduce':
                         pipeline[key] = value.lower() in ('yes', 'true', '1', 'y')
                         console.print(f"  [green]✓[/green] {key} = {'Yes' if pipeline[key] else 'No'}")
                     # Handle floats
@@ -262,7 +264,7 @@ def prompt_parameters(
         'chain_b': pipeline['chain_2'],
         'scope': scope,
         'use_reduce': pipeline['use_reduce'],
-        'select_interface': pipeline['select_interface'],
+        'select_interface': True,
         'interface_cutoff': pipeline['interface_cutoff'],
         'water_cutoff': pipeline['water_cutoff'],
         'cocomaps_params': cocomaps_params,
