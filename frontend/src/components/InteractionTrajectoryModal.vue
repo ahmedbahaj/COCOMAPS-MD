@@ -288,7 +288,6 @@ const frameAtomPairs = computed(() => {
       return {
         ...frameAtom,
         consistency: fullStats?.consistency || 0,
-        frameCount: fullStats?.frameCount || 1,
         type: frameAtom.interactionType
       }
     })
@@ -613,8 +612,8 @@ const loadAtomPairData = async () => {
   }
 }
 
-watch(() => props.visible, (newVal) => {
-  if (newVal && props.interactionData) {
+watch(() => props.visible, () => {
+  if (props.visible && props.interactionData) {
     // Pre-select the frame that was clicked in the chart
     selectedFrame.value = props.interactionData.frame || null
     loadDistanceData()
@@ -725,13 +724,6 @@ watch(() => props.interactionData, () => {
   margin-bottom: 24px;
   padding-bottom: 24px;
   border-bottom: 1px solid #e8e8ed;
-}
-
-.residue-info h3 {
-  margin: 0 0 12px 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1d1d1f;
 }
 
 .interaction-meta {
@@ -868,11 +860,6 @@ watch(() => props.interactionData, () => {
 .bond-frequency {
   font-size: 12px;
   font-weight: 600;
-}
-
-.bond-frames {
-  font-size: 11px;
-  color: #6e6e73;
 }
 
 .stats-grid {
@@ -1114,39 +1101,6 @@ td {
 
 .status-badge.absent {
   background: #CC0000;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  padding-top: 24px;
-  border-top: 1px solid #e8e8ed;
-}
-
-.action-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 980px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-family: inherit;
-}
-
-.primary-btn {
-  background: #1d1d1f;
-  color: white;
-}
-
-.primary-btn:hover {
-  background: #000000;
-}
-
-.secondary-btn {
-  background: #f5f5f7;
-  color: #1d1d1f;
 }
 
 /* Interaction Type Analysis Styles */
