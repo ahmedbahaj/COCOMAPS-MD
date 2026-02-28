@@ -2,7 +2,7 @@
   <div v-if="visible" class="trajectory-modal-overlay" @click.self="close">
     <div class="trajectory-modal-panel">
       <div class="panel-header">
-        <h2>Interaction Trajectory Analysis</h2>
+        <h2>{{ interactionData?.pair ? `Trajectory Analysis: ${interactionData.pair}` : 'Interaction Trajectory Analysis' }}</h2>
         <button class="close-button" @click="close">×</button>
       </div>
 
@@ -18,7 +18,6 @@
       <div v-else-if="interactionData" class="panel-content">
         <!-- Residue Pair Info -->
         <div class="residue-info">
-          <h3>{{ interactionData.pair }}</h3>
           <p class="interaction-meta">
             <span class="meta-item">
               <strong>Interaction Type:</strong> {{ interactionData.type }}
@@ -128,7 +127,7 @@
               <span class="marker" style="left: 75%">{{ Math.round(totalFrames * 0.75) }}</span>
               <span class="marker" style="left: 100%">{{ totalFrames }}</span>
             </div>
-            <div v-if="selectedFrame" class="selected-marker" :style="{ left: `${((selectedFrame - 1) / (totalFrames - 1)) * 100}%` }">
+            <div v-if="selectedFrame" class="selected-marker" :style="{ left: `${((selectedFrame - 0.5) / totalFrames) * 100}%` }">
               <div class="marker-line"></div>
               <div class="marker-label">Frame {{ selectedFrame }}</div>
             </div>
@@ -166,7 +165,7 @@
         <div v-if="interactionTypeAnalysis.types.length > 1" class="section">
           <h4>Interaction Type Analysis</h4>
           <p class="section-description">
-            How different interaction types co-occur across the trajectory
+            Which interaction types appear in each frame across the trajectory
           </p>
           
           <!-- Type Timeline -->
@@ -191,40 +190,6 @@
             </div>
           </div>
 
-          <!-- Co-occurrence Matrix -->
-          <div v-if="interactionTypeAnalysis.types.length > 1" class="cooccurrence-section">
-            <h5>Co-occurrence Analysis</h5>
-            <div class="cooccurrence-grid">
-              <div 
-                v-for="pair in interactionTypeAnalysis.cooccurrence" 
-                :key="pair.types"
-                class="cooccurrence-item"
-              >
-                <div class="cooccurrence-types">{{ pair.type1 }} + {{ pair.type2 }}</div>
-                <div class="cooccurrence-bar-container">
-                  <div class="cooccurrence-bar" :style="{ width: `${pair.percentage}%` }"></div>
-                </div>
-                <div class="cooccurrence-value">{{ pair.percentage }}% co-occur</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Binding Events -->
-        <div v-if="bindingEvents.length > 0" class="section">
-          <h4>Binding Events</h4>
-          <div class="events-list">
-            <div 
-              v-for="(event, idx) in bindingEvents" 
-              :key="idx"
-              class="event-item"
-              :class="'event-' + event.type"
-            >
-              <span class="event-icon">{{ event.icon }}</span>
-              <span class="event-label">{{ event.label }}</span>
-              <span class="event-frame">Frame {{ event.frame }}</span>
-            </div>
-          </div>
         </div>
 
         <!-- Interaction Details Table -->
@@ -444,42 +409,10 @@ const stats = computed(() => {
   }
 })
 
-// Detect binding events
-const bindingEvents = computed(() => {
-  if (!props.interactionData) return []
-  
-  const events = []
-  let wasPresent = false
-  
-  for (let i = 1; i <= totalFrames.value; i++) {
-    const isPresent = frameHasInteraction(i)
-    
-    if (isPresent && !wasPresent) {
-      events.push({
-        type: 'formation',
-        icon: '🟢',
-        label: wasPresent === null ? 'Formation' : 'Reformation',
-        frame: i
-      })
-    } else if (!isPresent && wasPresent) {
-      events.push({
-        type: 'breaking',
-        icon: '🔴',
-        label: 'Breaking',
-        frame: i
-      })
-    }
-    
-    wasPresent = isPresent
-  }
-  
-  return events
-})
-
-// Interaction type analysis
+// Interaction type analysis (type timeline only)
 const interactionTypeAnalysis = computed(() => {
   if (!props.interactionData || !distanceData.value) {
-    return { types: [], cooccurrence: [] }
+    return { types: [] }
   }
   
   const parts = props.interactionData.pair.split(' ↔ ')
@@ -487,7 +420,7 @@ const interactionTypeAnalysis = computed(() => {
   const allDistances = distanceData.value.distances?.[pairKey]
   
   if (!allDistances) {
-    return { types: [], cooccurrence: [] }
+    return { types: [] }
   }
   
   // Collect all types and their frames
@@ -512,36 +445,7 @@ const interactionTypeAnalysis = computed(() => {
     persistence: frames.length / totalFrames.value
   })).sort((a, b) => b.persistence - a.persistence)
   
-  // Calculate co-occurrence
-  const cooccurrence = []
-  for (let i = 0; i < types.length; i++) {
-    for (let j = i + 1; j < types.length; j++) {
-      const type1Frames = new Set(types[i].frames)
-      const type2Frames = new Set(types[j].frames)
-      
-      // Count frames where both are present
-      let coCount = 0
-      type1Frames.forEach(f => {
-        if (type2Frames.has(f)) coCount++
-      })
-      
-      // Calculate percentage relative to the less common type
-      const minFrames = Math.min(types[i].frames.length, types[j].frames.length)
-      const percentage = minFrames > 0 ? Math.round((coCount / minFrames) * 100) : 0
-      
-      if (percentage > 0) {
-        cooccurrence.push({
-          type1: types[i].type,
-          type2: types[j].type,
-          types: `${types[i].type} + ${types[j].type}`,
-          coCount,
-          percentage
-        })
-      }
-    }
-  }
-  
-  return { types, cooccurrence: cooccurrence.sort((a, b) => b.percentage - a.percentage) }
+  return { types }
 })
 
 // Update distance chart
@@ -1160,37 +1064,6 @@ watch(() => props.interactionData, () => {
   width: 100%;
 }
 
-.events-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.event-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: #f5f5f7;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.event-icon {
-  font-size: 18px;
-}
-
-.event-label {
-  font-weight: 600;
-  color: #1d1d1f;
-  flex: 1;
-}
-
-.event-frame {
-  color: #6e6e73;
-  font-size: 12px;
-}
-
 .table-container {
   overflow-x: auto;
   max-height: 400px;
@@ -1326,63 +1199,5 @@ td {
   text-align: left;
 }
 
-.cooccurrence-section {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e8e8ed;
-}
-
-.cooccurrence-section h5 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-.cooccurrence-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.cooccurrence-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: #f5f5f7;
-  border-radius: 8px;
-}
-
-.cooccurrence-types {
-  width: 180px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #1d1d1f;
-  flex-shrink: 0;
-}
-
-.cooccurrence-bar-container {
-  flex: 1;
-  height: 8px;
-  background: #e8e8ed;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.cooccurrence-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #3B6EF5, #00AA00);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.cooccurrence-value {
-  width: 100px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6e6e73;
-  text-align: right;
-}
 </style>
 
