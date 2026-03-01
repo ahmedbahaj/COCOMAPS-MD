@@ -6,6 +6,8 @@ Usage:
     python -m cli [pdb_file] [OPTIONS]
 """
 import argparse
+import copy
+import csv
 import os
 import sys
 import warnings
@@ -17,7 +19,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='numpy')
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt, Confirm
+from rich.prompt import Prompt
 
 console = Console()
 
@@ -47,32 +49,47 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-  pdb-cli                                          # interactive mode
-  pdb-cli systems/my_protein.pdb
-  pdb-cli systems/my_protein.pdb -c A B
-  pdb-cli systems/my_protein.pdb --interface-cutoff 7.0
-  pdb-cli systems/my_protein.pdb --no-interactive --no-charts
-  pdb-cli systems/my_protein.pdb -p custom_params.json
+  pdb-cli my_protein.pdb                        # run with defaults
+  pdb-cli my_protein.pdb -o results/run1         # specify output dir
+  pdb-cli my_protein.pdb -C                      # interactive customization
+  pdb-cli my_protein.pdb -c A B -o out/ -s 1 -e 100 -n 2 -i 7.0 -t 70
         """,
     )
 
     parser.add_argument('pdb_file', nargs='?', default=None,
                         help='Path to input PDB file (prompted if omitted)')
+
+    # ── Pipeline flags ──
     parser.add_argument('-c', '--chains', nargs=2, metavar=('A', 'B'),
                         help='Chain IDs to analyze (default: auto-detect)')
-    parser.add_argument('-o', '--output', help='Output directory (default: systems/<pdb_name>)')
-    parser.add_argument('--use-reduce', action='store_true', default=False,
+    parser.add_argument('-o', '--output',
+                        help='Output directory (default: systems/<pdb_name>)')
+    parser.add_argument('-r', '--reduce', action='store_true', default=False,
                         help='Use reduce version of CoCoMaps')
-    parser.add_argument('--interface-cutoff', type=float, default=5.0,
+    parser.add_argument('-i', '--cutoff', type=float, default=5.0,
                         help='Interface selection cutoff in Å (default: 5.0)')
-    parser.add_argument('--water-cutoff', type=float, default=None,
-                        help='Bridging water cutoff in Å (default: same as interface-cutoff)')
-    parser.add_argument('-p', '--params-json', default=None,
-                        help='Path to JSON file with CoCoMaps parameters')
-    parser.add_argument('--no-interactive', action='store_true', default=False,
-                        help='Skip all interactive prompts, use defaults')
-    parser.add_argument('--no-charts', action='store_true', default=False,
-                        help='Skip chart generation after analysis')
+    parser.add_argument('-w', '--water', type=float, default=None,
+                        help='Bridging water cutoff in Å (default: same as --cutoff)')
+    parser.add_argument('-p', '--params', default=None,
+                        help='Path to JSON file with CoCoMaps parameter overrides')
+
+    # ── Trajectory scope flags ──
+    parser.add_argument('-s', '--start', type=int, default=None,
+                        help='Start frame, 1-indexed (default: 1)')
+    parser.add_argument('-e', '--end', type=int, default=None,
+                        help='End frame, 1-indexed inclusive (default: last frame)')
+    parser.add_argument('-n', '--step', type=int, default=1,
+                        help='Frame step — analyze every Nth frame (default: 1)')
+
+    # ── Chart flags ──
+    parser.add_argument('-t', '--threshold', type=int, default=None,
+                        help='Conservation threshold %% for charts, 0-100 (default: 50)')
+    parser.add_argument('-u', '--unit', default=None,
+                        help='Time axis label, e.g. fs, ps, ns (default: Frame)')
+
+    # ── Mode ──
+    parser.add_argument('-C', '--customize', action='store_true', default=False,
+                        help='Enter interactive customization after showing defaults')
 
     return parser
 
@@ -86,7 +103,6 @@ def main():
 
     # ── Prompt for PDB file if not provided ──
     if args.pdb_file is None:
-        from rich.prompt import Prompt
         console.print("  [dim]No PDB file provided. Enter the path below.[/dim]")
         pdb_path = Prompt.ask("  PDB file path")
         args.pdb_file = pdb_path.strip()
@@ -107,176 +123,162 @@ def main():
     console.print(f"  Atoms:    {info['n_atoms']}")
     console.print(f"  Residues: {info['n_residues']}")
 
-    # ── Chain selection ──
-    from cli.prompts import (
-        prompt_chain_selection,
-        prompt_trajectory_scope,
-        prompt_parameters,
-        prompt_global_chart_controls,
-        prompt_conservation_matrix_options,
-        prompt_heatmap_options,
-        prompt_trends_options,
-        prompt_distribution_options,
-        prompt_area_options,
-        prompt_conserved_islands_options,
-    )
-    from cli.constants import DEFAULT_COCOMAPS_PARAMS
-
+    # ── Resolve chain selection ──
+    chains = info['chains']
     if args.chains:
         chain_a, chain_b = args.chains
-        console.print(f"\n  Chains (from args): [bold cyan]{chain_a}[/bold cyan] and [bold cyan]{chain_b}[/bold cyan]")
-    elif args.no_interactive:
-        chains = info['chains']
+    else:
         chain_a = chains[0] if len(chains) >= 1 else 'A'
         chain_b = chains[1] if len(chains) >= 2 else 'B'
-        console.print(f"\n  Chains (auto): [bold cyan]{chain_a}[/bold cyan] and [bold cyan]{chain_b}[/bold cyan]")
-    else:
-        chain_a, chain_b = prompt_chain_selection(info['chains'])
 
-    # ── Trajectory scope ──
-    if args.no_interactive:
-        scope = {'start_frame': 0, 'end_frame': info['total_frames'], 'frame_step': 1}
-        console.print(f"\n  Trajectory: all {info['total_frames']} frames")
-    else:
-        scope = prompt_trajectory_scope(info['total_frames'])
+    # ── Resolve trajectory scope ──
+    total_frames = info['total_frames']
+    start_frame = (args.start - 1) if args.start is not None else 0
+    end_frame = args.end if args.end is not None else total_frames
+    frame_step = args.step
+
+    # ── Resolve cutoffs ──
+    interface_cutoff = args.cutoff
+    water_cutoff = args.water if args.water is not None else interface_cutoff
+
+    # ── Build pipeline params dict ──
+    from cli.constants import DEFAULT_COCOMAPS_PARAMS, DEFAULT_CHART_OPTIONS
+    cocomaps_params = dict(DEFAULT_COCOMAPS_PARAMS)
+
+    # Apply JSON overrides if provided
+    if args.params:
+        import json
+        try:
+            with open(args.params) as f:
+                overrides = json.load(f)
+            for key, value in overrides.items():
+                if key in cocomaps_params:
+                    cocomaps_params[key] = value
+            console.print(f"\n  [green]Loaded parameters from {args.params}[/green]")
+        except Exception as e:
+            console.print(f"\n  [red]Failed to load params JSON: {e}[/red]")
+
+    pipeline = {
+        'chain_a': chain_a,
+        'chain_b': chain_b,
+        'scope': {
+            'start_frame': start_frame,
+            'end_frame': end_frame,
+            'frame_step': frame_step,
+        },
+        'use_reduce': args.reduce,
+        'select_interface': True,
+        'interface_cutoff': interface_cutoff,
+        'water_cutoff': water_cutoff,
+    }
+
+    # ── Build chart options ──
+    chart_opts = copy.deepcopy(DEFAULT_CHART_OPTIONS)
+    if args.threshold is not None:
+        chart_opts['global']['conservation_threshold'] = max(0, min(100, args.threshold)) / 100.0
+    if args.unit is not None:
+        chart_opts['global']['time_unit'] = None if args.unit.lower() == "frame" else args.unit
 
     # ── Output directory ──
     if args.output:
         output_dir = args.output
     else:
         pdb_stem = Path(args.pdb_file).stem
-        output_dir = os.path.join('systems', pdb_stem)
-
-    if not args.no_interactive:
+        default_dir = os.path.join('systems', pdb_stem)
         console.print()
         console.print(Panel(
-            f"[bold]Results will be saved to:[/bold] {os.path.abspath(output_dir)}",
+            f"[bold]Results will be saved to:[/bold] {os.path.abspath(default_dir)}",
             title="Output Directory",
             border_style="cyan",
         ))
-        if not Confirm.ask("  Use this output path?", default=True):
-            output_dir = Prompt.ask("  Enter output directory path", default=output_dir)
-        console.print(f"  → Output: [bold]{os.path.abspath(output_dir)}[/bold]")
+        output_dir = Prompt.ask("  Output directory", default=default_dir)
 
-    # ── Water cutoff ──
-    water_cutoff = args.water_cutoff if args.water_cutoff is not None else args.interface_cutoff
+    console.print(f"  → Output: [bold]{os.path.abspath(output_dir)}[/bold]")
 
-    # ── CoCoMaps parameters ──
-    cocomaps_params = dict(DEFAULT_COCOMAPS_PARAMS)
-    if args.params_json:
-        import json
-        try:
-            with open(args.params_json) as f:
-                overrides = json.load(f)
-            for key, value in overrides.items():
-                if key in cocomaps_params:
-                    cocomaps_params[key] = value
-            console.print(f"\n  [green]Loaded parameters from {args.params_json}[/green]")
-        except Exception as e:
-            console.print(f"\n  [red]Failed to load params JSON: {e}[/red]")
+    # ── Show full config summary ──
+    from cli.prompts import show_config_summary, interactive_customize
 
-    # ── Parameter review ──
-    if args.no_interactive:
-        params = {
-            'chain_a': chain_a,
-            'chain_b': chain_b,
-            'scope': scope,
-            'use_reduce': args.use_reduce,
-            'select_interface': True,  # always on
-            'interface_cutoff': args.interface_cutoff,
-            'water_cutoff': water_cutoff,
-            'cocomaps_params': cocomaps_params,
-        }
+    show_config_summary(pipeline, cocomaps_params, chart_opts)
+
+    # ── Customize or run ──
+    if args.customize:
+        interactive_customize(pipeline, cocomaps_params, chart_opts)
     else:
-        params = prompt_parameters(
-            chain_a, chain_b, scope,
-            args.use_reduce, True,  # select_interface always on
-            args.interface_cutoff, water_cutoff,
-            cocomaps_params,
-        )
-
-    # ── Confirm and run ──
-    if not args.no_interactive:
+        from rich.prompt import Confirm
         console.print()
-        if not Confirm.ask("[bold green]Start analysis?[/bold green]", default=True):
-            console.print("[yellow]Aborted.[/yellow]")
-            sys.exit(0)
+        if Confirm.ask("  [bold]Customize settings before running?[/bold]", default=False):
+            interactive_customize(pipeline, cocomaps_params, chart_opts)
 
     # ── Run pipeline ──
+    console.print()
+    console.print("[bold green]Starting analysis…[/bold green]")
+
     from cli.runner import run_pipeline
 
     output_dir = run_pipeline(
         pdb_file=args.pdb_file,
         output_dir=output_dir,
-        chain_a=params['chain_a'],
-        chain_b=params['chain_b'],
-        start_frame=params['scope']['start_frame'],
-        end_frame=params['scope']['end_frame'],
-        frame_step=params['scope']['frame_step'],
-        use_reduce=params['use_reduce'],
-        select_interface=params['select_interface'],
-        interface_cutoff=params['interface_cutoff'],
-        water_cutoff=params['water_cutoff'],
-        cocomaps_params=params['cocomaps_params'],
+        chain_a=pipeline['chain_a'],
+        chain_b=pipeline['chain_b'],
+        start_frame=pipeline['scope']['start_frame'],
+        end_frame=pipeline['scope']['end_frame'],
+        frame_step=pipeline['scope']['frame_step'],
+        use_reduce=pipeline['use_reduce'],
+        select_interface=pipeline['select_interface'],
+        interface_cutoff=pipeline['interface_cutoff'],
+        water_cutoff=pipeline['water_cutoff'],
+        cocomaps_params=cocomaps_params,
     )
 
-    # ── Chart generation ──
-    if args.no_charts:
-        console.print("\n[dim]Chart generation skipped (--no-charts).[/dim]")
-        sys.exit(0)
-
+    # ── Chart generation (always runs) ──
     from cli.charts import generate_all_charts
 
     system_name = Path(args.pdb_file).stem
 
-    if args.no_interactive:
-        # Use defaults
-        global_controls = {
-            'conservation_threshold': 0.5,
-            'time_unit': None,
-            'excluded_types': {'proximal'},
-        }
-        matrix_opts = {
-            'pair_threshold': 0.5,
-            'type_threshold': 0.5,
-            'atom_change_mode': 'previous',
-        }
-        heatmap_opts = {'show_labels': True}
-        trends_opts = {'log_scale': False}
-        area_opts = {'show_stats': True, 'show_percentages': False}
-        # Find available interaction types from _atom_pairs.csv
-        import csv
-        atom_pairs_file = os.path.join(output_dir, '_atom_pairs.csv')
-        available_types = []
-        if os.path.exists(atom_pairs_file):
-            with open(atom_pairs_file, newline='') as f:
-                for row in csv.DictReader(f):
-                    itype = row.get('interactionType', '').strip()
-                    if itype and itype not in available_types:
-                        available_types.append(itype)
-        distribution_opts = {'types': sorted(available_types), 'min_conservation': 50}
-        show_islands = True
-    else:
-        # Interactive prompts for chart generation
-        global_controls = prompt_global_chart_controls()
-        matrix_opts = prompt_conservation_matrix_options()
-        heatmap_opts = prompt_heatmap_options()
-        trends_opts = prompt_trends_options()
+    # Determine available interaction types from output
+    atom_pairs_file = os.path.join(output_dir, '_atom_pairs.csv')
+    available_types = []
+    if os.path.exists(atom_pairs_file):
+        with open(atom_pairs_file, newline='') as f:
+            for row in csv.DictReader(f):
+                itype = row.get('interactionType', '').strip()
+                if itype and itype not in available_types:
+                    available_types.append(itype)
 
-        # Determine available types from _atom_pairs.csv
-        import csv
-        atom_pairs_file = os.path.join(output_dir, '_atom_pairs.csv')
-        available_types = []
-        if os.path.exists(atom_pairs_file):
-            with open(atom_pairs_file, newline='') as f:
-                for row in csv.DictReader(f):
-                    itype = row.get('interactionType', '').strip()
-                    if itype and itype not in available_types:
-                        available_types.append(itype)
+    # Build chart args from chart_opts
+    g = chart_opts['global']
+    global_controls = {
+        'conservation_threshold': g['conservation_threshold'],
+        'time_unit': g['time_unit'],
+        'excluded_types': g['excluded_types'],
+    }
 
-        distribution_opts = prompt_distribution_options(sorted(available_types))
-        area_opts = prompt_area_options()
-        show_islands = prompt_conserved_islands_options()
+    m = chart_opts['conservation_matrix']
+    matrix_opts = {
+        'pair_threshold': m['pair_threshold'],
+        'type_threshold': m['type_threshold'],
+        'atom_change_mode': m['atom_change_mode'],
+    } if m['enabled'] else None
+
+    h = chart_opts['heatmap']
+    heatmap_opts = {'show_labels': h['show_labels']} if h['enabled'] else None
+
+    t = chart_opts['trends']
+    trends_opts = {'log_scale': t['log_scale']} if t['enabled'] else None
+
+    d = chart_opts['distribution']
+    distribution_opts = {
+        'types': sorted(available_types),
+        'min_conservation': d['min_conservation'],
+    } if d['enabled'] else None
+
+    a = chart_opts['area']
+    area_opts = {
+        'show_stats': a['show_stats'],
+        'show_percentages': a['show_percentages'],
+    } if a['enabled'] else None
+
+    show_islands = chart_opts['conserved_islands']['enabled']
 
     generate_all_charts(
         system_dir=output_dir,

@@ -102,6 +102,28 @@ DEFAULT_COCOMAPS_PARAMS = {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Default chart options — single source of truth for chart generation defaults
+# ──────────────────────────────────────────────────────────────────────────────
+DEFAULT_CHART_OPTIONS = {
+    'global': {
+        'conservation_threshold': 0.5,
+        'time_unit': None,
+        'excluded_types': {'proximal'},
+    },
+    'conservation_matrix': {
+        'enabled': True,
+        'pair_threshold': 0.5,
+        'type_threshold': 0.5,
+        'atom_change_mode': 'previous',
+    },
+    'heatmap': {'enabled': True, 'show_labels': True},
+    'trends': {'enabled': True, 'log_scale': False},
+    'distribution': {'enabled': True, 'min_conservation': 50},
+    'area': {'enabled': True, 'show_stats': True, 'show_percentages': False},
+    'conserved_islands': {'enabled': True},
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Trends CSV keys — same order as backend data.py TRENDS_KEYS
 # ──────────────────────────────────────────────────────────────────────────────
 TRENDS_KEYS = [
