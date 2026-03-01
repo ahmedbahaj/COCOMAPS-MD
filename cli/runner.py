@@ -76,15 +76,37 @@ def run_pipeline(
     # ──────────────────────────────────────────────────────────────────────
     console.print("\n[bold cyan]STEP 1/5[/bold cyan] — Splitting PDB into frames …")
 
-    import MDAnalysis as mda
-    from MDAnalysis.coordinates import PDB
+    # --- Raw-text frame splitting (handles variable atom counts) ---
+    # Read MODEL/ENDMDL blocks from the PDB file so we don't rely on
+    # MDAnalysis trajectory indexing, which crashes when atom counts
+    # differ between frames.
+    raw_frames = []  # list of frame text strings
+    with open(pdb_file, 'r') as fh:
+        current_frame_lines = []
+        in_model = False
+        for line in fh:
+            record = line[:6].strip()
+            if record == 'MODEL':
+                in_model = True
+                current_frame_lines = [line]
+            elif record == 'ENDMDL':
+                current_frame_lines.append(line)
+                raw_frames.append(''.join(current_frame_lines))
+                current_frame_lines = []
+                in_model = False
+            elif in_model:
+                current_frame_lines.append(line)
 
-    u = mda.Universe(pdb_file)
-    total_frames = len(u.trajectory)
+    # Fallback: if no MODEL records, treat entire file as one frame
+    if not raw_frames:
+        with open(pdb_file, 'r') as fh:
+            raw_frames = [fh.read()]
+
+    total_frames_raw = len(raw_frames)
 
     # Determine slice
-    if end_frame == -1 or end_frame > total_frames:
-        end_frame = total_frames
+    if end_frame == -1 or end_frame > total_frames_raw:
+        end_frame = total_frames_raw
     if start_frame < 0:
         start_frame = 0
     frame_step = max(1, frame_step)
@@ -103,11 +125,7 @@ def run_pipeline(
     # Rename waters helper
     from analyze_pdb import rename_waters_to_hoh
 
-    # Interface selection
-    selections = None
-    if select_interface:
-        from interface_selector import get_atom_selections, select_interface_atoms
-        selections = get_atom_selections(u, chain_a, chain_b)
+    import MDAnalysis as mda
 
     with Progress(
         SpinnerColumn(),
@@ -120,29 +138,42 @@ def run_pipeline(
         task = progress.add_task("Splitting frames", total=num_frames)
 
         for idx, frame_idx in enumerate(frames_to_process):
-            u.trajectory[frame_idx]
             output_frame_num = idx + 1
-
-            if select_interface and selections is not None:
-                from interface_selector import select_interface_atoms
-                result = select_interface_atoms(
-                    u, selections, chain_a, chain_b, interface_cutoff, water_cutoff
-                )
-                output_atoms = result['atoms']
-            else:
-                output_atoms = u.atoms
-
-            rename_waters_to_hoh(output_atoms)
-
             frame_folder = os.path.join(output_dir, f"frame_{output_frame_num}")
             os.makedirs(frame_folder, exist_ok=True)
             frame_file = os.path.join(frame_folder, f"frame_{output_frame_num}.pdb")
 
-            if len(output_atoms) > 0:
-                output_atoms.write(frame_file)
-            else:
-                with open(frame_file, 'w') as f:
-                    f.write("REMARK   Empty frame - no interface atoms found\nEND\n")
+            # Write raw frame to a temp file, load it, apply interface selection
+            raw_text = raw_frames[frame_idx]
+            tmp_frame = os.path.join(frame_folder, '_tmp_raw.pdb')
+            with open(tmp_frame, 'w') as f:
+                f.write(raw_text)
+                if not raw_text.rstrip().endswith('END'):
+                    f.write('END\n')
+
+            try:
+                u = mda.Universe(tmp_frame)
+
+                if select_interface:
+                    from interface_selector import get_atom_selections, select_interface_atoms
+                    selections = get_atom_selections(u, chain_a, chain_b)
+                    result = select_interface_atoms(
+                        u, selections, chain_a, chain_b, interface_cutoff, water_cutoff
+                    )
+                    output_atoms = result['atoms']
+                else:
+                    output_atoms = u.atoms
+
+                rename_waters_to_hoh(output_atoms)
+
+                if len(output_atoms) > 0:
+                    output_atoms.write(frame_file)
+                else:
+                    with open(frame_file, 'w') as f:
+                        f.write("REMARK   Empty frame - no interface atoms found\nEND\n")
+            finally:
+                if os.path.exists(tmp_frame):
+                    os.remove(tmp_frame)
 
             progress.update(task, advance=1)
 

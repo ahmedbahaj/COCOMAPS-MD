@@ -980,7 +980,13 @@ def generate_violin_plots(
             pair_distances = {}
             for r in filtered:
                 pair_key = f"{r.get('resName1','')}{r.get('resNum1','')}{r.get('chain1','')} ↔ {r.get('resName2','')}{r.get('resNum2','')}{r.get('chain2','')}"
-                dist = float(r.get('distance', 0))
+                raw_dist = r.get('distance', '').strip()
+                if not raw_dist:
+                    continue
+                try:
+                    dist = float(raw_dist)
+                except ValueError:
+                    continue
                 if pair_key not in pair_distances:
                     pair_distances[pair_key] = []
                 pair_distances[pair_key].append(dist)
