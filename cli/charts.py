@@ -47,17 +47,33 @@ def _read_json(path: str) -> dict:
         return json.load(f)
 
 
-def _export_highcharts_png(chart_options: dict, output_path: str, width: int = 1600, scale: int = 2):
+def _export_highcharts_png(
+    chart_options: dict,
+    output_path: str,
+    width: int = 1600,
+    scale: int = 2,
+    callback_js: str | None = None,
+):
     """
     Export a Highcharts chart to PNG using highcharts-export-server.
 
     Writes the options JSON to a temp file, invokes the CLI, and saves the PNG.
+    If callback_js is provided, it is written to a .js temp file and passed via
+    --callback + --allowCodeExecution so JS formatter functions work.
     """
     with tempfile.NamedTemporaryFile(
         mode='w', suffix='.json', delete=False, encoding='utf-8'
     ) as tmp:
         json.dump(chart_options, tmp, ensure_ascii=False)
         tmp_path = tmp.name
+
+    cb_path = None
+    if callback_js:
+        with tempfile.NamedTemporaryFile(
+            mode='w', suffix='.js', delete=False, encoding='utf-8'
+        ) as cb_tmp:
+            cb_tmp.write(callback_js)
+            cb_path = cb_tmp.name
 
     try:
         cmd = [
@@ -68,6 +84,9 @@ def _export_highcharts_png(chart_options: dict, output_path: str, width: int = 1
             '--width', str(width),
             '--scale', str(scale),
         ]
+        if cb_path:
+            cmd += ['--callback', cb_path, '--allowCodeExecution', '1']
+
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=60,
         )
@@ -86,6 +105,8 @@ def _export_highcharts_png(chart_options: dict, output_path: str, width: int = 1
         return False
     finally:
         os.unlink(tmp_path)
+        if cb_path:
+            os.unlink(cb_path)
 
 
 def _matches_selected_types(types_string: str, excluded_type_ids: set) -> bool:
@@ -614,6 +635,7 @@ def generate_interaction_heatmap(
             'min': 0,
             'max': 1,
             'reversed': False,
+            'tickPositions': [0, 0.25, 0.5, 0.75, 1.0],
             'stops': [
                 [0, '#f5f5f7'],
                 [0.3, '#90CAF9'],
@@ -622,7 +644,6 @@ def generate_interaction_heatmap(
                 [1, '#0D47A1'],
             ],
             'labels': {
-                'format': '{value:%,.0f}',
                 'style': {
                     'fontSize': '12px',
                     'fontWeight': '500',
@@ -655,7 +676,22 @@ def generate_interaction_heatmap(
         }],
     }
 
-    return _export_highcharts_png(chart_options, output_path, width=chart_options['chart']['width'])
+    # JS callback: format colorAxis labels as percentages (0% → 100%)
+    heatmap_callback_js = """
+function(chart) {
+    if (chart.colorAxis && chart.colorAxis[0]) {
+        chart.colorAxis[0].update({
+            labels: {
+                formatter: function() {
+                    return Math.round(this.value * 100) + '%';
+                }
+            }
+        }, true);
+    }
+}
+"""
+
+    return _export_highcharts_png(chart_options, output_path, width=chart_options['chart']['width'], callback_js=heatmap_callback_js)
 
 
 def generate_conservation_matrix(
@@ -775,6 +811,7 @@ def generate_conservation_matrix(
 
     # Build series list — each type gets its own colored series
     series = []
+    types_with_data = set()
     for itype in sorted(series_map.keys()):
         color = get_interaction_color_hex(itype)
         series.append({
@@ -789,7 +826,165 @@ def generate_conservation_matrix(
             'rowsize': 1,
             'dataLabels': {'enabled': False},
             'showInLegend': True,
+            '_hasData': True,
         })
+        types_with_data.add(itype.lower())
+
+    # ── Add ALL interaction types to legend (GUI parity) ─────────────
+    # Types present in data → bold; absent types → grayed out
+    existing_names_lower = {s['name'].lower() for s in series}
+
+    def _type_already_in_series(it_entry):
+        """Check if INTERACTION_TYPE already exists in series via keywords."""
+        label_low = it_entry['label'].lower()
+        if label_low in existing_names_lower:
+            return True
+        for kw in it_entry.get('keywords', []):
+            kw_low = kw.lower()
+            for name in existing_names_lower:
+                if kw_low in name:
+                    return True
+        return False
+
+    for it in INTERACTION_TYPES:
+        # Skip excluded types
+        if it['id'] in excluded_types:
+            continue
+        if _type_already_in_series(it):
+            continue
+        color = get_interaction_color_hex(it['label'])
+        series.append({
+            'type': 'heatmap',
+            'name': it['label'],
+            'data': [],
+            'color': color,
+            'borderWidth': 1,
+            'borderColor': '#e8e8ed',
+            'nullColor': 'transparent',
+            'colsize': 1,
+            'rowsize': 1,
+            'dataLabels': {'enabled': False},
+            'showInLegend': True,
+            '_hasData': False,
+        })
+
+    # ── Atom change detection (mirrors GUI hasAtomChange / scatter) ───
+    atom_pairs_file = Path(system_dir) / '_atom_pairs.csv'
+    if atom_pairs_file.exists():
+        ap_rows = _read_csv(str(atom_pairs_file))
+
+        # Build lookup: pair_label -> type -> frame_num -> [atomPair strings]
+        ap_lookup = {}  # { "pair_label" : { type : { frame : [atom_pair, ...] } } }
+        for r in ap_rows:
+            r1 = f"{r.get('resName1','')}{r.get('resNum1','')}_{r.get('chain1','')}"
+            r2 = f"{r.get('resName2','')}{r.get('resNum2','')}_{r.get('chain2','')}"
+            pair_label = f"{r1} - {r2}"
+            itype = r.get('interactionType', '').strip()
+            if not itype:
+                continue
+            frame_num = int(r.get('frame', 0))
+            atom1 = r.get('atom1', '')
+            atom2 = r.get('atom2', '')
+            atom_pair = f"{atom1}-{atom2}"
+
+            ap_lookup.setdefault(pair_label, {}).setdefault(itype, {}).setdefault(frame_num, [])
+            if atom_pair not in ap_lookup[pair_label][itype][frame_num]:
+                ap_lookup[pair_label][itype][frame_num].append(atom_pair)
+
+        # Sort atom pair lists for consistent comparison
+        for pl in ap_lookup.values():
+            for tp in pl.values():
+                for fr in tp:
+                    tp[fr] = sorted(tp[fr])
+
+        def _has_overlap(set1, set2):
+            s = set(set1)
+            return any(p in s for p in set2)
+
+        def _get_dominant(type_frames_map):
+            """Most frequent atom-pair combination across all frames."""
+            from collections import Counter
+            combo_counts = Counter()
+            for frame_num, pairs in type_frames_map.items():
+                key = '|'.join(sorted(pairs))
+                combo_counts[key] += 1
+            if not combo_counts:
+                return []
+            top_key = combo_counts.most_common(1)[0][0]
+            return top_key.split('|') if top_key else []
+
+        def _get_first_frame_pairs(type_frames_map):
+            """Atom pairs from the first frame where interaction appears."""
+            if not type_frames_map:
+                return []
+            first_frame = min(type_frames_map.keys())
+            return type_frames_map[first_frame]
+
+        atom_change_data = []
+        for pt in pair_type_combos:
+            pair_label = pt['pair']
+            itype = pt['type']
+            row_idx = pair_type_to_row.get(f"{pair_label}__{itype}")
+            if row_idx is None:
+                continue
+
+            type_frames_map = ap_lookup.get(pair_label, {}).get(itype, {})
+            if not type_frames_map:
+                continue
+
+            # Get frames where this pair-type exists (from pair_type_frames lookup)
+            pt_key = f"{pair_label}__{itype}"
+            active_frames = sorted(pair_type_frames.get(pt_key, set()))
+
+            for frame_num in active_frames:
+                current_pairs = type_frames_map.get(frame_num, [])
+                if not current_pairs:
+                    continue
+
+                ref_pairs = []
+                if atom_change_mode == 'previous':
+                    if frame_num <= 1:
+                        continue
+                    ref_pairs = type_frames_map.get(frame_num - 1, [])
+                    if not ref_pairs:
+                        continue  # New appearance, not a change
+                elif atom_change_mode == 'dominant':
+                    ref_pairs = _get_dominant(type_frames_map)
+                    if not ref_pairs:
+                        continue
+                elif atom_change_mode == 'first':
+                    ref_pairs = _get_first_frame_pairs(type_frames_map)
+                    if not ref_pairs:
+                        continue
+                    if sorted(current_pairs) == sorted(ref_pairs):
+                        continue  # Same as first frame
+                else:
+                    continue
+
+                # TRUE CHANGE: no overlap between reference and current
+                if not _has_overlap(ref_pairs, current_pairs):
+                    atom_change_data.append({
+                        'x': frame_num,
+                        'y': row_idx,
+                    })
+
+        if atom_change_data:
+            series.append({
+                'type': 'scatter',
+                'name': 'Atom Changes',
+                'color': '#FF9500',
+                'data': atom_change_data,
+                'marker': {
+                    'symbol': 'circle',
+                    'radius': 4,
+                    'fillColor': '#FF9500',
+                    'lineColor': '#FFFFFF',
+                    'lineWidth': 1,
+                },
+                'showInLegend': True,
+                'enableMouseTracking': True,
+                'zIndex': 10,
+            })
 
     # Y-axis labels: pair labels (one per row)
     y_labels = [pt['pair'] for pt in pair_type_combos]
@@ -878,6 +1073,7 @@ def generate_conservation_matrix(
             'verticalAlign': 'top',
             'layout': 'vertical',
             'y': 60,
+            'useHTML': True,
             'itemStyle': {
                 'fontSize': '12px',
                 'fontWeight': '500',
@@ -892,7 +1088,25 @@ def generate_conservation_matrix(
         'series': series,
     }
 
-    return _export_highcharts_png(chart_options, output_path, width=chart_width)
+    # JS callback: set labelFormatter so present types are bold, absent grayed
+    callback_js = """
+function(chart) {
+    chart.legend.allItems.forEach(function(item) {
+        var hasData = item.options._hasData;
+        if (hasData === false) {
+            item.legendItem.label.attr({
+                style: 'color: #9ca3af; font-weight: 400; font-size: 12px;'
+            });
+        } else if (hasData === true) {
+            item.legendItem.label.attr({
+                style: 'font-weight: 700; font-size: 12px; color: #1d1d1f;'
+            });
+        }
+    });
+}
+"""
+
+    return _export_highcharts_png(chart_options, output_path, width=chart_width, callback_js=callback_js)
 
 
 def generate_violin_plots(
