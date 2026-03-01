@@ -246,7 +246,7 @@ def _build_frame_graph(csv_path: Path) -> nx.Graph | None:
 def count_conserved_islands(
     system_dir: str | Path,
     min_consistency: float = 0.70,
-    min_island_size: int = 2,
+    min_island_size: int = 3,
     debug: bool = False,
 ) -> tuple[list[dict], dict[frozenset, int], int]:
     """
@@ -318,7 +318,7 @@ def count_conserved_islands(
 def run_conserved_islands(
     output_dir: str | Path,
     min_consistency: float = 0.70,
-    min_island_size: int = 2,
+    min_island_size: int = 3,
     verbose: bool = True,
     step_num: int | None = None,
     debug: bool = False,
@@ -450,8 +450,8 @@ Examples:
     parser.add_argument(
         "--min-size",
         type=int,
-        default=2,
-        help="Minimum number of residues in an island (default: 2).",
+        default=3,
+        help="Minimum number of residues in an island (default: 3; pairs of 2 are excluded).",
     )
     parser.add_argument("--debug", action="store_true", help="Print per-frame progress.")
     args = parser.parse_args()

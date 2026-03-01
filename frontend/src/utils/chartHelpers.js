@@ -49,6 +49,20 @@ export function getInteractionBaseColor(typeLabel) {
 }
 
 /**
+ * Return text color (white or dark) for contrast on getInteractionBaseColor background.
+ */
+export function getTextColorForBg(typeLabel) {
+  const colorStr = getInteractionBaseColor(typeLabel)
+  const match = colorStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+  if (!match) return '#ffffff'
+  const r = parseInt(match[1], 10)
+  const g = parseInt(match[2], 10)
+  const b = parseInt(match[3], 10)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.5 ? '#1d1d1f' : '#ffffff'
+}
+
+/**
  * Check if interaction matches selected types
  */
 export function matchesSelectedTypes(interactionTypes, selectedTypes, interactionTypeList) {

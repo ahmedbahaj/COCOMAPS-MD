@@ -1,6 +1,12 @@
 <template>
   <div class="chart-wrapper">
-    <div ref="chartContainer" class="chart-container"></div>
+    <div class="chart-area">
+      <div v-if="chartLoading" class="chart-loading-overlay">
+        <div class="chart-loading-spinner"></div>
+        <p>Building matrix...</p>
+      </div>
+      <div ref="chartContainer" class="chart-container"></div>
+    </div>
     
     <div class="chart-toolbar">
       <!-- Pair Conservation Threshold (like FilteredHeatmap) -->
@@ -158,6 +164,7 @@ if (typeof Highcharts === 'object') {
 
 const dataStore = useDataStore()
 const chartContainer = ref(null)
+const chartLoading = ref(false)
 let chart = null
 const distanceData = ref(null)
 const atomPairDataByPair = ref(new Map()) // Map<pairKey, atomPairData>
@@ -351,6 +358,8 @@ const isTypeHidden = (typeName) => {
 const updateChart = async () => {
   if (!chartContainer.value) return
 
+  chartLoading.value = true
+  try {
   // Load atom pair data for all pairs first (if not already loaded)
   await loadAtomPairDataForAllPairs()
 
@@ -1078,6 +1087,9 @@ const updateChart = async () => {
   const exportOptions = withExporting(chartOptions, `interaction-conservation-matrix-${systemName}`)
   if (!chartContainer.value) return
   chart = Highcharts.chart(chartContainer.value, exportOptions)
+  } finally {
+    chartLoading.value = false
+  }
 }
 
 const loadDistanceData = async () => {
@@ -1613,6 +1625,44 @@ input[type="range"]::-moz-range-thumb:hover {
   color: #6e6e73;
   font-weight: 500;
   font-style: italic;
+}
+
+.chart-area {
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+}
+
+.chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 10;
+  border-radius: 10px;
+}
+
+.chart-loading-overlay p {
+  margin: 12px 0 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6e6e73;
+}
+
+.chart-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e8e8ed;
+  border-top-color: #007aff;
+  border-radius: 50%;
+  animation: chartSpin 0.9s linear infinite;
+}
+
+@keyframes chartSpin {
+  to { transform: rotate(360deg); }
 }
 
 .chart-container {
