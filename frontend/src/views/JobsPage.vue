@@ -270,7 +270,9 @@ const loadAllJobs = async () => {
         dateCreated: system.dateCreated,
         frames: system.frames,
         status: system.status || 'ready',
-        // No job-specific fields for completed systems
+        // Analysis job identifier (from _metadata.json)
+        jobId: system.jobId || null,
+        // Backend processing job fields (not used for completed systems)
         job_id: null,
         step_label: null,
         progress: 100
@@ -408,11 +410,21 @@ const openJob = async (job) => {
     // Nothing to open for failed jobs
     return
   } else {
-    // Completed system - navigate to analysis
+    // Completed system - navigate directly to analysis by its public jobId
     await dataStore.loadSystems()
-    const systemId = job.id
-    await dataStore.setCurrentSystem(systemId)
-    router.push('/analysis')
+
+    // Try to find the matching system by id or by jobId from the jobs table
+    const system = dataStore.systems.find(
+      (s) => s.id === job.id || (job.jobId && s.jobId === job.jobId)
+    )
+
+    if (!system || !system.jobId) {
+      console.warn('No jobId found for job/system', job)
+      return
+    }
+
+    await dataStore.setCurrentSystem(system.id)
+    router.push({ name: 'Analysis', params: { jobId: system.jobId } })
   }
 }
 

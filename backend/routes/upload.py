@@ -100,7 +100,42 @@ def split_pdb(app, job_id, pdb_file, pdb_name, chain1='A', chain2='B', interface
         water_cutoff = interface_cutoff
 
     try:
-        u = mda.Universe(pdb_file)
+        # ── Split the PDB into raw per-frame text blocks ──
+        # Handles both MODEL/ENDMDL-delimited and END-delimited multi-frame PDBs.
+        import tempfile as _tmpmod
+
+        raw_frames = []
+        with open(pdb_file, 'r') as fh:
+            current_frame_lines = []
+            in_model = False
+            for line in fh:
+                record = line[:6].strip()
+                if record == 'MODEL':
+                    in_model = True
+                    current_frame_lines = [line]
+                elif record == 'ENDMDL':
+                    current_frame_lines.append(line)
+                    raw_frames.append(''.join(current_frame_lines))
+                    current_frame_lines = []
+                    in_model = False
+                elif in_model:
+                    current_frame_lines.append(line)
+
+        if not raw_frames:
+            # Fallback: split by END records (multi-frame without MODEL/ENDMDL)
+            with open(pdb_file, 'r') as fh:
+                current_frame_lines = []
+                for line in fh:
+                    record = line[:6].strip()
+                    if record == 'END':
+                        if current_frame_lines:
+                            raw_frames.append(''.join(current_frame_lines))
+                            current_frame_lines = []
+                    else:
+                        current_frame_lines.append(line)
+                if current_frame_lines:
+                    raw_frames.append(''.join(current_frame_lines))
+
         upload_folder = app.config['UPLOAD_FOLDER']
         systems_folder = os.path.join(upload_folder, 'systems')
         main_folder = os.path.join(systems_folder, pdb_name)
@@ -108,13 +143,11 @@ def split_pdb(app, job_id, pdb_file, pdb_name, chain1='A', chain2='B', interface
         os.makedirs(systems_folder, exist_ok=True)
         os.makedirs(main_folder, exist_ok=True)
 
-        # Per-frame interface selection (always on)
         from interface_selector import get_atom_selections, select_interface_atoms
         from analyze_pdb import rename_waters_to_hoh
-        selections = get_atom_selections(u, chain1, chain2)
 
         # Determine frame range
-        total_frames = len(u.trajectory)
+        total_frames = len(raw_frames)
         if end_frame == -1 or end_frame > total_frames:
             end_frame = total_frames
         if start_frame < 0:
@@ -128,8 +161,20 @@ def split_pdb(app, job_id, pdb_file, pdb_name, chain1='A', chain2='B', interface
         # Iterate through selected frames
         frame_count = 0
         for idx, frame_idx in enumerate(frames_to_process):
-            u.trajectory[frame_idx]
+            raw_text = raw_frames[frame_idx]
 
+            # Write raw frame to a temp file and load it
+            tmp_frame = _tmpmod.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
+            try:
+                tmp_frame.write(raw_text)
+                if not raw_text.rstrip().endswith('END'):
+                    tmp_frame.write('END\n')
+                tmp_frame.close()
+                u = mda.Universe(tmp_frame.name)
+            finally:
+                os.unlink(tmp_frame.name)
+
+            selections = get_atom_selections(u, chain1, chain2)
             result = select_interface_atoms(u, selections, chain1, chain2, interface_cutoff, water_cutoff)
             output_atoms = result['atoms']
             rename_waters_to_hoh(output_atoms)

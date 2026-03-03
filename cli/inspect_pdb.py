@@ -28,19 +28,35 @@ def inspect_pdb(pdb_path: str) -> dict:
     """
     # Count frames by MODEL records (handles variable atom counts)
     model_count = 0
+    end_count = 0
     with open(pdb_path, 'r') as fh:
         for line in fh:
-            if line[:6].strip() == 'MODEL':
+            rec = line[:6].strip()
+            if rec == 'MODEL':
                 model_count += 1
+            elif rec == 'END':
+                end_count += 1
 
-    # If no MODEL records, it's a single-frame PDB
-    total_frames = model_count if model_count > 0 else 1
-
-    # Load only the first frame for atom/residue/chain info
-    # For multi-model files with varying atoms, extract the first frame text
+    # Determine total frames:
+    # - If MODEL records exist, use that count.
+    # - Otherwise, if multiple END records exist, each END delimits a frame.
+    # - Otherwise, single frame.
     if model_count > 0:
-        first_frame_lines = []
-        with open(pdb_path, 'r') as fh:
+        total_frames = model_count
+    elif end_count > 1:
+        total_frames = end_count
+    else:
+        total_frames = 1
+
+    # Load only the first frame for atom/residue/chain info.
+    # Always extract the first frame into a temp file to avoid MDAnalysis
+    # issues with multi-frame PDBs that lack MODEL/ENDMDL records.
+    import tempfile, os
+
+    first_frame_lines = []
+    with open(pdb_path, 'r') as fh:
+        if model_count > 0:
+            # Multi-model: collect lines between first MODEL and ENDMDL
             in_model = False
             for line in fh:
                 record = line[:6].strip()
@@ -51,18 +67,22 @@ def inspect_pdb(pdb_path: str) -> dict:
                     break
                 elif in_model:
                     first_frame_lines.append(line)
-        # Write to a temp file for MDAnalysis
-        import tempfile, os
-        tmp = tempfile.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
-        try:
-            tmp.writelines(first_frame_lines)
-            tmp.write('END\n')
-            tmp.close()
-            u = mda.Universe(tmp.name)
-        finally:
-            os.unlink(tmp.name)
-    else:
-        u = mda.Universe(pdb_path)
+        else:
+            # No MODEL records: collect lines until the first END (or EOF)
+            for line in fh:
+                record = line[:6].strip()
+                if record == 'END':
+                    break
+                first_frame_lines.append(line)
+
+    tmp = tempfile.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
+    try:
+        tmp.writelines(first_frame_lines)
+        tmp.write('END\n')
+        tmp.close()
+        u = mda.Universe(tmp.name)
+    finally:
+        os.unlink(tmp.name)
 
     # Collect unique chain (segment) IDs
     chain_ids = sorted(set(u.atoms.segids))
