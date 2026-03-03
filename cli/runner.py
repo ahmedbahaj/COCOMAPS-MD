@@ -97,10 +97,22 @@ def run_pipeline(
             elif in_model:
                 current_frame_lines.append(line)
 
-    # Fallback: if no MODEL records, treat entire file as one frame
+    # Fallback: if no MODEL records, split by END records.
+    # Some multi-frame PDBs use END instead of MODEL/ENDMDL.
     if not raw_frames:
         with open(pdb_file, 'r') as fh:
-            raw_frames = [fh.read()]
+            current_frame_lines = []
+            for line in fh:
+                record = line[:6].strip()
+                if record == 'END':
+                    if current_frame_lines:
+                        raw_frames.append(''.join(current_frame_lines))
+                        current_frame_lines = []
+                else:
+                    current_frame_lines.append(line)
+            # Capture any trailing content without a final END
+            if current_frame_lines:
+                raw_frames.append(''.join(current_frame_lines))
 
     total_frames_raw = len(raw_frames)
 

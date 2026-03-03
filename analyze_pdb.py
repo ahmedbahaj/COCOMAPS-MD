@@ -132,38 +132,97 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
         if verbose:
             print(f"Copied original PDB to: {dest_path}")
     
-    # Load the structure/trajectory
-    universe = mda.Universe(pdb_file)
-    num_frames = len(universe.trajectory)
-    
+    # ── Split the PDB into raw per-frame text blocks ──
+    # Handles both MODEL/ENDMDL-delimited and END-delimited multi-frame PDBs.
+    import tempfile as _tmpmod
+
+    raw_frames = []  # list of frame text strings
+    with open(pdb_file, 'r') as fh:
+        current_frame_lines = []
+        in_model = False
+        for line in fh:
+            record = line[:6].strip()
+            if record == 'MODEL':
+                in_model = True
+                current_frame_lines = [line]
+            elif record == 'ENDMDL':
+                current_frame_lines.append(line)
+                raw_frames.append(''.join(current_frame_lines))
+                current_frame_lines = []
+                in_model = False
+            elif in_model:
+                current_frame_lines.append(line)
+
+    if not raw_frames:
+        # Fallback: split by END records (multi-frame without MODEL/ENDMDL)
+        with open(pdb_file, 'r') as fh:
+            current_frame_lines = []
+            for line in fh:
+                record = line[:6].strip()
+                if record == 'END':
+                    if current_frame_lines:
+                        raw_frames.append(''.join(current_frame_lines))
+                        current_frame_lines = []
+                else:
+                    current_frame_lines.append(line)
+            if current_frame_lines:
+                raw_frames.append(''.join(current_frame_lines))
+
+    num_frames = len(raw_frames)
+
     if verbose:
         print(f"Loaded structure with {num_frames} frame(s)")
-    
-    # Pre-compute atom selections if doing interface selection
+
+    # Load first frame to get chain/atom info for display
+    _tmp_first = _tmpmod.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
+    try:
+        _tmp_first.write(raw_frames[0])
+        if not raw_frames[0].rstrip().endswith('END'):
+            _tmp_first.write('END\n')
+        _tmp_first.close()
+        _first_universe = mda.Universe(_tmp_first.name)
+    finally:
+        os.unlink(_tmp_first.name)
+
+    # Pre-compute atom selections if doing interface selection (from first frame)
     selections = None
     if select_interface:
-        selections = get_atom_selections(universe, chain_a, chain_b)
+        selections = get_atom_selections(_first_universe, chain_a, chain_b)
         summary = get_selection_summary(selections)
         if verbose:
             print(f"Chain {chain_a}: {summary['chain_a_atoms']} atoms, {summary['chain_a_heavy']} heavy atoms")
             print(f"Chain {chain_b}: {summary['chain_b_atoms']} atoms, {summary['chain_b_heavy']} heavy atoms")
             print(f"Total water molecules: {summary['water_molecules']}")
             print(f"Total metal atoms: {summary['metal_atoms']}")
-    
+    del _first_universe
+
     if verbose:
         print(f"\nProcessing frames...")
-    
+
     # Track statistics
     frame_stats = []
-    
-    # Process each frame
-    for frame_idx, ts in enumerate(universe.trajectory):
+
+    # Process each frame from raw text
+    for frame_idx in range(num_frames):
         frame_num = frame_idx + 1
-        
+        raw_text = raw_frames[frame_idx]
+
+        # Write raw frame to a temp file and load it
+        tmp_frame = _tmpmod.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
+        try:
+            tmp_frame.write(raw_text)
+            if not raw_text.rstrip().endswith('END'):
+                tmp_frame.write('END\n')
+            tmp_frame.close()
+            universe = mda.Universe(tmp_frame.name)
+        finally:
+            os.unlink(tmp_frame.name)
+
         if select_interface:
-            # Get interface atoms for this frame
+            # Re-compute selections for this frame's universe
+            frame_selections = get_atom_selections(universe, chain_a, chain_b)
             result = select_interface_atoms(
-                universe, selections, chain_a, chain_b, cutoff, water_cutoff
+                universe, frame_selections, chain_a, chain_b, cutoff, water_cutoff
             )
             output_atoms = result['atoms']
             stats = result['stats']
@@ -179,29 +238,29 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
                 'metal_atoms': 0,
                 'total_atoms': len(universe.atoms)
             }
-        
+
         # === CENTRALIZED WRITE POINT ===
         # All PDB writing happens here - perfect place for transformations
-        
+
         # Rename waters to HOH for CoCoMaps compatibility
         rename_waters_to_hoh(output_atoms)
-        
+
         # Create frame directory and write PDB
         frame_folder = os.path.join(output_dir, f"frame_{frame_num}")
         os.makedirs(frame_folder, exist_ok=True)
         frame_file = os.path.join(frame_folder, f"frame_{frame_num}.pdb")
-        
+
         if len(output_atoms) > 0:
             output_atoms.write(frame_file)
         else:
             # Write empty PDB file header only
             with open(frame_file, 'w') as f:
                 f.write("REMARK   Empty frame - no interface atoms found\nEND\n")
-        
+
         # Track statistics
         stats['frame'] = frame_num
         frame_stats.append(stats)
-        
+
         if verbose:
             if select_interface:
                 print(f"  Frame {frame_num}: {stats['interface_residues']} residues, "
