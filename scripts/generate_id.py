@@ -1,34 +1,8 @@
 import json
-import secrets
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Set
 
-
-ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-
-def generate_job_id(now: Optional[datetime] = None) -> str:
-    """
-    Generate a job ID of the form:
-    YYYYDDD-RRRRRRRR
-
-    - YYYY: 4-digit year (UTC)
-    - DDD: day of year (001-366)
-    - RRRRRRRR: 8-character random base36-like (A-Z,0-9)
-    """
-    if now is None:
-        now = datetime.now(timezone.utc)
-
-    day_of_year = now.timetuple().tm_yday
-    date_part = f"{now.year}{day_of_year:03d}"
-    random_part = "".join(secrets.choice(ALPHABET) for _ in range(8))
-    return f"{date_part}-{random_part}"
-
-
-def isoformat_utc(dt: datetime) -> str:
-    """Return an ISO 8601 string with a trailing 'Z' for UTC."""
-    return dt.replace(microsecond=0, tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+from job_id import ensure_job_fields, generate_job_id, isoformat_utc
 
 
 def update_metadata_files(systems_dir: Path, days_valid: int = 60) -> None:
@@ -39,8 +13,8 @@ def update_metadata_files(systems_dir: Path, days_valid: int = 60) -> None:
     if not systems_dir.is_dir():
         raise SystemExit(f"Systems directory not found: {systems_dir}")
 
-    now = datetime.now(timezone.utc)
-    expires_at = now + timedelta(days=days_valid)
+    # Track job ids to avoid collisions within this run.
+    seen: Set[str] = set()
 
     for system_dir in systems_dir.iterdir():
         if not system_dir.is_dir():
@@ -61,21 +35,22 @@ def update_metadata_files(systems_dir: Path, days_valid: int = 60) -> None:
             print(f"Skipping {metadata_path} (expected JSON object).")
             continue
 
-        # Skip if a jobId is already present
-        if "jobId" in data:
+        # If already has a jobId, keep it (don't rewrite timestamps).
+        if isinstance(data.get("jobId"), str) and data["jobId"].strip():
             print(f"{metadata_path}: jobId already present ({data['jobId']}), skipping.")
             continue
 
-        job_id = generate_job_id(now)
-        data["jobId"] = job_id
-        data["jobCreatedAt"] = isoformat_utc(now)
-        data["jobExpiresAt"] = isoformat_utc(expires_at)
+        # Ensure fields exist; make jobId unique within this run.
+        ensure_job_fields(data, days_valid=days_valid, regenerate_if_expired=False)
+        while data.get("jobId") in seen:
+            data["jobId"] = generate_job_id()
+        seen.add(data.get("jobId"))
 
         with metadata_path.open("w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
             f.write("\n")
 
-        print(f"{metadata_path}: added jobId={job_id}")
+        print(f"{metadata_path}: added jobId={data.get('jobId')}")
 
 
 def main() -> None:

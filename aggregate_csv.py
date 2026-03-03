@@ -14,7 +14,9 @@ import csv
 import json
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
+
+from job_id import ensure_job_fields
 
 
 def _extract_first_number(value_str):
@@ -252,7 +254,7 @@ _TRENDS_PROPERTY_MAP = {
 }
 
 
-def aggregate_system(system_path: str | Path, verbose: bool = True) -> bool:
+def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> bool:
     """
     Aggregate per-frame CSVs into system-level _interactions.csv, _area.csv,
     _trends.csv, and _metadata.json.
@@ -462,13 +464,27 @@ def aggregate_system(system_path: str | Path, verbose: bool = True) -> bool:
         if verbose:
             print(f"  Wrote {out_path} ({len(atom_pairs_rows)} rows)")
 
-    metadata = {
-        'totalFrames': total_frames,
-        'chainPattern': chain_pattern,
-    }
     metadata_path = system_path / '_metadata.json'
+
+    existing = {}
+    if metadata_path.exists():
+        try:
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                maybe = json.load(f)
+            if isinstance(maybe, dict):
+                existing = maybe
+        except Exception:
+            existing = {}
+
+    # Always update these to reflect what we just aggregated.
+    existing['totalFrames'] = total_frames
+    existing['chainPattern'] = chain_pattern
+
+    # Ensure a public job id exists (and regenerate if expired).
+    ensure_job_fields(existing, days_valid=60, regenerate_if_expired=True)
+
     with open(metadata_path, 'w', encoding='utf-8') as f:
-        json.dump(metadata, f, indent=2)
+        json.dump(existing, f, indent=2)
     wrote_any = True
     if verbose:
         print(f"  Wrote {metadata_path}")
