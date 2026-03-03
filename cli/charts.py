@@ -548,7 +548,7 @@ def generate_interaction_heatmap(
     res1_set = sorted(set(fmt_res(e, '1') for e in interactions), key=sort_key)
     res2_set = sorted(set(fmt_res(e, '2') for e in interactions), key=sort_key)
 
-    # Build heatmap data — value is 0-1 (consistency) like the GUI
+    # Build heatmap data — value is 0-100 (percentage) for display
     heatmap_data = []
     for entry in interactions:
         r1 = fmt_res(entry, '1')
@@ -559,7 +559,7 @@ def generate_interaction_heatmap(
         heatmap_data.append({
             'x': x,
             'y': y,
-            'value': round(c, 4),
+            'value': round(c * 100, 2),
         })
 
     # ── Dynamic label sizing (mirrors FilteredHeatmap.vue) ──
@@ -645,9 +645,9 @@ def generate_interaction_heatmap(
         },
         'colorAxis': {
             'min': 0,
-            'max': 1,
+            'max': 100,
             'reversed': False,
-            'tickPositions': [0, 0.25, 0.5, 0.75, 1.0],
+            'tickPositions': [0, 25, 50, 75, 100],
             'stops': [
                 [0, '#f5f5f7'],
                 [0.3, '#90CAF9'],
@@ -656,6 +656,7 @@ def generate_interaction_heatmap(
                 [1, '#0D47A1'],
             ],
             'labels': {
+                'format': '{value}%',
                 'style': {
                     'fontSize': '12px',
                     'fontWeight': '500',
@@ -688,22 +689,7 @@ def generate_interaction_heatmap(
         }],
     }
 
-    # JS callback: format colorAxis labels as percentages (0% → 100%)
-    heatmap_callback_js = """
-function(chart) {
-    if (chart.colorAxis && chart.colorAxis[0]) {
-        chart.colorAxis[0].update({
-            labels: {
-                formatter: function() {
-                    return Math.round(this.value * 100) + '%';
-                }
-            }
-        }, true);
-    }
-}
-"""
-
-    return _export_highcharts_png(chart_options, output_path, width=chart_options['chart']['width'], callback_js=heatmap_callback_js)
+    return _export_highcharts_png(chart_options, output_path, width=chart_options['chart']['width'])
 
 
 def generate_conservation_matrix(
