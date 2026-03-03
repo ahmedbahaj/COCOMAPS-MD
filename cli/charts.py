@@ -814,9 +814,10 @@ def generate_conservation_matrix(
     types_with_data = set()
     for itype in sorted(series_map.keys()):
         color = get_interaction_color_hex(itype)
+        bold_name = f'<span style="font-weight:700;font-size:12px;color:#1d1d1f">{itype}</span>'
         series.append({
             'type': 'heatmap',
-            'name': itype,
+            'name': bold_name,
             'data': series_map[itype],
             'color': color,
             'borderWidth': 1,
@@ -832,16 +833,15 @@ def generate_conservation_matrix(
 
     # ── Add ALL interaction types to legend (GUI parity) ─────────────
     # Types present in data → bold; absent types → grayed out
-    existing_names_lower = {s['name'].lower() for s in series}
 
     def _type_already_in_series(it_entry):
         """Check if INTERACTION_TYPE already exists in series via keywords."""
         label_low = it_entry['label'].lower()
-        if label_low in existing_names_lower:
+        if label_low in types_with_data:
             return True
         for kw in it_entry.get('keywords', []):
             kw_low = kw.lower()
-            for name in existing_names_lower:
+            for name in types_with_data:
                 if kw_low in name:
                     return True
         return False
@@ -853,9 +853,10 @@ def generate_conservation_matrix(
         if _type_already_in_series(it):
             continue
         color = get_interaction_color_hex(it['label'])
+        gray_name = f'<span style="color:#9ca3af;font-weight:400;font-size:12px">{it["label"]}</span>'
         series.append({
             'type': 'heatmap',
-            'name': it['label'],
+            'name': gray_name,
             'data': [],
             'color': color,
             'borderWidth': 1,
@@ -1088,25 +1089,7 @@ def generate_conservation_matrix(
         'series': series,
     }
 
-    # JS callback: set labelFormatter so present types are bold, absent grayed
-    callback_js = """
-function(chart) {
-    chart.legend.allItems.forEach(function(item) {
-        var hasData = item.options._hasData;
-        if (hasData === false) {
-            item.legendItem.label.attr({
-                style: 'color: #9ca3af; font-weight: 400; font-size: 12px;'
-            });
-        } else if (hasData === true) {
-            item.legendItem.label.attr({
-                style: 'font-weight: 700; font-size: 12px; color: #1d1d1f;'
-            });
-        }
-    });
-}
-"""
-
-    return _export_highcharts_png(chart_options, output_path, width=chart_width, callback_js=callback_js)
+    return _export_highcharts_png(chart_options, output_path, width=chart_width)
 
 
 def generate_violin_plots(
