@@ -12,7 +12,7 @@ const routes = [
     component: LandingPage
   },
   {
-    path: '/analysis',
+    path: '/analysis/:jobId?',
     name: 'Analysis',
     component: Home
   },

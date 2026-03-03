@@ -6,8 +6,10 @@ from pathlib import Path
 import os
 import re
 from datetime import datetime
+import json
 
 bp = Blueprint('systems', __name__)
+
 
 def _get_chain_pattern(frame_folder):
     """
@@ -25,7 +27,6 @@ def _get_chain_pattern(frame_folder):
 
 def _get_display_name(system_path, default_name):
     """Get display name from metadata file if it exists"""
-    import json
     metadata_file = system_path / '.metadata.json'
     if metadata_file.exists():
         try:
@@ -39,7 +40,6 @@ def _get_display_name(system_path, default_name):
 
 def _get_frame_count_from_metadata(system_path, fallback_count):
     """Get totalFrames from _metadata.json when it exists, else return fallback (from frame folder count)."""
-    import json
     meta = system_path / '_metadata.json'
     if meta.exists():
         try:
@@ -51,6 +51,34 @@ def _get_frame_count_from_metadata(system_path, fallback_count):
         except Exception:
             pass
     return fallback_count
+
+
+def _get_job_info_from_metadata(system_path):
+    """
+    Read job-related fields from _metadata.json when available.
+    Returns dict with keys: jobId, jobCreatedAt, jobExpiresAt (values may be None).
+    """
+    meta = system_path / '_metadata.json'
+    result = {
+        'jobId': None,
+        'jobCreatedAt': None,
+        'jobExpiresAt': None,
+    }
+    if not meta.exists():
+        return result
+
+    try:
+        with open(meta, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            result['jobId'] = data.get('jobId')
+            result['jobCreatedAt'] = data.get('jobCreatedAt')
+            result['jobExpiresAt'] = data.get('jobExpiresAt')
+    except Exception:
+        # Ignore metadata errors; job fields remain None.
+        pass
+
+    return result
 
 
 def _set_display_name(system_path, display_name):
@@ -101,6 +129,9 @@ def list_systems():
                     
                     # Get display name from metadata
                     display_name = _get_display_name(item, item.name)
+
+                    # Get job info from _metadata.json (public analysis job id)
+                    job_info = _get_job_info_from_metadata(item)
                     
                     systems.append({
                         'id': item.name,
@@ -110,7 +141,10 @@ def list_systems():
                         'chain1': chain1,
                         'chain2': chain2,
                         'dateCreated': date_created,
-                        'status': 'ready'  # All loaded systems are ready
+                        'status': 'ready',  # All loaded systems are ready
+                        'jobId': job_info['jobId'],
+                        'jobCreatedAt': job_info['jobCreatedAt'],
+                        'jobExpiresAt': job_info['jobExpiresAt'],
                     })
         
         # Sort by name
@@ -143,6 +177,9 @@ def get_system(system_id):
         
         # Get display name from metadata if exists
         display_name = _get_display_name(system_path, system_id)
+
+        # Get job info from _metadata.json (public analysis job id)
+        job_info = _get_job_info_from_metadata(system_path)
         
         # Get folder modification time
         mod_time = os.path.getmtime(system_path)
@@ -156,7 +193,10 @@ def get_system(system_id):
             'chain1': chain1,
             'chain2': chain2,
             'dateCreated': date_created,
-            'status': 'ready'
+            'status': 'ready',
+            'jobId': job_info['jobId'],
+            'jobCreatedAt': job_info['jobCreatedAt'],
+            'jobExpiresAt': job_info['jobExpiresAt'],
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -28,6 +28,7 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
 import { useDataStore } from '../stores/dataStore'
 
 const props = defineProps({
@@ -40,9 +41,18 @@ const props = defineProps({
 const emit = defineEmits(['close', 'select-system'])
 
 const dataStore = useDataStore()
+const router = useRouter()
 
 const selectSystem = async (systemId) => {
   await dataStore.setCurrentSystem(systemId)
+
+  const system = dataStore.systems.find(s => s.id === systemId)
+  if (system && system.jobId) {
+    router.push({ name: 'Analysis', params: { jobId: system.jobId } })
+  } else {
+    router.push({ name: 'Analysis' })
+  }
+
   emit('select-system', systemId)
   emit('close')
 }

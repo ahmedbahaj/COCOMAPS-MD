@@ -53,6 +53,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useDataStore } from '../stores/dataStore'
 import ChartSelector from '../components/ChartSelector.vue'
 import ControlsPanel from '../components/ControlsPanel.vue'
@@ -64,6 +65,8 @@ import SystemSidebar from '../components/SystemSidebar.vue'
 import AppFooter from '../components/AppFooter.vue'
 
 const dataStore = useDataStore()
+const route = useRoute()
+const router = useRouter()
 const sidebarOpen = ref(false)
 const uploadModal = ref(null)
 
@@ -79,9 +82,24 @@ const openUploadModal = () => {
 
 onMounted(async () => {
   await dataStore.loadSystems()
-  // Set first system as default if available
+
+  const jobId = route.params.jobId
+
+  if (jobId && dataStore.systems.length > 0) {
+    const systemForJob = dataStore.systems.find(s => s.jobId === jobId)
+    if (systemForJob) {
+      await dataStore.setCurrentSystem(systemForJob.id)
+      return
+    }
+  }
+
+  // Fallback: set first system as default if available
   if (dataStore.systems.length > 0 && !dataStore.currentSystem) {
-    await dataStore.setCurrentSystem(dataStore.systems[0].id)
+    const first = dataStore.systems[0]
+    await dataStore.setCurrentSystem(first.id)
+    if (first.jobId) {
+      router.replace({ name: 'Analysis', params: { jobId: first.jobId } })
+    }
   }
 })
 </script>
