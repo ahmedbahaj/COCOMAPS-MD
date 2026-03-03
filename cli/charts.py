@@ -389,10 +389,22 @@ def generate_area_chart(
 
     x_title = f'Time ({time_unit})' if time_unit else 'Frame'
 
+    total_stats = calc_stats(total_bsa)
+    polar_stats = calc_stats(polar_bsa)
+    nonpolar_stats = calc_stats(nonpolar_bsa)
+
+    def build_legend_name(base_name, color, stats):
+        if not show_stats:
+            return base_name
+        return (
+            f'{base_name} <span style="color:{color};font-weight:600">'
+            f'(Mean = {stats["mean"]:.2f}, ±Std = {stats["stdDev"]:.2f})</span>'
+        )
+
     series = [
         {
             'id': 'total-bsa',
-            'name': 'Total BSA',
+            'name': build_legend_name('Total BSA', '#3B6EF5', total_stats),
             'data': total_bsa,
             'color': '#3B6EF5',
             'dashStyle': 'Solid',
@@ -401,7 +413,7 @@ def generate_area_chart(
         },
         {
             'id': 'polar-bsa',
-            'name': 'Total POLAR Buried Area',
+            'name': build_legend_name('Total POLAR Buried Area', '#FF3B30', polar_stats),
             'data': polar_bsa,
             'color': '#FF3B30',
             'dashStyle': 'Dash',
@@ -410,7 +422,7 @@ def generate_area_chart(
         },
         {
             'id': 'nonpolar-bsa',
-            'name': 'Total NON POLAR Buried Area',
+            'name': build_legend_name('Total NON POLAR Buried Area', '#34C759', nonpolar_stats),
             'data': nonpolar_bsa,
             'color': '#34C759',
             'dashStyle': 'Dot',
@@ -420,12 +432,11 @@ def generate_area_chart(
     ]
 
     if show_stats:
-        for base_id, data, color in [
-            ('total-bsa', total_bsa, '#3B6EF5'),
-            ('polar-bsa', polar_bsa, '#FF3B30'),
-            ('nonpolar-bsa', nonpolar_bsa, '#34C759'),
+        for base_id, stats, data, color in [
+            ('total-bsa', total_stats, total_bsa, '#3B6EF5'),
+            ('polar-bsa', polar_stats, polar_bsa, '#FF3B30'),
+            ('nonpolar-bsa', nonpolar_stats, nonpolar_bsa, '#34C759'),
         ]:
-            stats = calc_stats(data)
             if stats['stdDev'] > 0:
                 range_data = [[i, stats['lower'], stats['upper']] for i in range(len(data))]
                 series.append({
@@ -472,6 +483,7 @@ def generate_area_chart(
             'align': 'center',
             'verticalAlign': 'top',
             'layout': 'horizontal',
+            'useHTML': True,
             'itemStyle': {'fontSize': '14px', 'fontWeight': '500', 'color': '#1d1d1f'},
         },
         'plotOptions': {

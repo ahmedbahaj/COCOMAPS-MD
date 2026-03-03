@@ -84,6 +84,11 @@ const updateChart = () => {
   const polarStats = calculateStats(polarBSAData)
   const nonPolarStats = calculateStats(nonPolarBSAData)
 
+  const buildLegendName = (baseName, color, stats) => {
+    if (!showStats.value) return baseName
+    return `${baseName} <span style="color:${color};font-weight:600">(Mean = ${stats.mean.toFixed(2)}, ±Std = ${stats.stdDev.toFixed(2)})</span>`
+  }
+
   const buildRangeSeries = (id, color, stats, baseData) => {
     if (!stats.stdDev || stats.stdDev === 0) return null
     const areaData = baseData.map((_, index) => [index, stats.lower, stats.upper])
@@ -162,6 +167,7 @@ const updateChart = () => {
       align: 'center',
       verticalAlign: 'top',
       layout: 'horizontal',
+      useHTML: true,
       itemStyle: {
         fontSize: '14px',
         fontWeight: '500',
@@ -187,7 +193,7 @@ const updateChart = () => {
     },
     series: [{
       id: 'total-bsa-line',
-      name: 'Total BSA',
+      name: buildLegendName('Total BSA', '#3B6EF5', totalStats),
       data: totalBSAData,
       color: '#3B6EF5',
       dashStyle: 'Solid',
@@ -197,7 +203,7 @@ const updateChart = () => {
       }
     }, {
       id: 'polar-bsa-line',
-      name: 'Total POLAR Buried Area',
+      name: buildLegendName('Total POLAR Buried Area', '#FF3B30', polarStats),
       data: polarBSAData,
       color: '#FF3B30',
       dashStyle: 'Dash',
@@ -207,7 +213,7 @@ const updateChart = () => {
       }
     }, {
       id: 'nonpolar-bsa-line',
-      name: 'Total NON POLAR Buried Area',
+      name: buildLegendName('Total NON POLAR Buried Area', '#34C759', nonPolarStats),
       data: nonPolarBSAData,
       color: '#34C759',
       dashStyle: 'Dot',
@@ -238,7 +244,8 @@ const updateChart = () => {
         sortedPoints.forEach(point => {
           const frameIndex = point.point?.index ?? 0
           const frameData = sortedAreaData[frameIndex]
-          const percentField = PERCENT_FIELD_MAP[point.series.name]
+          const baseName = point.series.name.replace(/<span[\s\S]*$/, '').trim()
+          const percentField = PERCENT_FIELD_MAP[baseName]
           const percentValue = showPercentages.value && frameData && percentField ? frameData[percentField] : null
           const percentText = percentValue !== null && percentValue !== undefined
             ? ` (${percentValue.toFixed(2)}%)`
