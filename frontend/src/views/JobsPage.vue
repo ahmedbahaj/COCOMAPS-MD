@@ -270,16 +270,15 @@ const loadAllJobs = async () => {
         dateCreated: system.dateCreated,
         frames: system.frames,
         status: system.status || 'ready',
-        // Analysis job identifier (from _metadata.json)
+        // Public analysis jobId (canonical link); from system or from backend job record
         jobId: system.jobId || null,
-        // Backend processing job fields (not used for completed systems)
         job_id: null,
         step_label: null,
         progress: 100
       })
     }
 
-    // Overlay active/recent jobs (these have progress info)
+    // Overlay active/recent jobs (these have progress info); for completed, keep analysis_job_id when present
     for (const job of jobs) {
       const pdbName = job.pdb_name
       const isActive = !['completed', 'failed'].includes(job.status)
@@ -310,8 +309,11 @@ const loadAllJobs = async () => {
             progress: job.progress || 0
           })
         }
+      } else if (job.status === 'completed' && pdbName && merged.has(pdbName)) {
+        // Prefer backend's public analysis_job_id (canonical) on the system row
+        const row = merged.get(pdbName)
+        if (job.analysis_job_id) row.jobId = job.analysis_job_id
       }
-      // completed jobs are already covered by the systems list
     }
 
     allJobs.value = Array.from(merged.values())

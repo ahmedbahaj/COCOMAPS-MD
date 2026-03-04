@@ -441,21 +441,24 @@ const pollStatus = (jobId) => {
         // Store timeUnit in dataStore for charts to use
         dataStore.setTimeUnit(advancedSettings.value.timeUnit)
 
-        // Resolve the completed system and its public analysis jobId
-        try {
-          const systems = await api.getSystems()
-          const systemId = status.pdb_name || jobId
-          const system = systems.find(s => s.id === systemId)
-
-          if (system && system.jobId) {
-            router.push({ name: 'Analysis', params: { jobId: system.jobId } })
-          } else {
-            // Fallback: go to Jobs page if we can't resolve a jobId
+        // Prefer public analysis jobId from backend (canonical); else resolve from systems
+        const analysisJobId = status.analysis_job_id
+        if (analysisJobId) {
+          router.push({ name: 'Analysis', params: { jobId: analysisJobId } })
+        } else {
+          try {
+            const systems = await api.getSystems()
+            const systemId = status.pdb_name || jobId
+            const system = systems.find(s => s.id === systemId)
+            if (system && system.jobId) {
+              router.push({ name: 'Analysis', params: { jobId: system.jobId } })
+            } else {
+              router.push({ name: 'Jobs' })
+            }
+          } catch (e) {
+            console.error('Failed to resolve system/jobId after completion:', e)
             router.push({ name: 'Jobs' })
           }
-        } catch (e) {
-          console.error('Failed to resolve system/jobId after completion:', e)
-          router.push({ name: 'Jobs' })
         }
       } else if (status.status === 'failed') {
         clearInterval(statusPollInterval)

@@ -350,11 +350,23 @@ def process_pdb_async(app, job_id, pdb_file, pdb_name, use_reduce=True, chain1='
             except Exception as e:
                 print(f"[jobs] Warning: CSV aggregation failed: {e}")
 
-            # Done!
+            # Attach public analysis jobId (from _metadata.json) so frontend can link to /analysis/<jobId>
+            analysis_job_id = None
+            metadata_path = os.path.join(system_dir, '_metadata.json')
+            if os.path.isfile(metadata_path):
+                try:
+                    with open(metadata_path, 'r', encoding='utf-8') as f:
+                        meta = json.load(f)
+                    analysis_job_id = meta.get('jobId') if isinstance(meta.get('jobId'), str) else None
+                except Exception:
+                    pass
+
+            # Done! Store public jobId so API and frontend use it as the canonical link.
             _update_job(app, job_id,
                         status='completed',
                         progress=100,
-                        step_label='Completed')
+                        step_label='Completed',
+                        analysis_job_id=analysis_job_id)
 
         except Exception as e:
             _update_job(app, job_id,
