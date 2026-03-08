@@ -135,7 +135,7 @@ def run_pipeline(
         shutil.copy(pdb_file, dest)
 
     # Rename waters helper
-    from analyze_pdb import rename_waters_to_hoh
+    from engine import rename_waters_to_hoh
 
     import MDAnalysis as mda
 
@@ -167,7 +167,7 @@ def run_pipeline(
                 u = mda.Universe(tmp_frame)
 
                 if select_interface:
-                    from interface_selector import get_atom_selections, select_interface_atoms
+                    from engine import get_atom_selections, select_interface_atoms
                     selections = get_atom_selections(u, chain_a, chain_b)
                     result = select_interface_atoms(
                         u, selections, chain_a, chain_b, interface_cutoff, water_cutoff
@@ -299,7 +299,7 @@ def run_pipeline(
     console.print("\n[bold cyan]STEP 4/5[/bold cyan] — Running conserved island analysis …")
 
     try:
-        from conserved_islands import run_conserved_islands
+        from engine import run_conserved_islands
         run_conserved_islands(
             output_dir,
             min_consistency=0.70,
@@ -316,7 +316,7 @@ def run_pipeline(
     console.print("\n[bold cyan]STEP 5/5[/bold cyan] — Aggregating system CSV files …")
 
     try:
-        from aggregate_csv import aggregate_system
+        from engine import aggregate_system
         aggregate_system(output_dir, verbose=False)
         console.print("  [green]✓[/green] CSV aggregation complete")
     except Exception as e:

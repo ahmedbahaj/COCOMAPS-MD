@@ -94,4 +94,3 @@ def ensure_job_fields(
         metadata["jobExpiresAt"] = isoformat_utc(now + timedelta(days=int(days_valid)))
 
     return metadata
-

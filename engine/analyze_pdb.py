@@ -16,17 +16,27 @@ import json
 import shutil
 from pathlib import Path
 from datetime import datetime
-from distutils.util import strtobool
 import MDAnalysis as mda
+
+try:
+    from distutils.util import strtobool
+except ImportError:
+    def strtobool(val):
+        val = str(val).lower().strip()
+        if val in ('y', 'yes', 't', 'true', '1', 'on'):
+            return 1
+        if val in ('n', 'no', 'f', 'false', '0', 'off'):
+            return 0
+        raise ValueError(f"invalid truth value: {val!r}")
 from MDAnalysis.coordinates import PDB
 from dotenv import load_dotenv
 
-# Load .env file from the same directory as this script
-env_path = Path(__file__).parent / '.env'
-load_dotenv(env_path)
+# Load .env from project root (parent of engine/)
+_env_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(_env_path)
 
 # Import pure selection functions from interface_selector
-from interface_selector import (
+from .interface_selector import (
     get_atom_selections,
     select_interface_atoms,
     get_selection_summary
@@ -557,7 +567,7 @@ def run_pipeline(
         if progress_callback:
             progress_callback(step_label='Running conserved island analysis', progress=92)
 
-        from conserved_islands import run_conserved_islands
+        from .conserved_islands import run_conserved_islands
         run_conserved_islands(
             output_dir,
             min_consistency=0.70,
@@ -568,7 +578,7 @@ def run_pipeline(
         if progress_callback:
             progress_callback(step_label='Aggregating results', progress=96)
 
-        from aggregate_csv import aggregate_system
+        from .aggregate_csv import aggregate_system
         aggregate_system(output_dir, verbose=verbose)
 
         if progress_callback:
@@ -586,19 +596,19 @@ def main():
         epilog="""
 Examples:
   # Full pipeline (interface selection is always on)
-  python analyze_pdb.py systems/my_protein.pdb
-  
+  python -m engine.analyze_pdb systems/my_protein.pdb
+
   # Interface selection with custom cutoff (default: 5Å)
-  python analyze_pdb.py systems/my_protein.pdb --interface-cutoff 7.0
-  
+  python -m engine.analyze_pdb systems/my_protein.pdb --interface-cutoff 7.0
+
   # Separate cutoffs for protein interface and water bridges
-  python analyze_pdb.py systems/my_protein.pdb --interface-cutoff 5.0 --water-cutoff 3.5
-  
+  python -m engine.analyze_pdb systems/my_protein.pdb --interface-cutoff 5.0 --water-cutoff 3.5
+
   # Enable reduce (adds hydrogens, slower)
-  python analyze_pdb.py systems/my_protein.pdb --use-reduce
-  
+  python -m engine.analyze_pdb systems/my_protein.pdb --use-reduce
+
   # Custom output directory
-  python analyze_pdb.py systems/my_protein.pdb -o systems/my_output
+  python -m engine.analyze_pdb systems/my_protein.pdb -o systems/my_output
 
 Interface Selection (always on):
   Each frame is processed with per-frame interface selection:
@@ -714,7 +724,7 @@ Environment Variables:
         step_num += 1
 
         # STEP 4: Conserved island analysis
-        from conserved_islands import run_conserved_islands
+        from .conserved_islands import run_conserved_islands
         run_conserved_islands(
             output_dir,
             min_consistency=0.70,
@@ -725,7 +735,7 @@ Environment Variables:
         step_num += 1
 
         # STEP 5: Aggregate per-frame CSVs into system-level files
-        from aggregate_csv import aggregate_system
+        from .aggregate_csv import aggregate_system
         print(f"\n{'='*80}")
         print(f"STEP {step_num}: Aggregating system CSVs")
         print(f"{'='*80}")

@@ -19,13 +19,13 @@ import sys
 from pathlib import Path
 from typing import Set
 
-# Ensure project root (where job_id.py lives) is on sys.path
+# Ensure project root (where engine package lives) is on sys.path
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from job_id import ensure_job_fields, generate_job_id, isoformat_utc
+from engine.job_id import ensure_job_fields, generate_job_id, isoformat_utc
 
 
 def update_metadata_files(systems_dir: Path, days_valid: int = 60) -> None:

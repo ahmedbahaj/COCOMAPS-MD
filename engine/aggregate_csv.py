@@ -16,7 +16,7 @@ import re
 from pathlib import Path
 from typing import Optional, Union
 
-from job_id import ensure_job_fields
+from .job_id import ensure_job_fields
 
 
 def _extract_first_number(value_str):

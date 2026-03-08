@@ -13,7 +13,7 @@ import threading
 from datetime import datetime
 from distutils.util import strtobool
 
-# Ensure project root is on path for analyze_pdb (engine)
+# Ensure project root is on path for engine package
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
@@ -91,8 +91,8 @@ def process_pdb_async(app, job_id, pdb_file, pdb_name, use_reduce=True, chain1='
             upload_folder = app.config['UPLOAD_FOLDER']
             system_dir = os.path.join(upload_folder, 'systems', pdb_name)
 
-            # Run the full pipeline (engine lives in analyze_pdb.py only)
-            from analyze_pdb import run_pipeline
+            # Run the full pipeline (engine package)
+            from engine import run_pipeline
 
             def progress_callback(step_label, progress):
                 _update_job(app, job_id, step_label=step_label, progress=progress)
@@ -185,7 +185,7 @@ def upload_file():
 
         # Save file FIRST, before reading request.form — multipart stream is consumed in order,
         # so reading form fields first can leave the file empty.
-        # Use a temp dir + original filename so analyze_pdb.process_frames() copies it with the right name.
+        # Use a temp dir + original filename so engine.process_frames() copies it with the right name.
         temp_dir = tempfile.mkdtemp(prefix='pdb_upload_')
         filepath = os.path.join(temp_dir, filename)
         file.save(filepath)

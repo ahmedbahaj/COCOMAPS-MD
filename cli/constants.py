@@ -71,7 +71,7 @@ def get_interaction_color_hex(type_string: str) -> str:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Default CoCoMaps parameters (same as create_input_jsons in analyze_pdb.py)
+# Default CoCoMaps parameters (same as create_input_jsons in engine.analyze_pdb)
 # ──────────────────────────────────────────────────────────────────────────────
 DEFAULT_COCOMAPS_PARAMS = {
     'HBOND_DIST': 3.9,
