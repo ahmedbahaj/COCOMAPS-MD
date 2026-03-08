@@ -1,3 +1,19 @@
+""""
+Generate a jobId and expiry info to _metadata.json if they are not already present.
+usage: python generate_id.py <systems_dir>
+
+<systems_dir> is the directory containing the systems to process.
+
+This script will add a jobId and expiry info to _metadata.json if they are not already present.
+
+The jobId is a unique identifier for the system and is used to track the system.
+
+The expiry info is the date and time when the jobId will expire.
+"""
+
+
+
+
 import json
 import sys
 from pathlib import Path
