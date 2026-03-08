@@ -10,6 +10,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional, Union
 
 import pandas as pd
 import networkx as nx
@@ -220,7 +221,7 @@ def process_final_files(
 # Multi-frame conserved island detection
 # ---------------------------------------------------------------------------
 
-def _build_frame_graph(csv_path: Path) -> nx.Graph | None:
+def _build_frame_graph(csv_path: Path) -> Optional[nx.Graph]:
     """Read a single final_file.csv and return its interaction graph, or None on failure."""
     df = pd.read_csv(csv_path, low_memory=False)
     if df is None or df.empty:
@@ -244,7 +245,7 @@ def _build_frame_graph(csv_path: Path) -> nx.Graph | None:
 
 
 def count_conserved_islands(
-    system_dir: str | Path,
+    system_dir: Union[str, Path],
     min_consistency: float = 0.70,
     min_island_size: int = 3,
     debug: bool = False,
@@ -316,11 +317,11 @@ def count_conserved_islands(
 
 
 def run_conserved_islands(
-    output_dir: str | Path,
+    output_dir: Union[str, Path],
     min_consistency: float = 0.70,
     min_island_size: int = 3,
     verbose: bool = True,
-    step_num: int | None = None,
+    step_num: Optional[int] = None,
     debug: bool = False,
 ) -> list[dict]:
     """

@@ -81,20 +81,22 @@ def _get_job_info_from_metadata(system_path):
     return result
 
 
-def _set_display_name(system_path, display_name):
-    """Set display name in metadata file"""
-    import json
+def _set_display_name(system_path, display_name, owner_email=None):
+    """Set display name and optionally owner email in .metadata.json"""
     metadata_file = system_path / '.metadata.json'
     metadata = {}
     if metadata_file.exists():
         try:
-            with open(metadata_file, 'r') as f:
+            with open(metadata_file, 'r', encoding='utf-8') as f:
                 metadata = json.load(f)
-        except:
+        except Exception:
             pass
     metadata['displayName'] = display_name
-    with open(metadata_file, 'w') as f:
-        json.dump(metadata, f)
+    if owner_email is not None:
+        metadata['ownerEmail'] = owner_email
+    with open(metadata_file, 'w', encoding='utf-8') as f:
+        json.dump(metadata, f, indent=2)
+        f.write('\n')
 
 
 @bp.route('/systems', methods=['GET'])

@@ -157,6 +157,8 @@ export default {
    * Upload file with full configuration options
    * @param {File} file - The PDB file to upload
    * @param {Object} options - Configuration options
+   * @param {string} options.jobName - Display name for the job (stored in .metadata.json)
+   * @param {string} options.email - User email (stored in .metadata.json)
    * @param {string} options.chain1 - First chain ID
    * @param {string} options.chain2 - Second chain ID
    * @param {boolean} options.useReduce - Whether to use reduce preprocessing
@@ -169,6 +171,8 @@ export default {
   async uploadFileWithOptions(file, options, onProgress) {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('job_name', options.jobName ?? '')
+    formData.append('email', options.email ?? '')
     formData.append('chain1', options.chain1)
     formData.append('chain2', options.chain2)
     formData.append('reduce', options.useReduce ? 'true' : 'false')

@@ -11,6 +11,40 @@
     
     <Transition name="slide">
       <div v-if="isExpanded" class="settings-panel">
+        <!-- Job Name -->
+        <div class="setting-row">
+          <div class="setting-label">
+            <span>Job Name</span>
+            <TooltipIcon text="Display name for this analysis. Shown in the jobs list and analysis views. Defaults to the PDB filename." />
+          </div>
+          <div class="setting-control full-width">
+            <input
+              type="text"
+              v-model="settings.jobName"
+              :placeholder="defaultJobName || 'e.g. my_trajectory'"
+              class="text-input job-name-input"
+            />
+          </div>
+        </div>
+
+        <!-- Email Address -->
+        <div class="setting-row">
+          <div class="setting-label">
+            <span>Email Address</span>
+            <TooltipIcon text="Your email for this job." />
+          </div>
+          <div class="setting-control full-width">
+            <input
+              type="email"
+              v-model="settings.email"
+              placeholder="you@example.com"
+              class="text-input email-input"
+            />
+          </div>
+        </div>
+
+        <div class="setting-section-divider"></div>
+
         <!-- Use Reduce Toggle -->
         <div class="setting-row">
           <div class="setting-label">
@@ -123,6 +157,8 @@ const props = defineProps({
   modelValue: {
     type: Object,
     default: () => ({
+      jobName: '',
+      email: '',
       interfaceCutoff: 6.0,
       waterCutoff: 5.0,
       useReduce: false,
@@ -131,6 +167,11 @@ const props = defineProps({
       startFrame: 1,
       endFrame: 50
     })
+  },
+  /** PDB file stem; used as placeholder and to suggest default job name */
+  defaultJobName: {
+    type: String,
+    default: ''
   },
   totalFrames: {
     type: Number,
@@ -145,6 +186,8 @@ const props = defineProps({
 const isExpanded = ref(false)
 
 const settings = reactive({
+  jobName: props.modelValue.jobName ?? '',
+  email: props.modelValue.email ?? '',
   interfaceCutoff: props.modelValue.interfaceCutoff ?? 6.0,
   waterCutoff: props.modelValue.waterCutoff ?? 5.0,
   useReduce: props.modelValue.useReduce ?? false,
@@ -167,8 +210,17 @@ watch(frameInterval, (newVal) => {
   settings.endFrame = newVal.endFrame
 }, { deep: true })
 
+// When defaultJobName (PDB stem) changes, set jobName to it so the field shows the default
+watch(() => props.defaultJobName, (stem) => {
+  if (stem !== undefined && stem !== null && stem !== '') {
+    settings.jobName = stem
+  }
+}, { immediate: true })
+
 // Watch for external settings updates (e.g., from parent)
 watch(() => props.modelValue, (newVal) => {
+  if (newVal.jobName !== undefined) settings.jobName = newVal.jobName
+  if (newVal.email !== undefined) settings.email = newVal.email
   if (newVal.timeUnit !== undefined) settings.timeUnit = newVal.timeUnit
   if (newVal.frameStep !== undefined) settings.frameStep = newVal.frameStep
   if (newVal.useCustomInterval !== undefined) settings.useCustomInterval = newVal.useCustomInterval
@@ -286,6 +338,18 @@ watch(settings, (newSettings) => {
   background: #ffffff;
   font-family: inherit;
   transition: all 0.15s ease;
+}
+
+.setting-control.full-width {
+  flex: 1;
+  min-width: 0;
+}
+
+.job-name-input,
+.email-input {
+  width: 100%;
+  min-width: 180px;
+  text-align: left;
 }
 
 .text-input:focus {

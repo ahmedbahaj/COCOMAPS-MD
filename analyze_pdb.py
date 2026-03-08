@@ -68,7 +68,7 @@ def rename_waters_to_hoh(atoms):
 
 def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
                    select_interface=False, cutoff=5.0, water_cutoff=5.0,
-                   verbose=True, step_num=None):
+                   verbose=True, step_num=None, start_frame=0, end_frame=-1, frame_step=1):
     """
     Process PDB file: split into frames with optional interface selection.
     
@@ -95,6 +95,12 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
         Whether to print progress messages
     step_num : int or None
         Step number for display (e.g., "STEP 1:")
+    start_frame : int
+        0-based index of first frame to process (default 0)
+    end_frame : int
+        0-based exclusive end index, or -1 for all frames (default -1)
+    frame_step : int
+        Step between frames (default 1)
     
     Returns:
     --------
@@ -169,15 +175,25 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
                 raw_frames.append(''.join(current_frame_lines))
 
     num_frames = len(raw_frames)
+    if end_frame == -1 or end_frame > num_frames:
+        end_frame = num_frames
+    if start_frame < 0:
+        start_frame = 0
+    frame_step = max(1, frame_step)
+    frames_to_process = list(range(start_frame, end_frame, frame_step))
+    num_to_process = len(frames_to_process)
 
     if verbose:
         print(f"Loaded structure with {num_frames} frame(s)")
+        if num_to_process != num_frames:
+            print(f"Processing frames {start_frame + 1} to {end_frame} (step {frame_step}) -> {num_to_process} frames")
 
-    # Load first frame to get chain/atom info for display
+    # Load first frame to process for chain/atom info for display
+    first_idx = frames_to_process[0] if frames_to_process else 0
     _tmp_first = _tmpmod.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
     try:
-        _tmp_first.write(raw_frames[0])
-        if not raw_frames[0].rstrip().endswith('END'):
+        _tmp_first.write(raw_frames[first_idx])
+        if not raw_frames[first_idx].rstrip().endswith('END'):
             _tmp_first.write('END\n')
         _tmp_first.close()
         _first_universe = mda.Universe(_tmp_first.name)
@@ -202,9 +218,9 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
     # Track statistics
     frame_stats = []
 
-    # Process each frame from raw text
-    for frame_idx in range(num_frames):
-        frame_num = frame_idx + 1
+    # Process each frame from raw text (only frames in frames_to_process)
+    for out_idx, frame_idx in enumerate(frames_to_process):
+        frame_num = out_idx + 1
         raw_text = raw_frames[frame_idx]
 
         # Write raw frame to a temp file and load it
@@ -277,7 +293,7 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
         log_file = os.path.join(output_dir, "interface_selection_summary.txt")
         _write_summary_log(
             pdb_file, output_dir, log_file, chain_a, chain_b, cutoff, water_cutoff,
-            num_frames, selections, frame_stats
+            num_to_process, selections, frame_stats
         )
         if verbose:
             print(f"\nSummary log: {log_file}")
@@ -286,16 +302,16 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
         print(f"\n{'='*60}")
         print(f"Frame Processing Complete")
         print(f"{'='*60}")
-        print(f"Frames processed: {num_frames}")
+        print(f"Frames processed: {num_to_process}")
         print(f"Time elapsed: {elapsed:.2f} seconds")
-        if select_interface:
-            avg_residues = sum(s['interface_residues'] for s in frame_stats) / num_frames
-            avg_total = sum(s['total_atoms'] for s in frame_stats) / num_frames
+        if select_interface and frame_stats:
+            avg_residues = sum(s['interface_residues'] for s in frame_stats) / len(frame_stats)
+            avg_total = sum(s['total_atoms'] for s in frame_stats) / len(frame_stats)
             print(f"Average interface residues: {avg_residues:.1f}")
             print(f"Average total atoms: {avg_total:.1f}")
         print(f"Output directory: {output_dir}")
     
-    return output_dir, num_frames, frame_stats
+    return output_dir, num_to_process, frame_stats
 
 
 def _write_summary_log(input_pdb, output_dir, log_file, chain_a, chain_b,
@@ -365,7 +381,7 @@ def _write_summary_log(input_pdb, output_dir, log_file, chain_a, chain_b,
         f.write("=" * 80 + "\n")
 
 
-def create_input_jsons(output_dir, frame_count, chains=None):
+def create_input_jsons(output_dir, frame_count, chains=None, interface_cutoff=5.0):
     """Create example_input.json files for each frame"""
     if chains is None:
         chains = DEFAULT_CHAINS
@@ -388,7 +404,7 @@ def create_input_jsons(output_dir, frame_count, chains=None):
             "WBRIDGE_DIST": 3.9,
             "CH_ON_DIST": 3.6,
             "CH_ON_ANGLE": 110,
-            "CUT_OFF": 5,
+            "CUT_OFF": interface_cutoff,
             "APOLAR_TOLERANCE": 0.5,
             "POLAR_TOLERANCE": 0.5,
             "PI_PI_DIST": 5.5,
@@ -415,8 +431,9 @@ def create_input_jsons(output_dir, frame_count, chains=None):
     print(f"✓ Created {frame_count} input JSON files")
 
 
-def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None):
-    """Run CoCoMaps Docker analysis on all frames"""
+def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_callback=None):
+    """Run CoCoMaps Docker analysis on all frames.
+    progress_callback: optional callable(step_label, progress_pct) called per frame."""
     step_label = f"STEP {step_num}: " if step_num else ""
     print(f"\n{'='*80}")
     print(f"{step_label}Running CoCoMaps Analysis ({'WITH' if use_reduce else 'WITHOUT'} reduce)")
@@ -436,13 +453,17 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None):
                 pass
     
     frame_numbers = sorted(frame_numbers)
-    print(f"Found {len(frame_numbers)} frames to process\n")
+    total = len(frame_numbers)
+    print(f"Found {total} frames to process\n")
     
     start_time = time.time()
     successful = 0
     failed = 0
     
-    for i in frame_numbers:
+    for idx, i in enumerate(frame_numbers):
+        if progress_callback:
+            progress_callback(step_label=f'Analyzing frame {idx + 1}/{total}', progress=30 + int((idx + 1) / total * 60))
+
         frame_folder = f"frame_{i}"
         frame_path = os.path.join(output_dir, frame_folder)
         
@@ -476,9 +497,86 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None):
     print(f"Successful: {successful}/{len(frame_numbers)}")
     print(f"Failed: {failed}/{len(frame_numbers)}")
     print(f"Total time: {elapsed:.2f} seconds ({elapsed/60:.1f} minutes)")
-    print(f"Average time per frame: {elapsed/len(frame_numbers):.2f} seconds")
+    if frame_numbers:
+        print(f"Average time per frame: {elapsed/len(frame_numbers):.2f} seconds")
     
     return elapsed, successful, failed
+
+
+def run_pipeline(
+    pdb_file,
+    output_dir,
+    chain_a='A',
+    chain_b='B',
+    interface_cutoff=5.0,
+    water_cutoff=None,
+    use_reduce=False,
+    start_frame=0,
+    end_frame=-1,
+    frame_step=1,
+    progress_callback=None,
+    verbose=True,
+):
+    """
+    Run the full analysis pipeline (engine entry point).
+    Used by both the CLI (main) and the web backend.
+
+    progress_callback: optional callable(step_label, progress_pct) for UI updates (e.g. web job status).
+    Returns: (frame_count, None) on success, or (0, error_message) on failure.
+    """
+    if water_cutoff is None:
+        water_cutoff = interface_cutoff
+    try:
+        if progress_callback:
+            progress_callback(step_label='Preprocessing file', progress=0)
+
+        output_dir, frame_count, frame_stats = process_frames(
+            pdb_file,
+            output_dir,
+            chain_a=chain_a,
+            chain_b=chain_b,
+            select_interface=True,
+            cutoff=interface_cutoff,
+            water_cutoff=water_cutoff,
+            verbose=verbose,
+            start_frame=start_frame,
+            end_frame=end_frame,
+            frame_step=frame_step,
+        )
+
+        if frame_count == 0:
+            return 0, 'No frames to process. Check MODEL/ENDMDL/END records and selected chains.'
+
+        if frame_stats and all(s.get('total_atoms', 0) == 0 for s in frame_stats):
+            return 0, f'No interface atoms in any frame. Check chain IDs (e.g. 1ULL uses A and B).'
+
+        create_input_jsons(output_dir, frame_count, [chain_a, chain_b], interface_cutoff=interface_cutoff)
+
+        run_cocomaps_analysis(output_dir, use_reduce=use_reduce, step_num=None, progress_callback=progress_callback)
+
+        if progress_callback:
+            progress_callback(step_label='Running conserved island analysis', progress=92)
+
+        from conserved_islands import run_conserved_islands
+        run_conserved_islands(
+            output_dir,
+            min_consistency=0.70,
+            min_island_size=2,
+            verbose=verbose,
+        )
+
+        if progress_callback:
+            progress_callback(step_label='Aggregating results', progress=96)
+
+        from aggregate_csv import aggregate_system
+        aggregate_system(output_dir, verbose=verbose)
+
+        if progress_callback:
+            progress_callback(step_label='Completed', progress=100)
+
+        return frame_count, None
+    except Exception as e:
+        return 0, str(e)
 
 
 def main():
@@ -598,9 +696,16 @@ Environment Variables:
             step_num=step_num
         )
         step_num += 1
-        
+
+        # Fail early if interface selection produced no atoms in any frame (wrong chains)
+        if args.select_interface and frame_stats and all(s.get('total_atoms', 0) == 0 for s in frame_stats):
+            print("\nError: No interface atoms found in any frame.")
+            print("  This usually means the chain IDs do not match the PDB.")
+            print("  Example: 1ULL has chains A (RNA) and B (REV peptide); use: -c A B")
+            return 1
+
         # STEP 2: Create input JSON files
-        create_input_jsons(output_dir, frame_count, args.chains)
+        create_input_jsons(output_dir, frame_count, args.chains, interface_cutoff=args.interface_cutoff)
         
         # STEP 3: Run CoCoMaps
         analysis_time, successful, failed = run_cocomaps_analysis(

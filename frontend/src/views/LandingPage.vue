@@ -128,6 +128,7 @@
           <AdvancedSettings 
             :modelValue="advancedSettings" 
             @update:settings="advancedSettings = $event"
+            :defaultJobName="pdbStem"
             :totalFrames="detectedFrames"
             :maxFrames="50"
           />
@@ -196,6 +197,8 @@ const detectedFrames = ref(0)
 // Configuration state
 const chainSelection = ref({ chain1: '', chain2: '', isValid: false })
 const advancedSettings = ref({
+  jobName: '',
+  email: '',
   interfaceCutoff: 5.0,
   waterCutoff: 5.0,
   useReduce: false,
@@ -205,6 +208,13 @@ const advancedSettings = ref({
   useCustomInterval: false,
   startFrame: 1,
   endFrame: 50
+})
+
+// PDB file stem (filename without .pdb) for default job name
+const pdbStem = computed(() => {
+  const file = uploadedFile.value
+  if (!file || !file.name) return ''
+  return file.name.replace(/\.pdb$/i, '')
 })
 
 // Computed: default step size to cover full trajectory in ~50 frames
@@ -228,9 +238,13 @@ const activeJobId = ref(null)
 let statusPollInterval = null
 
 const canStartAnalysis = computed(() => {
-  return uploadedFile.value && 
-         chainSelection.value.isValid && 
-         detectedChains.value.length >= 2
+  const jobName = (advancedSettings.value.jobName || '').trim()
+  const email = (advancedSettings.value.email || '').trim()
+  return uploadedFile.value &&
+         chainSelection.value.isValid &&
+         detectedChains.value.length >= 2 &&
+         jobName.length > 0 &&
+         email.length > 0
 })
 
 // On mount: check for active job in localStorage or query param
@@ -343,6 +357,8 @@ const resetUpload = () => {
   detectedFrames.value = 0
   chainSelection.value = { chain1: '', chain2: '', isValid: false }
   advancedSettings.value = {
+    jobName: '',
+    email: '',
     interfaceCutoff: 5.0,
     waterCutoff: 5.0,
     useReduce: false,
@@ -375,6 +391,8 @@ const startAnalysis = async () => {
   try {
     // Build options object
     const options = {
+      jobName: (advancedSettings.value.jobName || pdbStem.value || '').trim() || pdbStem.value,
+      email: (advancedSettings.value.email || '').trim(),
       chain1: chainSelection.value.chain1,
       chain2: chainSelection.value.chain2,
       useReduce: advancedSettings.value.useReduce,
@@ -382,18 +400,21 @@ const startAnalysis = async () => {
       waterCutoff: advancedSettings.value.waterCutoff
     }
 
-    // Add frame selection parameters if more than 50 frames
+    // Always send frame range so backend processes the correct number of frames
     if (detectedFrames.value > 50) {
       if (advancedSettings.value.useCustomInterval) {
-        // Use custom interval selection
         options.startFrame = advancedSettings.value.startFrame
         options.endFrame = advancedSettings.value.endFrame
       } else {
-        // Use step-based selection covering entire trajectory
         options.startFrame = 1
         options.endFrame = detectedFrames.value
         options.frameStep = advancedSettings.value.frameStep || defaultStepSize.value
       }
+    } else {
+      // ≤50 frames: send full range explicitly so backend doesn't rely on defaults
+      options.startFrame = 1
+      options.endFrame = detectedFrames.value
+      options.frameStep = 1
     }
 
     // Upload file using the proper API method
