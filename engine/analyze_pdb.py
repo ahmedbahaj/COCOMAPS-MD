@@ -201,14 +201,11 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
     # Load first frame to process for chain/atom info for display
     first_idx = frames_to_process[0] if frames_to_process else 0
     _tmp_first = _tmpmod.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
-    try:
-        _tmp_first.write(raw_frames[first_idx])
-        if not raw_frames[first_idx].rstrip().endswith('END'):
-            _tmp_first.write('END\n')
-        _tmp_first.close()
-        _first_universe = mda.Universe(_tmp_first.name)
-    finally:
-        os.unlink(_tmp_first.name)
+    _tmp_first.write(raw_frames[first_idx])
+    if not raw_frames[first_idx].rstrip().endswith('END'):
+        _tmp_first.write('END\n')
+    _tmp_first.close()
+    _first_universe = mda.Universe(_tmp_first.name)
 
     # Pre-compute atom selections if doing interface selection (from first frame)
     selections = None
@@ -220,7 +217,9 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
             print(f"Chain {chain_b}: {summary['chain_b_atoms']} atoms, {summary['chain_b_heavy']} heavy atoms")
             print(f"Total water molecules: {summary['water_molecules']}")
             print(f"Total metal atoms: {summary['metal_atoms']}")
+    _first_universe.trajectory.close()
     del _first_universe
+    os.unlink(_tmp_first.name)
 
     if verbose:
         print(f"\nProcessing frames...")
@@ -235,14 +234,11 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
 
         # Write raw frame to a temp file and load it
         tmp_frame = _tmpmod.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
-        try:
-            tmp_frame.write(raw_text)
-            if not raw_text.rstrip().endswith('END'):
-                tmp_frame.write('END\n')
-            tmp_frame.close()
-            universe = mda.Universe(tmp_frame.name)
-        finally:
-            os.unlink(tmp_frame.name)
+        tmp_frame.write(raw_text)
+        if not raw_text.rstrip().endswith('END'):
+            tmp_frame.write('END\n')
+        tmp_frame.close()
+        universe = mda.Universe(tmp_frame.name)
 
         if select_interface:
             # Re-compute selections for this frame's universe
@@ -282,6 +278,11 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
             # Write empty PDB file header only
             with open(frame_file, 'w') as f:
                 f.write("REMARK   Empty frame - no interface atoms found\nEND\n")
+
+        # Close the trajectory reader so Windows releases the file lock
+        universe.trajectory.close()
+        del universe
+        os.unlink(tmp_frame.name)
 
         # Track statistics
         stats['frame'] = frame_num
