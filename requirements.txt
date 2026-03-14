@@ -1,6 +1,6 @@
 Flask==3.0.0
 Flask-CORS==4.0.0
-MDAnalysis==2.6.1
+MDAnalysis
 werkzeug==3.0.1
 setuptools
 python-dotenv
