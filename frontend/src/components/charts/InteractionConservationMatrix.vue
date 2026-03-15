@@ -23,7 +23,7 @@
               min="0"
               max="1.0"
               step="0.1"
-              :value="pairConservationThreshold"
+              :value="dataStore.currentThreshold"
               @input="updatePairThreshold"
             />
             <div class="slider-ticks">
@@ -39,7 +39,7 @@
           <div class="slider-value-input">
             <input
               type="number"
-              :value="Math.round(pairConservationThreshold * 100)"
+              :value="Math.round(dataStore.currentThreshold * 100)"
               @input="updatePairThresholdFromInput"
               @blur="validatePairThresholdInput"
               min="0"
@@ -50,7 +50,7 @@
             <span class="percent-symbol">%</span>
           </div>
         </div>
-        <p class="slider-description">Show pairs present in at least {{ Math.round(pairConservationThreshold * 100) }}% of frames</p>
+        <p class="slider-description">Show pairs present in at least {{ Math.round(dataStore.currentThreshold * 100) }}% of frames</p>
       </div>
       
       <!-- Type Conservation Threshold -->
@@ -169,7 +169,7 @@ let chart = null
 const distanceData = ref(null)
 const atomPairDataByPair = ref(new Map()) // Map<pairKey, atomPairData>
 const conservationThreshold = ref(0.5) // Default 50% for type conservation
-const pairConservationThreshold = ref(0.5) // Default 50% for pair conservation (like FilteredHeatmap)
+// pairConservationThreshold now uses dataStore.currentThreshold (shared with ConservationAnalysis)
 const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
   const hiddenTypes = ref(new Set()) // Track hidden interaction types from legend clicks
@@ -203,7 +203,7 @@ const hideTooltip = () => {
 
 // Tooltip descriptions for each metric
 const residueTooltips = computed(() => ({
-  cr: `Count of unique residue pairs present in ≥${Math.round(pairConservationThreshold.value * 100)}% of trajectory frames`,
+  cr: `Count of unique residue pairs present in ≥${Math.round(dataStore.currentThreshold * 100)}% of trajectory frames`,
   count: 'Total number of conservation score samples from all qualifying pairs',
   mean: 'Average pair conservation across all interactions meeting the threshold',
   median: 'Middle value of sorted conservation scores; half above, half below',
@@ -266,16 +266,16 @@ const updateThreshold = (event) => {
   updateChart()
 }
 
-// Pair conservation threshold functions
+// Pair conservation threshold functions — write to shared store
 const updatePairThreshold = (event) => {
-  pairConservationThreshold.value = parseFloat(event.target.value)
+  dataStore.setThreshold(parseFloat(event.target.value))
   updateChart()
 }
 
 const updatePairThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0 && value <= 100) {
-    pairConservationThreshold.value = value / 100
+    dataStore.setThreshold(value / 100)
     updateChart()
   }
 }
@@ -283,13 +283,13 @@ const updatePairThresholdFromInput = (event) => {
 const validatePairThresholdInput = (event) => {
   let value = parseFloat(event.target.value)
   if (isNaN(value)) {
-    event.target.value = Math.round(pairConservationThreshold.value * 100)
+    event.target.value = Math.round(dataStore.currentThreshold * 100)
     return
   }
   // Clamp value between 0 and 100
   value = Math.max(0, Math.min(100, value))
   event.target.value = value
-  pairConservationThreshold.value = value / 100
+  dataStore.setThreshold(value / 100)
   updateChart()
 }
 
@@ -376,14 +376,14 @@ const updateChart = async () => {
   }
 
   // LEVEL 1: Filter pairs by overall conservation (using pairConservationThreshold)
-  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= pairConservationThreshold.value)
+  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= dataStore.currentThreshold)
 
   if (stablePairs.length === 0) {
     if (chart) {
       chart.destroy()
       chart = null
     }
-    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No pairs found with ≥${Math.round(pairConservationThreshold.value * 100)}% conservation.</div>`
+    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No pairs found with ≥${Math.round(dataStore.currentThreshold * 100)}% conservation.</div>`
     return
   }
 
@@ -1144,7 +1144,7 @@ const loadAtomPairDataForAllPairs = async () => {
   if (!dataStore.currentSystem) return
   
   const allInteractions = dataStore.filteredInteractions
-  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= pairConservationThreshold.value)
+  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= dataStore.currentThreshold)
   
   if (stablePairs.length === 0) return
   
@@ -1358,7 +1358,7 @@ watch([
   () => dataStore.totalFrames,
   () => dataStore.currentSystem?.id,
   () => dataStore.selectedInteractionTypes.size,
-  () => pairConservationThreshold.value
+  () => dataStore.currentThreshold
 ], async () => {
   if (dataStore.currentChartType === 'interactionConservationMatrix') {
     if (dataStore.currentSystem?.id && !distanceData.value) {
