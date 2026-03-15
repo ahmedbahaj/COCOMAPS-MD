@@ -158,6 +158,45 @@
           <button type="button" class="toolbar-btn" @click="deselectAllPairs">Deselect all</button>
           <span class="pairs-count">{{ selectedPairKeys.length }} of {{ mostConservedList.length }} selected</span>
         </div>
+        <div class="slider-section">
+          <label for="pairs-conservation-slider" class="slider-label">Pair Conservation Threshold</label>
+          <div class="slider-container">
+            <div class="slider-control">
+              <input
+                id="pairs-conservation-slider"
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                :value="dataStore.currentThreshold"
+                @input="updateThreshold"
+              />
+              <div class="slider-ticks">
+                <span
+                  v-for="tick in conservationTicks"
+                  :key="tick.value"
+                  class="slider-tick"
+                >
+                  <span class="slider-tick-label">{{ tick.label }}</span>
+                </span>
+              </div>
+            </div>
+            <div class="slider-value-input">
+              <input
+                type="number"
+                :value="thresholdPercent"
+                @input="updateThresholdFromInput"
+                @blur="validateThresholdInput"
+                min="0"
+                max="100"
+                step="1"
+                class="value-input"
+              />
+              <span class="percent-symbol">%</span>
+            </div>
+          </div>
+          <p class="slider-description">Show pairs with conservation ≥ {{ thresholdPercent }}%</p>
+        </div>
         <ul class="pairs-list" role="list">
           <li
             v-for="item in mostConservedList"
@@ -302,6 +341,42 @@ const selectedResiduesForViewer = computed(() => {
   if (viewMode.value === 'islands') return selectedIslandResidues.value
   return selectedPairsResidues.value
 })
+
+// --- Pair Conservation Threshold slider ---
+const thresholdPercent = computed(() => Math.round(dataStore.currentThreshold * 100))
+
+const conservationTicks = computed(() => {
+  const ticks = []
+  for (let value = 0; value <= 1.0 + 0.0001; value += 0.1) {
+    ticks.push({
+      value: parseFloat(value.toFixed(2)),
+      label: Math.round(value * 100)
+    })
+  }
+  return ticks
+})
+
+const updateThreshold = (event) => {
+  dataStore.setThreshold(parseFloat(event.target.value))
+}
+
+const updateThresholdFromInput = (event) => {
+  const value = parseFloat(event.target.value)
+  if (!isNaN(value) && value >= 0 && value <= 100) {
+    dataStore.setThreshold(value / 100)
+  }
+}
+
+const validateThresholdInput = (event) => {
+  let value = parseFloat(event.target.value)
+  if (isNaN(value)) {
+    event.target.value = thresholdPercent.value
+    return
+  }
+  value = Math.max(0, Math.min(100, value))
+  event.target.value = value
+  dataStore.setThreshold(value / 100)
+}
 </script>
 
 <style scoped>
@@ -724,5 +799,139 @@ const selectedResiduesForViewer = computed(() => {
   color: #1d1d1f;
   border-radius: 6px;
   white-space: nowrap;
+}
+
+/* Slider styles (matching ControlsPanel / DistanceDistribution) */
+.slider-section {
+  margin-bottom: 20px;
+  padding: 16px 0;
+  border-top: 1px solid #e8e8ed;
+}
+
+.slider-label {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 12px;
+  letter-spacing: -0.022em;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-control {
+  position: relative;
+  flex: 1;
+}
+
+.slider-ticks {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.slider-tick {
+  position: relative;
+  width: 2px;
+  height: 16px;
+  background: #b4b4bb;
+  opacity: 0.7;
+}
+
+.slider-tick-label {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #6e6e73;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: #d2d2d7;
+  outline: none;
+  flex: 1;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1d1d1f;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: #000000;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  transform: scale(1.05);
+}
+
+.slider-value-input {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+}
+
+.value-input {
+  width: 60px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  text-align: right;
+  border: 2px solid #d2d2d7;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #ffffff;
+  font-variant-numeric: tabular-nums;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.value-input:focus {
+  outline: none;
+  border-color: #1d1d1f;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.1);
+}
+
+.value-input::-webkit-inner-spin-button,
+.value-input::-webkit-outer-spin-button {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.percent-symbol {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.slider-description {
+  font-size: 14px;
+  color: #6e6e73;
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 </style>
