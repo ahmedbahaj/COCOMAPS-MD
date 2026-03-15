@@ -23,18 +23,18 @@
         </p>
       </div>
       
-      <!-- Conservation Threshold Slider -->
+      <!-- Pair Conservation Threshold Slider -->
       <div class="control-group">
-        <label for="conservation-slider">Min Conservation Threshold</label>
+        <label for="conservation-slider">Pair Conservation Threshold</label>
         <div class="slider-container">
           <div class="slider-control">
             <input
               id="conservation-slider"
               type="range"
               min="0"
-              max="100"
-              step="10"
-              :value="minConsistency"
+              max="1"
+              step="0.1"
+              :value="dataStore.currentThreshold"
               @input="updateThreshold"
             />
             <div class="slider-ticks">
@@ -50,7 +50,7 @@
           <div class="slider-value-input">
             <input
               type="number"
-              :value="minConsistency"
+              :value="thresholdPercent"
               @input="updateThresholdFromInput"
               @blur="validateThresholdInput"
               min="0"
@@ -61,7 +61,7 @@
             <span class="percent-symbol">%</span>
           </div>
         </div>
-        <p class="slider-description">Show pairs with conservation ≥ {{ minConsistency }}%</p>
+        <p class="slider-description">Show pairs with conservation ≥ {{ thresholdPercent }}%</p>
       </div>
     </div>
   </div>
@@ -79,44 +79,46 @@ const chartContainer = ref(null)
 const selectedInteractionType = ref('')
 const distanceData = ref(null)
 const loading = ref(false)
-const minConsistency = ref(50)
+
+// Threshold percent (derived from store)
+const thresholdPercent = computed(() => Math.round(dataStore.currentThreshold * 100))
 
 // Conservation threshold ticks (0% to 100% in 10% steps)
 const conservationTicks = computed(() => {
   const ticks = []
-  for (let value = 0; value <= 100; value += 10) {
+  for (let value = 0; value <= 1.0 + 0.0001; value += 0.1) {
     ticks.push({
-      value,
-      label: value
+      value: parseFloat(value.toFixed(2)),
+      label: Math.round(value * 100)
     })
   }
   return ticks
 })
 
-// Slider update handlers
+// Slider update handlers — write to the shared store
 const updateThreshold = (event) => {
-  minConsistency.value = parseInt(event.target.value)
+  dataStore.setThreshold(parseFloat(event.target.value))
   updateChart()
 }
 
 const updateThresholdFromInput = (event) => {
-  const value = parseInt(event.target.value)
+  const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0 && value <= 100) {
-    minConsistency.value = value
+    dataStore.setThreshold(value / 100)
     updateChart()
   }
 }
 
 const validateThresholdInput = (event) => {
-  let value = parseInt(event.target.value)
+  let value = parseFloat(event.target.value)
   if (isNaN(value)) {
-    event.target.value = minConsistency.value
+    event.target.value = thresholdPercent.value
     return
   }
   // Clamp value between 0 and 100
   value = Math.max(0, Math.min(100, value))
   event.target.value = value
-  minConsistency.value = value
+  dataStore.setThreshold(value / 100)
   updateChart()
 }
 
@@ -212,14 +214,14 @@ const updateChart = () => {
     return
   }
 
-  // Filter by conservation threshold
+  // Filter by conservation threshold (from shared store)
   const filteredPairs = distanceData.value.filter(pair => 
-    (pair.consistency * 100) >= minConsistency.value
+    pair.consistency >= dataStore.currentThreshold
   )
 
   if (filteredPairs.length === 0) {
     Plotly.purge(chartContainer.value)
-    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No pairs found with conservation ≥ ' + minConsistency.value + '%</div>'
+    chartContainer.value.innerHTML = '<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No pairs found with conservation ≥ ' + thresholdPercent.value + '%</div>'
     return
   }
 
@@ -495,6 +497,7 @@ onBeforeUnmount(() => {
 watch([
   () => dataStore.currentChartType,
   () => dataStore.currentSystem?.id,
+  () => dataStore.currentThreshold,
   () => availableInteractionTypes.value
 ], () => {
   if (dataStore.currentChartType === 'violinPlot') {

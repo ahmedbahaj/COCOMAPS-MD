@@ -7,7 +7,7 @@
       v-if="showSlider"
       class="control-section"
     >
-      <label for="consistencySlider">Conservation Threshold</label>
+      <label for="consistencySlider">Pair Conservation Threshold</label>
       <div class="slider-container">
         <div class="slider-control">
           <input
