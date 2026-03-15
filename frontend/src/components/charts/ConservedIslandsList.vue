@@ -153,11 +153,8 @@
           <span class="check-icon" aria-hidden="true">☑</span>
           All pairs are selected by default. Toggle checkboxes to show only the pairs you want in the 3D viewer.
         </p>
-        <div class="pairs-toolbar">
-          <button type="button" class="toolbar-btn" @click="selectAllPairs">Select all</button>
-          <button type="button" class="toolbar-btn" @click="deselectAllPairs">Deselect all</button>
-          <span class="pairs-count">{{ selectedPairKeys.length }} of {{ mostConservedList.length }} selected</span>
-        </div>
+
+        <!-- Pair Conservation Threshold Slider -->
         <div class="slider-section">
           <label for="pairs-conservation-slider" class="slider-label">Pair Conservation Threshold</label>
           <div class="slider-container">
@@ -197,34 +194,93 @@
           </div>
           <p class="slider-description">Show pairs with conservation ≥ {{ thresholdPercent }}%</p>
         </div>
-        <ul class="pairs-list" role="list">
-          <li
-            v-for="item in mostConservedList"
-            :key="item.pair"
-            class="pair-row"
-            :class="{ selected: isPairSelected(item.pair) }"
-          >
-            <label class="pair-row-label">
-              <input
-                type="checkbox"
-                :checked="isPairSelected(item.pair)"
-                :aria-label="`Toggle ${item.pair} in 3D view`"
-                @change="togglePair(item.pair)"
-              />
-              <span class="pair-name">{{ item.pair }}</span>
-              <span class="pair-meta">({{ item.frameCount }}/{{ dataStore.totalFrames }} frames)</span>
-            </label>
-            <div v-if="item.types && item.types.length" class="type-tags">
-              <span
-                v-for="(t, tIdx) in item.types.slice(0, 4)"
-                :key="tIdx"
-                class="type-tag"
-                :style="{ backgroundColor: getInteractionBaseColor(t.type), color: getTextColorForBg(t.type) }"
-              >{{ t.type }}</span>
-              <span v-if="item.types.length > 4" class="type-tag more">+{{ item.types.length - 4 }}</span>
-            </div>
-          </li>
-        </ul>
+
+        <!-- Toolbar: search + select/deselect (immediately above table) -->
+        <div class="pairs-toolbar">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 20 20" width="16" height="16"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input
+              type="text"
+              v-model="searchQuery"
+              placeholder="Search residues…"
+              class="search-input"
+            />
+            <button v-if="searchQuery" type="button" class="search-clear" @click="searchQuery = ''">✕</button>
+          </div>
+          <button type="button" class="toolbar-btn" @click="selectAllPairs">Select all</button>
+          <button type="button" class="toolbar-btn" @click="deselectAllPairs">Deselect all</button>
+          <span class="pairs-count">{{ selectedPairKeys.length }} / {{ filteredPairsList.length }} selected</span>
+        </div>
+
+        <div class="pairs-table-wrap">
+          <table class="pairs-table">
+            <thead>
+              <tr>
+                <th class="col-check">
+                  <input
+                    type="checkbox"
+                    :checked="allFilteredSelected"
+                    :indeterminate="someFilteredSelected && !allFilteredSelected"
+                    @change="toggleAllFiltered"
+                    aria-label="Select all visible pairs"
+                  />
+                </th>
+                <th class="col-pair sortable" @click="toggleSort('pair')">
+                  Residue Pair
+                  <span class="sort-arrow" :class="sortIndicatorClass('pair')"></span>
+                </th>
+                <th class="col-conservation sortable" @click="toggleSort('conservation')">
+                  Conservation
+                  <span class="sort-arrow" :class="sortIndicatorClass('conservation')"></span>
+                </th>
+                <th class="col-frames sortable" @click="toggleSort('frames')">
+                  Frames
+                  <span class="sort-arrow" :class="sortIndicatorClass('frames')"></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="item in filteredPairsList" :key="item.pair">
+                <tr
+                  class="pair-data-row"
+                  :class="{ selected: isPairSelected(item.pair) }"
+                >
+                  <td class="col-check" @click.stop>
+                    <input
+                      type="checkbox"
+                      :checked="isPairSelected(item.pair)"
+                      @change="togglePair(item.pair)"
+                      :aria-label="`Toggle ${item.pair} in 3D view`"
+                    />
+                  </td>
+                  <td class="col-pair">
+                    <span class="pair-name">{{ item.pair }}</span>
+                  </td>
+                  <td class="col-conservation">
+                    <div class="conservation-cell">
+                      <div class="conservation-bar-track">
+                        <div
+                          class="conservation-bar-fill"
+                          :style="{ width: conservationPercent(item) + '%', backgroundColor: conservationColor(item) }"
+                        ></div>
+                      </div>
+                      <span class="conservation-value">{{ conservationPercent(item) }}%</span>
+                    </div>
+                  </td>
+                  <td class="col-frames">
+                    <span class="frames-value">{{ item.frameCount }}</span>
+                    <span class="frames-total"> / {{ dataStore.totalFrames }}</span>
+                  </td>
+                </tr>
+              </template>
+              <tr v-if="filteredPairsList.length === 0" class="no-results-row">
+                <td colspan="4">
+                  <div class="no-results">No pairs match "{{ searchQuery }}"</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
     </template>
@@ -248,8 +304,95 @@ const islandViewMode = ref({})
 const expandedIslandId = ref(null)
 const selectedPairKeys = ref([])
 
+// --- New state for table features ---
+const searchQuery = ref('')
+const sortColumn = ref('conservation') // 'pair' | 'conservation' | 'frames' | 'types'
+const sortDirection = ref('desc')       // 'asc' | 'desc'
+
 const mostConservedList = computed(() => statistics.value?.residue?.mostConservedList ?? [])
 
+// --- Search + Sort ---
+const filteredPairsList = computed(() => {
+  let list = [...mostConservedList.value]
+
+  // Search filter
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.trim().toLowerCase()
+    list = list.filter(item => item.pair.toLowerCase().includes(q))
+  }
+
+  // Sort
+  list.sort((a, b) => {
+    let cmp = 0
+    switch (sortColumn.value) {
+      case 'pair':
+        cmp = a.pair.localeCompare(b.pair)
+        break
+      case 'conservation':
+        cmp = (a.frameCount / (dataStore.totalFrames || 1)) - (b.frameCount / (dataStore.totalFrames || 1))
+        break
+      case 'frames':
+        cmp = a.frameCount - b.frameCount
+        break
+    }
+    return sortDirection.value === 'asc' ? cmp : -cmp
+  })
+
+  return list
+})
+
+function toggleSort(col) {
+  if (sortColumn.value === col) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortColumn.value = col
+    sortDirection.value = col === 'pair' ? 'asc' : 'desc'
+  }
+}
+
+function sortIndicatorClass(col) {
+  if (sortColumn.value !== col) return 'inactive'
+  return sortDirection.value === 'asc' ? 'asc' : 'desc'
+}
+
+// --- Conservation display helpers ---
+function conservationPercent(item) {
+  const totalFrames = dataStore.totalFrames || 1
+  return Math.round((item.frameCount / totalFrames) * 100)
+}
+
+function conservationColor(item) {
+  const pct = conservationPercent(item) / 100
+  // Gradient: light blue → deep blue
+  if (pct >= 0.9) return '#0D47A1'
+  if (pct >= 0.7) return '#1E88E5'
+  if (pct >= 0.5) return '#42A5F5'
+  if (pct >= 0.3) return '#90CAF9'
+  return '#BBDEFB'
+}
+
+// --- Header checkbox (select/deselect all filtered) ---
+const allFilteredSelected = computed(() => {
+  if (filteredPairsList.value.length === 0) return false
+  return filteredPairsList.value.every(item => isPairSelected(item.pair))
+})
+const someFilteredSelected = computed(() => {
+  return filteredPairsList.value.some(item => isPairSelected(item.pair))
+})
+function toggleAllFiltered() {
+  if (allFilteredSelected.value) {
+    // Deselect all filtered
+    const filteredKeys = new Set(filteredPairsList.value.map(p => p.pair))
+    selectedPairKeys.value = selectedPairKeys.value.filter(k => !filteredKeys.has(k))
+  } else {
+    // Select all filtered (keep existing selections too)
+    const existing = new Set(selectedPairKeys.value)
+    filteredPairsList.value.forEach(item => existing.add(item.pair))
+    selectedPairKeys.value = Array.from(existing)
+  }
+}
+
+// --- Pair selection ---
 watch(
   [viewMode, mostConservedList],
   () => {
@@ -266,19 +409,17 @@ watch(mostConservedList, (list) => {
   }
 }, { deep: true })
 
+// --- Island helpers ---
 function selectIsland(id) {
   selectedIslandId.value = selectedIslandId.value === id ? null : id
 }
-
 function getIslandViewMode(id) {
   const current = islandViewMode.value[id]
   return current === 'table' ? 'table' : 'graph'
 }
-
 function setIslandViewMode(id, mode) {
   islandViewMode.value = { ...islandViewMode.value, [id]: mode }
 }
-
 function toggleExpandedIsland(id) {
   expandedIslandId.value = expandedIslandId.value === id ? null : id
 }
@@ -298,7 +439,6 @@ function pairStringToResidues(pairStr) {
 function isPairSelected(pairKey) {
   return selectedPairKeys.value.includes(pairKey)
 }
-
 function togglePair(pairKey) {
   if (isPairSelected(pairKey)) {
     selectedPairKeys.value = selectedPairKeys.value.filter((k) => k !== pairKey)
@@ -306,11 +446,9 @@ function togglePair(pairKey) {
     selectedPairKeys.value = [...selectedPairKeys.value, pairKey]
   }
 }
-
 function selectAllPairs() {
-  selectedPairKeys.value = mostConservedList.value.map((p) => p.pair)
+  selectedPairKeys.value = filteredPairsList.value.map((p) => p.pair)
 }
-
 function deselectAllPairs() {
   selectedPairKeys.value = []
 }
@@ -535,82 +673,235 @@ const validateThresholdInput = (event) => {
   font-weight: 500;
 }
 
-.pairs-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.pair-row {
+/* =================== Search Box =================== */
+.search-box {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex: 1;
+  max-width: 300px;
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #86868b;
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  padding: 8px 32px 8px 34px;
+  font-size: 14px;
+  border: 2px solid #d2d2d7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1d1d1f;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.search-input:focus {
+  outline: none;
+  border-color: #1d1d1f;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.08);
+}
+.search-input::placeholder {
+  color: #a1a1a6;
+}
+.search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #86868b;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 50%;
+}
+.search-clear:hover {
+  color: #1d1d1f;
+  background: #e8e8ed;
+}
+
+/* =================== Sortable Table =================== */
+.pairs-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e8e8ed;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.pairs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.pairs-table thead th {
+  text-align: left;
   padding: 12px 16px;
   background: #f5f5f7;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  transition: border-color 0.2s, background 0.2s;
+  color: #6e6e73;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e8e8ed;
+  white-space: nowrap;
+  user-select: none;
 }
 
-.pair-row:hover {
-  background: #ebebed;
-}
-
-.pair-row.selected {
-  border-color: #007aff;
-  background: #f0f7ff;
-}
-
-.pair-row-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.pairs-table thead th.sortable {
   cursor: pointer;
-  flex: 1;
-  min-width: 0;
+  transition: color 0.15s;
+}
+.pairs-table thead th.sortable:hover {
+  color: #1d1d1f;
 }
 
-.pair-row-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
+.col-check {
+  width: 40px;
+  text-align: center;
+}
+.col-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
   cursor: pointer;
   accent-color: #007aff;
 }
+.col-pair { min-width: 180px; }
+.col-conservation { min-width: 160px; }
+.col-frames { min-width: 90px; }
+.col-types { min-width: 100px; }
+
+/* Sort arrows */
+.sort-arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.sort-arrow.inactive::after {
+  content: '⇅';
+  font-size: 11px;
+  opacity: 0.4;
+}
+.sort-arrow.asc::after {
+  content: '↑';
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+.sort-arrow.desc::after {
+  content: '↓';
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d1d1f;
+}
+
+/* Data rows */
+.pair-data-row {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.pair-data-row td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0f0f2;
+  vertical-align: middle;
+}
+.pair-data-row:hover {
+  background: #fafafa;
+}
+.pair-data-row.selected {
+  background: #f0f7ff;
+}
 
 .pair-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #1d1d1f;
   font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
 }
 
-.pair-meta {
+/* Conservation bar */
+.conservation-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.conservation-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #e8e8ed;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 60px;
+}
+.conservation-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.conservation-value {
   font-size: 13px;
-  color: #6e6e73;
-  margin-left: 4px;
+  font-weight: 700;
+  color: #1d1d1f;
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
 }
 
-.pair-row .type-tags {
+/* Frames column */
+.frames-value {
+  font-weight: 600;
+  color: #1d1d1f;
+  font-variant-numeric: tabular-nums;
+}
+.frames-total {
+  color: #86868b;
+  font-size: 12px;
+}
+
+/* Type dots (compact) */
+.col-types > div,
+.col-types {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+}
+.type-dots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.type-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
-
-.pair-row .type-tag {
+.type-dot-more {
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 6px;
+  color: #86868b;
+}
+.types-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6e6e73;
+  margin-left: 2px;
 }
 
-.pair-row .type-tag.more {
-  background: #d2d2d7 !important;
-  color: #6e6e73;
+
+/* No results */
+.no-results-row td {
+  border-bottom: none;
+}
+.no-results {
+  padding: 40px 20px;
+  text-align: center;
+  color: #86868b;
+  font-size: 15px;
 }
 
 .islands-list {
