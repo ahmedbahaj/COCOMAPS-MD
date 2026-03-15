@@ -62,10 +62,12 @@ const currentChartComponent = computed(() => {
   return chartComponents[dataStore.currentChartType] || FilteredHeatmap
 })
 
-// Force re-render when chart type or data changes
+// Force re-render when chart type or system changes
+// NOTE: Do NOT include dataStore.currentThreshold here — charts handle threshold
+// changes internally via their own watchers. Including it here would destroy and
+// re-create the component, resetting local state (e.g. type conservation threshold).
 watch([
   () => dataStore.currentChartType,
-  () => dataStore.currentThreshold,
   () => dataStore.currentSystem?.id
 ], () => {
   chartKey.value++
