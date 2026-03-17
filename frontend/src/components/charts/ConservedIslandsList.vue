@@ -9,24 +9,51 @@
     <div class="viz-controls">
       <h3 class="panel-title">3D Visualization</h3>
       <p class="panel-subtitle">Highlight residues in the structure by choosing a mode below.</p>
-      <div class="mode-toggle" role="tablist" aria-label="Highlight mode">
+      <div class="mode-cards" role="tablist" aria-label="Highlight mode">
         <button
           type="button"
           role="tab"
           :aria-selected="viewMode === 'islands'"
-          :class="['mode-btn', { active: viewMode === 'islands' }]"
+          :class="['mode-card', { active: viewMode === 'islands' }]"
           @click="viewMode = 'islands'"
         >
-          Conserved Islands
+          <span class="mode-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <circle cx="6" cy="6" r="2"/>
+              <circle cx="18" cy="6" r="2"/>
+              <circle cx="6" cy="18" r="2"/>
+              <circle cx="18" cy="18" r="2"/>
+              <line x1="7.5" y1="7.5" x2="10" y2="10"/>
+              <line x1="16.5" y1="7.5" x2="14" y2="10"/>
+              <line x1="7.5" y1="16.5" x2="10" y2="14"/>
+              <line x1="16.5" y1="16.5" x2="14" y2="14"/>
+            </svg>
+          </span>
+          <span class="mode-card-text">
+            <span class="mode-card-title">Conserved Islands</span>
+            <span class="mode-card-desc">Groups of residues forming connected clusters</span>
+          </span>
         </button>
         <button
           type="button"
           role="tab"
           :aria-selected="viewMode === 'pairs'"
-          :class="['mode-btn', { active: viewMode === 'pairs' }]"
+          :class="['mode-card', { active: viewMode === 'pairs' }]"
           @click="viewMode = 'pairs'"
         >
-          Most Conserved Pairs
+          <span class="mode-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="12" r="4"/>
+              <circle cx="16" cy="12" r="4"/>
+              <line x1="12" y1="12" x2="12" y2="12"/>
+              <path d="M11 10l2 2-2 2"/>
+            </svg>
+          </span>
+          <span class="mode-card-text">
+            <span class="mode-card-title">Most Conserved Pairs</span>
+            <span class="mode-card-desc">Individual residue pairs ranked by conservation</span>
+          </span>
         </button>
       </div>
     </div>
@@ -592,35 +619,83 @@ const validateThresholdInput = (event) => {
   margin-bottom: 20px;
 }
 
-.mode-toggle {
+.mode-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mode-card {
   display: flex;
-  gap: 0;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: #f5f5f7;
+  border: 2px solid #e8e8ed;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.mode-card:hover {
+  border-color: #d2d2d7;
+  background: #f0f0f2;
+}
+
+.mode-card.active {
+  background: #ffffff;
+  border-color: #007aff;
+  box-shadow: 0 2px 10px rgba(0, 122, 255, 0.12);
+}
+
+.mode-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
   background: #e8e8ed;
   border-radius: 10px;
-  padding: 4px;
-  width: fit-content;
-}
-
-.mode-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  background: transparent;
   color: #6e6e73;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s ease;
 }
 
-.mode-btn:hover {
-  color: #1d1d1f;
+.mode-card.active .mode-card-icon {
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
 }
 
-.mode-btn.active {
-  background: #ffffff;
+.mode-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mode-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mode-card-title {
+  font-size: 15px;
+  font-weight: 600;
   color: #1d1d1f;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  line-height: 1.3;
+}
+
+.mode-card-desc {
+  font-size: 12px;
+  font-weight: 400;
+  color: #86868b;
+  line-height: 1.4;
+}
+
+.mode-card.active .mode-card-title {
+  color: #007aff;
 }
 
 .selection-hint {
