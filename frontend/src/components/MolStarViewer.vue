@@ -36,7 +36,9 @@ const props = defineProps({
   systemId: { type: String, default: null },
   frameNum: { type: Number, default: 1 },
   /** Residues to highlight: [{ chain, resNum, resName }]. Null to clear. */
-  selectedResidues: { type: Array, default: null }
+  selectedResidues: { type: Array, default: null },
+  /** 'select' = color overlay only; 'ball-and-stick' = also show atom-level detail */
+  highlightMode: { type: String, default: 'select' }
 })
 
 const containerId = ref(`molstar-${Math.random().toString(36).slice(2, 11)}`)
@@ -89,7 +91,7 @@ async function initViewer() {
       layoutShowLog: false,
       layoutShowLeftPanel: false,
       viewportShowExpand: true,
-      viewportShowControls: false,
+      viewportShowControls: true,
       viewportShowSelectionMode: false,
       viewportShowAnimation: false
     })
@@ -114,11 +116,17 @@ function disposeViewer() {
 function highlightResidues(residues) {
   if (!viewer) return
   try {
-    if (!residues || residues.length === 0) {
-      viewer.plugin.managers.interactivity.lociSelects.deselectAll()
-      return
-    }
-    viewer.plugin.managers.interactivity.lociSelects.deselectAll()
+    const plugin = viewer.plugin
+
+    // Clear previous selection
+    plugin.managers.interactivity.lociSelects.deselectAll()
+
+    // Clear previous ball-and-stick focus
+    try { plugin.managers.structure.focus.clear() } catch (_) { /* ignore */ }
+
+    if (!residues || residues.length === 0) return
+
+    // Apply selection highlight (color overlay)
     const schema = {
       items: residues.map(r => ({
         auth_asym_id: String(r.chain),
@@ -130,8 +138,110 @@ function highlightResidues(residues) {
       action: 'select',
       applyGranularity: true
     })
+
+    // Apply ball-and-stick representation for islands
+    if (props.highlightMode === 'ball-and-stick') {
+      applyBallAndStick(plugin, residues)
+    }
   } catch (err) {
     console.warn('Mol* highlight:', err)
+  }
+}
+
+/**
+ * Build a StructureElement.Loci from residue specs and apply focus representation.
+ * Uses window.molstar.lib.structure.StructureElement which is available from CDN.
+ */
+async function applyBallAndStick(plugin, residues) {
+  try {
+    // Get the loaded structure data
+    const structures = plugin.managers.structure.hierarchy.current.structures
+    if (!structures || structures.length === 0) return
+    const structureData = structures[0].cell.obj?.data
+    if (!structureData) return
+
+    // Access StructureElement from the CDN-loaded molstar lib
+    const SE = window.molstar?.lib?.structure?.StructureElement
+    if (!SE) {
+      console.warn('StructureElement not available on window.molstar.lib.structure')
+      return
+    }
+
+    // Build a set for fast residue lookup
+    const residueSet = new Set(
+      residues.map(r => `${String(r.chain)}:${Number(r.resNum)}`)
+    )
+
+    // Iterate through structure units to find atoms belonging to target residues
+    const bundleLoci = []
+
+    for (const unit of structureData.units) {
+      const elements = unit.elements
+      const model = unit.model
+
+      // Access the atom property accessors from the unit's model
+      const hierAtoms = model.atomicHierarchy?.atoms
+      const hierResidues = model.atomicHierarchy?.residues
+      const hierChains = model.atomicHierarchy?.chains
+      const residueAtomSeg = model.atomicHierarchy?.residueAtomSegments
+      const chainAtomSeg = model.atomicHierarchy?.chainAtomSegments
+
+      if (!hierResidues || !hierChains || !residueAtomSeg) continue
+
+      const authSeqId = hierResidues.auth_seq_id
+      const authAsymId = hierChains.auth_asym_id
+      const residueIdx = residueAtomSeg.index
+      const chainIdx = chainAtomSeg?.index
+
+      const matchingIndices = []
+      for (let i = 0, len = elements.length; i < len; i++) {
+        const atomIdx = elements[i]
+        const rI = residueIdx[atomIdx]
+        // Get chain: use chainAtomSegments.index to find the chain index for this atom
+        const cI = chainIdx ? chainIdx[atomIdx] : 0
+        const chain = authAsymId.value(cI)
+        const resNum = authSeqId.value(rI)
+
+        if (residueSet.has(`${chain}:${resNum}`)) {
+          matchingIndices.push(i)
+        }
+      }
+
+      if (matchingIndices.length > 0) {
+        // Create a Loci element for this unit
+        // SE.Loci expects { unit, indices: OrderedSet }
+        // Try to find SortedArray/OrderedSet from the molstar lib
+        const OrderedSet = window.molstar?.lib?.math?.OrderedSet
+        const SortedArray = window.molstar?.lib?.math?.SortedArray
+
+        let indices
+        if (SortedArray?.ofSortedArray) {
+          indices = SortedArray.ofSortedArray(new Int32Array(matchingIndices))
+        } else if (OrderedSet?.ofSortedArray) {
+          indices = OrderedSet.ofSortedArray(new Int32Array(matchingIndices))
+        } else {
+          // Last resort: try using the Interval/SortedArray from the unit itself
+          // The unit.elements is already an OrderedSet, peek at its constructor
+          try {
+            const proto = Object.getPrototypeOf(elements)?.constructor
+            indices = new Int32Array(matchingIndices)
+          } catch (_) {
+            indices = new Int32Array(matchingIndices)
+          }
+        }
+
+        bundleLoci.push({ unit, indices })
+      }
+    }
+
+    if (bundleLoci.length > 0) {
+      // Create the StructureElement.Loci
+      const loci = SE.Loci(structureData, bundleLoci)
+      // Apply focus — this triggers Mol*'s built-in ball-and-stick focus representation
+      plugin.managers.structure.focus.setFromLoci(loci)
+    }
+  } catch (err) {
+    console.warn('Ball-and-stick error:', err)
   }
 }
 
@@ -146,7 +256,7 @@ watch(() => [props.systemId, props.frameNum], () => {
   }
 })
 
-watch(() => props.selectedResidues, (residues) => {
+watch([() => props.selectedResidues, () => props.highlightMode], ([residues]) => {
   if (!loading.value && !loadError.value) {
     highlightResidues(residues)
   }

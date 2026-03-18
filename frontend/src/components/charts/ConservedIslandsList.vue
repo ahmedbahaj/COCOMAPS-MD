@@ -4,6 +4,7 @@
       v-if="dataStore.currentSystem?.id"
       :system-id="dataStore.currentSystem.id"
       :selected-residues="selectedResiduesForViewer"
+      :highlight-mode="viewMode === 'islands' ? 'ball-and-stick' : 'select'"
       class="structure-viewer"
     />
     <div class="viz-controls">
