@@ -2,11 +2,13 @@
 Aggregate per-frame CoCoMaps CSVs into system-level files.
 
 Produces:
-  - _interactions.csv  (one row per residue pair per frame)
-  - _area.csv          (one row per frame: BSA data)
-  - _trends.csv        (one row per frame: interaction type counts)
-  - _atom_pairs.csv    (one row per atom pair: all residue pairs, all frames)
-  - _metadata.json     (totalFrames, chainPattern, etc.)
+  - _interactions.csv      (one row per residue pair per frame)
+  - _area.csv              (one row per frame: BSA data)
+  - _trends.csv            (one row per frame: interaction type counts)
+  - _atom_pairs.csv        (one row per atom pair: all residue pairs, all frames)
+  - _water_mediated.csv    (concatenated Water_Mediated rows + frame; for viewer / deployment)
+  - _metal_mediated.csv    (concatenated Metal_Mediated rows + frame)
+  - _metadata.json         (totalFrames, chainPattern, etc.)
 
 Used by analyze_pdb.py (Step 5).
 """
@@ -254,10 +256,54 @@ _TRENDS_PROPERTY_MAP = {
 }
 
 
+def _read_mediated_type_csv(
+    frame_folder: Path,
+    chain_pattern: str,
+    frame_num: int,
+    csv_suffix: str,
+) -> list[dict]:
+    """Read one Water_Mediated or Metal_Mediated CSV; rows get a ``frame`` column."""
+    rows: list[dict] = []
+    for base in [f"{frame_folder.name}.pd_h.pdb", f"{frame_folder.name}.pdb"]:
+        path = frame_folder / f"{base}_{chain_pattern}_{csv_suffix}.csv"
+        if not path.is_file():
+            continue
+        try:
+            with open(path, "r", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+                cols = list(reader.fieldnames or [])
+                for row in reader:
+                    rec = {"frame": frame_num}
+                    for c in cols:
+                        if c is None:
+                            continue
+                        key = c.strip()
+                        rec[key] = row.get(c, "")
+                    rows.append(rec)
+        except OSError:
+            continue
+        break
+    return rows
+
+
+def _fieldnames_for_mediated_rows(rows: list[dict]) -> list[str]:
+    if not rows:
+        return ["frame"]
+    ordered: list[str] = []
+    for r in rows:
+        for k in r:
+            if k not in ordered:
+                ordered.append(k)
+    if "frame" in ordered:
+        ordered.remove("frame")
+    return ["frame"] + ordered
+
+
 def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> bool:
     """
     Aggregate per-frame CSVs into system-level _interactions.csv, _area.csv,
-    _trends.csv, and _metadata.json.
+    _trends.csv, _atom_pairs.csv, _water_mediated.csv, _metal_mediated.csv,
+    and _metadata.json.
 
     Returns True if any files were written, False if nothing to aggregate.
     """
@@ -280,6 +326,8 @@ def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> boo
     area_rows = []
     trends_rows = []
     atom_pairs_rows = []
+    water_mediated_rows = []
+    metal_mediated_rows = []
 
     for frame_folder in frame_folders:
         try:
@@ -411,6 +459,14 @@ def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> boo
                             'angle': '' if angle is None else str(angle),
                         })
 
+        # --- Water_Mediated / Metal_Mediated (full rows for viewer + deployment) ---
+        water_mediated_rows.extend(
+            _read_mediated_type_csv(frame_folder, chain_pattern, frame_num, "Water_Mediated")
+        )
+        metal_mediated_rows.extend(
+            _read_mediated_type_csv(frame_folder, chain_pattern, frame_num, "Metal_Mediated")
+        )
+
     # Write outputs
     wrote_any = False
 
@@ -463,6 +519,28 @@ def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> boo
         wrote_any = True
         if verbose:
             print(f"  Wrote {out_path} ({len(atom_pairs_rows)} rows)")
+
+    if water_mediated_rows:
+        out_path = system_path / "_water_mediated.csv"
+        wm_fields = _fieldnames_for_mediated_rows(water_mediated_rows)
+        with open(out_path, "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=wm_fields, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(water_mediated_rows)
+        wrote_any = True
+        if verbose:
+            print(f"  Wrote {out_path} ({len(water_mediated_rows)} rows)")
+
+    if metal_mediated_rows:
+        out_path = system_path / "_metal_mediated.csv"
+        mm_fields = _fieldnames_for_mediated_rows(metal_mediated_rows)
+        with open(out_path, "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=mm_fields, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(metal_mediated_rows)
+        wrote_any = True
+        if verbose:
+            print(f"  Wrote {out_path} ({len(metal_mediated_rows)} rows)")
 
     metadata_path = system_path / '_metadata.json'
 

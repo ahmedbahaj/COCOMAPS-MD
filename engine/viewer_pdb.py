@@ -4,12 +4,14 @@ minus waters/metals/ions that never appear in interaction data.
 
 Interaction keys are merged from:
   - _interactions.csv and *_final_file.csv (explicit HOH/MG/… on a side)
-  - frame_1 *Water_Mediated.csv* / *Metal_Mediated.csv*: CoCoMaps puts the
-    actual solvent in columns **Water Identity** / **Metal Identity** (e.g.
-    ``X_4300_HOH``), not in Res. Name 1/2 (those are protein–protein).
-  - Those identities use **trimmed** ``frame_1.pdb`` numbering; we map them to
-    the **original** PDB by nearest oxygen / residue center (same physical
-    molecule, different numbering).
+  - System-level ``_water_mediated.csv`` / ``_metal_mediated.csv`` (from
+    ``aggregate_system``), or per-frame ``*_Water_Mediated.csv`` /
+    ``*_Metal_Mediated.csv``. **All frames** are unioned: any water/metal that
+    mediated in **any** frame is kept in the viewer PDB (coordinates still from
+    the **first processed** frame of the original upload).
+  - Mapping trimmed → original uses the **first** ``frame_k`` trimmed PDB where
+    that CoCoMaps identity appears, then nearest oxygen/COM in the original
+    first frame.
 
 Web upload only (not used by CLI).
 """
@@ -282,36 +284,125 @@ def _get_row_value(row: dict, logical_name: str) -> Optional[str]:
     return None
 
 
-def _collect_mediated_identities_frame1(
+def _sorted_frame_dirs(system_path: Path) -> list[Path]:
+    """frame_1, frame_2, … under a system directory."""
+    dirs = [
+        f
+        for f in system_path.iterdir()
+        if f.is_dir() and f.name.startswith("frame_") and "_" in f.name
+    ]
+    return sorted(dirs, key=lambda p: int(p.name.split("_")[1]))
+
+
+def _parse_frame_cell(row: dict) -> Optional[int]:
+    raw = row.get("frame")
+    if raw is None or raw == "":
+        return None
+    try:
+        return int(float(str(raw).strip()))
+    except (ValueError, TypeError):
+        return None
+
+
+def _add_identities_from_mediated_aggregate_rows(
+    rows: list[dict],
+    col_logical: str,
+    dest: Set[Tuple[str, int, str]],
+    *,
+    frame_filter: Optional[int],
+) -> None:
+    for row in rows:
+        if frame_filter is not None:
+            fr = _parse_frame_cell(row)
+            if fr is None or fr != frame_filter:
+                continue
+        tok = _get_row_value(row, col_logical)
+        if not tok:
+            continue
+        p = _parse_cocomaps_identity_token(tok)
+        if p:
+            dest.add(p)
+
+
+def _read_aggregate_mediated_csv(path: Path) -> list[dict]:
+    rows: list[dict] = []
+    try:
+        with open(path, "r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                out: dict = {}
+                for k in reader.fieldnames or []:
+                    if k is None:
+                        continue
+                    out[k.strip()] = row.get(k, "")
+                rows.append(out)
+    except OSError:
+        pass
+    return rows
+
+
+def _collect_mediated_identities_from_frame_folders(
     system_path: Path,
 ) -> Tuple[Set[Tuple[str, int, str]], Set[Tuple[str, int, str]]]:
-    """Parse Water Identity / Metal Identity from frame_1 *Mediated.csv only."""
+    """Parse Water/Metal Identity from every frame_N/*_Water_Mediated.csv (fallback when no aggregates)."""
     water_id: Set[Tuple[str, int, str]] = set()
     metal_id: Set[Tuple[str, int, str]] = set()
-    frame1 = system_path / "frame_1"
-    if not frame1.is_dir():
-        return water_id, metal_id
-    cp = _get_chain_pattern(frame1)
-    for base in (f"frame_1.pd_h.pdb", f"frame_1.pdb"):
-        for csv_name, dest, col in (
-            ("Water_Mediated", water_id, "Water Identity"),
-            ("Metal_Mediated", metal_id, "Metal Identity"),
-        ):
-            csv_path = frame1 / f"{base}_{cp}_{csv_name}.csv"
-            if not csv_path.is_file():
-                continue
-            try:
-                with open(csv_path, "r", encoding="utf-8", newline="") as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
-                        tok = _get_row_value(row, col)
-                        if not tok:
-                            continue
-                        p = _parse_cocomaps_identity_token(tok)
-                        if p:
-                            dest.add(p)
-            except OSError:
-                continue
+    for frame_dir in _sorted_frame_dirs(system_path):
+        cp = _get_chain_pattern(frame_dir)
+        for base in (f"{frame_dir.name}.pd_h.pdb", f"{frame_dir.name}.pdb"):
+            for csv_name, dest, col in (
+                ("Water_Mediated", water_id, "Water Identity"),
+                ("Metal_Mediated", metal_id, "Metal Identity"),
+            ):
+                csv_path = frame_dir / f"{base}_{cp}_{csv_name}.csv"
+                if not csv_path.is_file():
+                    continue
+                try:
+                    with open(csv_path, "r", encoding="utf-8", newline="") as f:
+                        reader = csv.DictReader(f)
+                        for row in reader:
+                            tok = _get_row_value(row, col)
+                            if not tok:
+                                continue
+                            p = _parse_cocomaps_identity_token(tok)
+                            if p:
+                                dest.add(p)
+                except OSError:
+                    continue
+    return water_id, metal_id
+
+
+def _collect_mediated_identities(system_path: Path) -> Tuple[Set[Tuple[str, int, str]], Set[Tuple[str, int, str]]]:
+    """
+    Union of Water/Metal Identity across **all frames** (from _water_mediated.csv /
+    _metal_mediated.csv or per-frame CSVs). Viewer PDB uses **first processed frame**
+    coordinates from the original PDB but keeps any solvent that mediated in **any** frame.
+    """
+    water_id: Set[Tuple[str, int, str]] = set()
+    metal_id: Set[Tuple[str, int, str]] = set()
+    wa = system_path / "_water_mediated.csv"
+    ma = system_path / "_metal_mediated.csv"
+
+    if wa.is_file():
+        rows = _read_aggregate_mediated_csv(wa)
+        _add_identities_from_mediated_aggregate_rows(
+            rows, "Water Identity", water_id, frame_filter=None
+        )
+    if ma.is_file():
+        rows = _read_aggregate_mediated_csv(ma)
+        _add_identities_from_mediated_aggregate_rows(
+            rows, "Metal Identity", metal_id, frame_filter=None
+        )
+
+    need_water_fb = not wa.is_file() or not water_id
+    need_metal_fb = not ma.is_file() or not metal_id
+    if need_water_fb or need_metal_fb:
+        w_fb, m_fb = _collect_mediated_identities_from_frame_folders(system_path)
+        if need_water_fb:
+            water_id |= w_fb
+        if need_metal_fb:
+            metal_id |= m_fb
+
     return water_id, metal_id
 
 
@@ -397,7 +488,7 @@ def _nearest_named_residue_key_in_original(
 
 def _map_mediated_identities_to_original_keys(
     orig_u: mda.Universe,
-    trimmed_path: Optional[Path],
+    system_path: Path,
     water_idents: Set[Tuple[str, int, str]],
     metal_idents: Set[Tuple[str, int, str]],
     *,
@@ -406,55 +497,89 @@ def _map_mediated_identities_to_original_keys(
 ) -> Tuple[Set[Tuple[str, int]], Set[Tuple[str, int]], Set[Tuple[str, int]]]:
     """
     Map CoCoMaps (trimmed) identities to original (chain, resid) using 3D proximity.
+    For each identity, use the **first** trimmed frame (in order) where that residue
+    appears, then match to the original **first-frame** structure. One Universe load
+    per output frame.
     """
     wk: Set[Tuple[str, int]] = set()
     mk: Set[Tuple[str, int]] = set()
     ik: Set[Tuple[str, int]] = set()
-    if trimmed_path is None or not trimmed_path.is_file():
+    frame_dirs = _sorted_frame_dirs(system_path)
+    if not frame_dirs:
         return wk, mk, ik
-    u_t = None
-    try:
-        u_t = mda.Universe(str(trimmed_path))
-    except Exception:
-        return wk, mk, ik
-    try:
-        water_cache = _build_original_water_reference_cache(orig_u)
-        for ch, rn, rname in water_idents:
-            ag = _select_trimmed_residue(u_t, ch, rn)
-            pos = _trimmed_reference_position(ag, prefer_water_oxygen=True)
-            if pos is None:
-                continue
-            k = _nearest_water_key_from_cache(water_cache, pos, cutoff_angstrom)
-            if k:
-                wk.add(k)
-            elif verbose:
-                print(f"[viewer_pdb] warn: no original water near trimmed {ch}:{rn} {rname}")
 
-        for ch, rn, rname in metal_idents:
-            ag = _select_trimmed_residue(u_t, ch, rn)
-            pos = _trimmed_reference_position(ag, prefer_water_oxygen=False)
-            if pos is None:
-                continue
-            k = _nearest_named_residue_key_in_original(orig_u, pos, rname, cutoff_angstrom)
-            if not k:
-                if verbose:
+    water_cache = _build_original_water_reference_cache(orig_u)
+    pending_w = set(water_idents)
+    pending_m = set(metal_idents)
+
+    for fd in frame_dirs:
+        if not pending_w and not pending_m:
+            break
+        tp = _find_trimmed_frame_pdb(fd)
+        if tp is None or not tp.is_file():
+            continue
+        u_t = None
+        try:
+            u_t = mda.Universe(str(tp))
+            resolved_w: list[Tuple[str, int, str]] = []
+            for ident in list(pending_w):
+                ch, rn, rname = ident
+                ag = _select_trimmed_residue(u_t, ch, rn)
+                pos = _trimmed_reference_position(ag, prefer_water_oxygen=True)
+                if pos is None:
+                    continue
+                k = _nearest_water_key_from_cache(water_cache, pos, cutoff_angstrom)
+                if k:
+                    wk.add(k)
+                elif verbose:
+                    print(f"[viewer_pdb] warn: no original water near trimmed {ch}:{rn} {rname}")
+                resolved_w.append(ident)
+            for ident in resolved_w:
+                pending_w.discard(ident)
+
+            resolved_m: list[Tuple[str, int, str]] = []
+            for ident in list(pending_m):
+                ch, rn, rname = ident
+                ag = _select_trimmed_residue(u_t, ch, rn)
+                pos = _trimmed_reference_position(ag, prefer_water_oxygen=False)
+                if pos is None:
+                    continue
+                k = _nearest_named_residue_key_in_original(orig_u, pos, rname, cutoff_angstrom)
+                if k:
+                    ru = str(rname).strip().upper()
+                    if ru in _METAL_UPPER:
+                        mk.add(k)
+                    elif ru in _ION_UPPER:
+                        ik.add(k)
+                    elif ru in WATER_RESNAMES:
+                        wk.add(k)
+                    else:
+                        mk.add(k)
+                elif verbose:
                     print(f"[viewer_pdb] warn: no original {rname} near trimmed {ch}:{rn}")
-                continue
-            ru = str(rname).strip().upper()
-            if ru in _METAL_UPPER:
-                mk.add(k)
-            elif ru in _ION_UPPER:
-                ik.add(k)
-            elif ru in WATER_RESNAMES:
-                wk.add(k)
-            else:
-                mk.add(k)
-    finally:
-        if u_t is not None:
-            try:
-                u_t.trajectory.close()
-            except Exception:
-                pass
+                resolved_m.append(ident)
+            for ident in resolved_m:
+                pending_m.discard(ident)
+        except Exception:
+            continue
+        finally:
+            if u_t is not None:
+                try:
+                    u_t.trajectory.close()
+                except Exception:
+                    pass
+
+    if verbose and pending_w:
+        print(
+            f"[viewer_pdb] warn: {len(pending_w)} water identity/identities "
+            "never appeared in any trimmed frame PDB"
+        )
+    if verbose and pending_m:
+        print(
+            f"[viewer_pdb] warn: {len(pending_m)} metal identity/identities "
+            "never appeared in any trimmed frame PDB"
+        )
+
     return wk, mk, ik
 
 
@@ -503,7 +628,7 @@ def write_viewer_frame_pdb(
     metal_keep = m_i | m_f
     ion_keep = ion_i | ion_f
 
-    wid, mid = _collect_mediated_identities_frame1(system_path)
+    wid, mid = _collect_mediated_identities(system_path)
 
     raw_frames = _parse_raw_frames(original)
     num_frames = len(raw_frames)
@@ -536,10 +661,9 @@ def write_viewer_frame_pdb(
 
         universe = mda.Universe(tmp_path)
 
-        trimmed_pdb = _find_trimmed_frame_pdb(system_path / "frame_1")
         w_map, m_map, ion_map = _map_mediated_identities_to_original_keys(
             universe,
-            trimmed_pdb,
+            system_path,
             wid,
             mid,
             verbose=verbose,

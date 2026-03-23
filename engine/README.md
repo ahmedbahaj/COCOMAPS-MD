@@ -70,6 +70,8 @@ Combines per-frame CoCoMaps output into system-level files:
 | `_area.csv` | Buried surface area (BSA) per frame: total, polar, non-polar |
 | `_trends.csv` | Interaction type counts per frame (H-bonds, salt bridges, π-π, etc.) |
 | `_atom_pairs.csv` | Atom-level detail: specific atoms, distances, angles per interaction |
+| `_water_mediated.csv` | All frames: CoCoMaps Water_Mediated rows + `frame` (Water Identity column for viewer) |
+| `_metal_mediated.csv` | All frames: CoCoMaps Metal_Mediated rows + `frame` (Metal Identity) |
 | `_metadata.json` | Frame count, chain pattern, and auto-generated job ID with expiry |
 
 Handles 17+ interaction types with a normalization layer to map various CoCoMaps labels to canonical names.
