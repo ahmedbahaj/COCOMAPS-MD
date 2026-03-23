@@ -35,6 +35,9 @@ python -m engine.analyze_pdb systems/my_protein.pdb --interface-cutoff 7.0 -c A 
 python -m engine.analyze_pdb systems/my_protein.pdb --use-reduce
 ```
 
+### [`viewer_pdb.py`](viewer_pdb.py)
+Web uploads only: builds `frame_1/frame_1_viewer.pdb` from the original uploaded PDB’s first processed frame (before interface trimming), removing waters and metals that never appear in `_interactions.csv`. Not invoked from the CLI.
+
 ### [`interface_selector.py`](interface_selector.py)
 Pure selection logic — no file I/O. Identifies which atoms to keep for analysis.
 

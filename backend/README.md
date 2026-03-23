@@ -33,7 +33,7 @@ The API will be available at `http://localhost:5001`.
 | `GET` | `/api/systems/<id>/interaction-distances` | Distance data for all interactions across all frames |
 | `GET` | `/api/systems/<id>/distance-distributions?interaction_types=H-bond,Salt-bridge` | Distance distributions filtered by interaction type |
 | `GET` | `/api/systems/<id>/conserved-islands` | Conserved island data from `_conserved_islands.json` |
-| `GET` | `/api/systems/<id>/frame/<n>/pdb` | Serve a frame's PDB file (for Mol\* viewer) |
+| `GET` | `/api/systems/<id>/frame/<n>/pdb` | Serve a frame's PDB (for Mol\*). For `n=1`, serves `frame_1_viewer.pdb` when present (web upload: full first frame minus non-interacting waters/metals); else `frame_1.pdb` / `frame_1.pd_h.pdb` |
 
 ### Upload & Processing
 
@@ -69,7 +69,7 @@ System discovery and management. Scans `systems/` for directories containing `fr
 Data retrieval — the largest module (721 lines). Reads from the aggregated CSVs (`_interactions.csv`, `_area.csv`, `_trends.csv`, `_atom_pairs.csv`) and `_conserved_islands.json`. Computes consistency scores, type persistence, atom-pair statistics, and distance distributions on the fly.
 
 ### [`routes/upload.py`](routes/upload.py)
-Async file upload and processing. Saves the PDB to a temp directory, spawns a background thread running `engine.run_pipeline()`, and tracks progress via an in-memory dict persisted to `.jobs.json`.
+Async file upload and processing. Saves the PDB to a temp directory, spawns a background thread running `engine.run_pipeline()`, then writes `frame_1/frame_1_viewer.pdb` via `engine.viewer_pdb` for the Mol\* viewer, and tracks progress via an in-memory dict persisted to `.jobs.json`.
 
 ## Configuration
 

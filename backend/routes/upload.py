@@ -118,6 +118,19 @@ def process_pdb_async(app, job_id, pdb_file, pdb_name, use_reduce=True, chain1='
 
             _update_job(app, job_id, frames=frame_count)
 
+            # Mol* viewer: slim PDB from original frame 1 (non-interface), drop non-interacting waters/metals
+            try:
+                from engine.viewer_pdb import write_viewer_frame_pdb
+                write_viewer_frame_pdb(
+                    system_dir,
+                    start_frame=start_frame,
+                    end_frame=end_frame if end_frame != -1 else -1,
+                    frame_step=frame_step,
+                    verbose=False,
+                )
+            except Exception as viewer_err:
+                print(f"[jobs] Warning: viewer PDB not written: {viewer_err}")
+
             # Attach public analysis jobId (from _metadata.json) so frontend can link to /analysis/<jobId>
             analysis_job_id = None
             metadata_path = os.path.join(system_dir, '_metadata.json')
