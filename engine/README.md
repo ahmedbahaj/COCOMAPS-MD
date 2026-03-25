@@ -12,6 +12,8 @@ This package takes a multi-model PDB file and:
 4. **Detects** conserved interaction islands — residue clusters that persist across frames
 5. **Aggregates** all per-frame results into system-level CSVs and metadata
 
+After a successful web upload, the backend also writes a **Mol\* viewer PDB** (`frame_1/frame_1_viewer.pdb`) — see [`viewer_pdb.py`](viewer_pdb.py). The CLI pipeline does not run this step automatically; run it yourself if you need the slim viewer file locally.
+
 ## Modules
 
 ### [`analyze_pdb.py`](analyze_pdb.py)
@@ -36,7 +38,19 @@ python -m engine.analyze_pdb systems/my_protein.pdb --use-reduce
 ```
 
 ### [`viewer_pdb.py`](viewer_pdb.py)
-Web uploads only: builds `frame_1/frame_1_viewer.pdb` from the original uploaded PDB’s first processed frame (before interface trimming), removing waters and metals that never appear in `_interactions.csv`. Not invoked from the CLI.
+Builds **`frame_1/frame_1_viewer.pdb`** for the Mol\* 3D viewer: one structure using the **first processed frame** of the **original** system PDB (full complex, not the interface-trimmed `frame_1/frame_1.pdb`), so chain numbering matches the uploaded file.
+
+**What to keep:** Waters, metals, and configured ions (e.g. chloride) are **filtered** — only residues that appear in merged interaction data are kept. Keys come from **`_interactions.csv`**, per-frame **`*_final_file.csv`**, and **Water Identity / Metal Identity** from **`_water_mediated.csv` / `_metal_mediated.csv`** (or per-frame `*_Water_Mediated.csv` / `*_Metal_Mediated.csv`). Identities from **all frames** are unioned; coordinates are always from that **first** frame. Bulk solvent with no supporting row is dropped.
+
+**When it runs:** **`write_viewer_frame_pdb(system_dir)`** is called from the Flask upload handler after `run_pipeline()` succeeds (`backend/routes/upload.py`). It is **not** part of `python -m engine.analyze_pdb`.
+
+**Manual / CLI runs:** After the pipeline has produced `_interactions.csv` and the usual `frame_*` outputs:
+
+```bash
+python -c "from engine.viewer_pdb import write_viewer_frame_pdb; write_viewer_frame_pdb('systems/my_system', verbose=True)"
+# or backfill many systems:
+python scripts/build_viewer_pdbs.py --systems-dir systems --force
+```
 
 ### [`interface_selector.py`](interface_selector.py)
 Pure selection logic — no file I/O. Identifies which atoms to keep for analysis.
@@ -98,6 +112,9 @@ run_conserved_islands()   Graph analysis → _conserved_islands.json
     │
     ▼
 aggregate_system()        Combine all frames → system-level CSVs
+    │
+    ▼ (web upload only)
+write_viewer_frame_pdb()  frame_1/frame_1_viewer.pdb for Mol*
 ```
 
 ## Configuration
