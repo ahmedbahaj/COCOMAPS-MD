@@ -244,8 +244,14 @@ _TRENDS_PROPERTY_MAP = {
     'Polar vdW': 'Polar vdW contacts',
     'Proximal contacts': 'Proximal contacts',
     'Clashes': 'Clashes',
-    'Water mediated': 'Water-mediated contacts',
-    'Metal mediated': 'Metal-mediated contacts',
+    # Must match keys in trend_vals (same names as backend TRENDS_KEYS / frontend trendLabel).
+    # Previously pointed at 'Water-mediated contacts' / 'Metal-mediated contacts', which are
+    # not in trend_vals, so counts were always left at zero.
+    'Water mediated': 'Water mediated',
+    'Metal mediated': 'Metal mediated',
+    # Summary tables often use hyphens (e.g. "Water-Mediated Contacts")
+    'water-mediated': 'Water mediated',
+    'metal-mediated': 'Metal mediated',
     'S-S': 'S-S bonds',
     'SS bond': 'S-S bonds',
     'Amino-π': 'Amino-π interactions',
@@ -420,8 +426,11 @@ def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> boo
                         val = int(row.get('Value', 0))
                     except (TypeError, ValueError):
                         val = 0
+                    prop_lower = prop.lower()
                     for key, trend_key in _TRENDS_PROPERTY_MAP.items():
-                        if key in prop and trend_key in trend_vals:
+                        if trend_key not in trend_vals:
+                            continue
+                        if key.lower() in prop_lower:
                             trend_vals[trend_key] = val
                             break
             trends_rows.append({'frame': frame_num, **trend_vals})
