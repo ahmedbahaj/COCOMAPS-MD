@@ -76,9 +76,51 @@ def rename_waters_to_hoh(atoms):
             residue.resname = 'HOH'
 
 
+def write_frame_input_json(frame_folder, frame_num, chains, interface_cutoff=5.0):
+    """Write one CoCoMaps input JSON (INPUT_FILE_NAME) into frame_folder."""
+    if chains is None:
+        chains = DEFAULT_CHAINS
+    json_file = os.path.join(frame_folder, INPUT_FILE_NAME)
+    json_data = {
+        "pdb_file": f"/app/data/frame_{frame_num}.pdb",
+        "chains_set_1": chains[:1],
+        "chains_set_2": chains[1:2] if len(chains) > 1 else chains[:1],
+        "ranges_1": [[0, 100000]],
+        "ranges_2": [[0, 100000], [0, 100000]],
+        "HBOND_DIST": 3.9,
+        "HBOND_ANGLE": 90,
+        "SBRIDGE_DIST": 4.5,
+        "WBRIDGE_DIST": 3.9,
+        "CH_ON_DIST": 3.6,
+        "CH_ON_ANGLE": 110,
+        "CUT_OFF": interface_cutoff,
+        "APOLAR_TOLERANCE": 0.5,
+        "POLAR_TOLERANCE": 0.5,
+        "PI_PI_DIST": 5.5,
+        "PI_PI_THETA": 80,
+        "PI_PI_GAMMA": 90,
+        "ANION_PI_DIST": 5,
+        "LONEPAIR_PI_DIST": 5,
+        "AMINO_PI_DIST": 5,
+        "CATION_PI_DIST": 5,
+        "METAL_DIST": 3.2,
+        "HALOGEN_THETA1": 165,
+        "HALOGEN_THETA2": 120,
+        "C_H_PI_DIST": 5.0,
+        "C_H_PI_THETA1": 120,
+        "C_H_PI_THETA2": 30,
+        "NSOH_PI_DIST": 4.5,
+        "NSOH_PI_THETA1": 120,
+        "NSOH_PI_THETA2": 30,
+    }
+    with open(json_file, 'w') as f:
+        json.dump(json_data, f, indent=4)
+
+
 def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
                    select_interface=False, cutoff=5.0, water_cutoff=5.0,
-                   verbose=True, step_num=None, start_frame=0, end_frame=-1, frame_step=1):
+                   verbose=True, step_num=None, start_frame=0, end_frame=-1, frame_step=1,
+                   coco_input_chains=None):
     """
     Process PDB file: split into frames with optional interface selection.
     
@@ -111,7 +153,9 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
         0-based exclusive end index, or -1 for all frames (default -1)
     frame_step : int
         Step between frames (default 1)
-    
+    coco_input_chains : list or None
+        Chain list for CoCoMaps JSON (chains_set_1 / chains_set_2). Defaults to [chain_a, chain_b].
+
     Returns:
     --------
     tuple : (output_dir, frame_count, frame_stats)
@@ -279,6 +323,9 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
             with open(frame_file, 'w') as f:
                 f.write("REMARK   Empty frame - no interface atoms found\nEND\n")
 
+        json_chains = coco_input_chains if coco_input_chains is not None else [chain_a, chain_b]
+        write_frame_input_json(frame_folder, frame_num, json_chains, interface_cutoff=cutoff)
+
         # Close the trajectory reader so Windows releases the file lock
         universe.trajectory.close()
         del universe
@@ -393,52 +440,16 @@ def _write_summary_log(input_pdb, output_dir, log_file, chain_a, chain_b,
 
 
 def create_input_jsons(output_dir, frame_count, chains=None, interface_cutoff=5.0):
-    """Create example_input.json files for each frame"""
+    """Create example_input.json files for each frame (same format as process_frames)."""
     if chains is None:
         chains = DEFAULT_CHAINS
-    
+
     print(f"\nCreating input JSON files for {frame_count} frames...")
-    
+
     for i in range(1, frame_count + 1):
         frame_folder = os.path.join(output_dir, f"frame_{i}")
-        json_file = os.path.join(frame_folder, INPUT_FILE_NAME)
-        
-        json_data = {
-            "pdb_file": f"/app/data/frame_{i}.pdb",
-            "chains_set_1": chains[:1],
-            "chains_set_2": chains[1:2] if len(chains) > 1 else chains[:1],
-            "ranges_1": [[0, 100000]],
-            "ranges_2": [[0, 100000], [0, 100000]],
-            "HBOND_DIST": 3.9,
-            "HBOND_ANGLE": 90,
-            "SBRIDGE_DIST": 4.5,
-            "WBRIDGE_DIST": 3.9,
-            "CH_ON_DIST": 3.6,
-            "CH_ON_ANGLE": 110,
-            "CUT_OFF": interface_cutoff,
-            "APOLAR_TOLERANCE": 0.5,
-            "POLAR_TOLERANCE": 0.5,
-            "PI_PI_DIST": 5.5,
-            "PI_PI_THETA": 80,
-            "PI_PI_GAMMA": 90,
-            "ANION_PI_DIST": 5,
-            "LONEPAIR_PI_DIST": 5,
-            "AMINO_PI_DIST": 5,
-            "CATION_PI_DIST": 5,
-            "METAL_DIST": 3.2,
-            "HALOGEN_THETA1": 165,
-            "HALOGEN_THETA2": 120,
-            "C_H_PI_DIST": 5.0,
-            "C_H_PI_THETA1": 120,
-            "C_H_PI_THETA2": 30,
-            "NSOH_PI_DIST": 4.5,
-            "NSOH_PI_THETA1": 120,
-            "NSOH_PI_THETA2": 30
-        }
-        
-        with open(json_file, 'w') as f:
-            json.dump(json_data, f, indent=4)
-    
+        write_frame_input_json(frame_folder, i, chains, interface_cutoff=interface_cutoff)
+
     print(f"✓ Created {frame_count} input JSON files")
 
 
@@ -560,8 +571,6 @@ def run_pipeline(
 
         if frame_stats and all(s.get('total_atoms', 0) == 0 for s in frame_stats):
             return 0, f'No interface atoms in any frame. Check chain IDs (e.g. 1ULL uses A and B).'
-
-        create_input_jsons(output_dir, frame_count, [chain_a, chain_b], interface_cutoff=interface_cutoff)
 
         run_cocomaps_analysis(output_dir, use_reduce=use_reduce, step_num=None, progress_callback=progress_callback)
 
@@ -704,7 +713,8 @@ Environment Variables:
             cutoff=args.interface_cutoff,
             water_cutoff=water_cutoff,
             verbose=True,
-            step_num=step_num
+            step_num=step_num,
+            coco_input_chains=args.chains,
         )
         step_num += 1
 
@@ -715,10 +725,7 @@ Environment Variables:
             print("  Example: 1ULL has chains A (RNA) and B (REV peptide); use: -c A B")
             return 1
 
-        # STEP 2: Create input JSON files
-        create_input_jsons(output_dir, frame_count, args.chains, interface_cutoff=args.interface_cutoff)
-        
-        # STEP 3: Run CoCoMaps
+        # STEP 2: Run CoCoMaps
         analysis_time, successful, failed = run_cocomaps_analysis(
             output_dir, args.use_reduce, step_num=step_num
         )
