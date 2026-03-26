@@ -8,6 +8,7 @@ import time
 import shutil
 import subprocess
 import tempfile
+import uuid
 from pathlib import Path
 
 from rich.console import Console
@@ -60,6 +61,7 @@ def run_pipeline(
     if cocomaps_params is None:
         cocomaps_params = dict(DEFAULT_COCOMAPS_PARAMS)
 
+    chains = [chain_a, chain_b]
     overall_start = time.time()
 
     console.print()
@@ -70,9 +72,9 @@ def run_pipeline(
     ))
 
     # ──────────────────────────────────────────────────────────────────────
-    # STEP 1: Split / process frames and write CoCoMaps JSON per frame
+    # STEP 1: Split / process frames
     # ──────────────────────────────────────────────────────────────────────
-    console.print("\n[bold cyan]STEP 1/4[/bold cyan] — Splitting PDB and writing CoCoMaps inputs …")
+    console.print("\n[bold cyan]STEP 1/5[/bold cyan] — Splitting PDB into frames …")
 
     # --- Raw-text frame splitting (handles variable atom counts) ---
     # Read MODEL/ENDMDL blocks from the PDB file so we don't rely on
@@ -137,8 +139,6 @@ def run_pipeline(
 
     import MDAnalysis as mda
 
-    input_file_name = os.environ.get("INPUT_FILE_NAME", "example_input.json")
-
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -147,7 +147,7 @@ def run_pipeline(
         TimeElapsedColumn(),
         console=console,
     ) as progress:
-        task = progress.add_task("Processing frames", total=num_frames)
+        task = progress.add_task("Splitting frames", total=num_frames)
 
         for idx, frame_idx in enumerate(frames_to_process):
             output_frame_num = idx + 1
@@ -187,28 +187,38 @@ def run_pipeline(
                 if os.path.exists(tmp_frame):
                     os.remove(tmp_frame)
 
-            json_data = {
-                "pdb_file": f"/app/data/frame_{output_frame_num}.pdb",
-                "chains_set_1": [chain_a],
-                "chains_set_2": [chain_b],
-                "ranges_1": [[0, 100000]],
-                "ranges_2": [[0, 100000], [0, 100000]],
-                **cocomaps_params,
-            }
-            json_path = os.path.join(frame_folder, input_file_name)
-            with open(json_path, 'w') as f:
-                json.dump(json_data, f, indent=4)
-
             progress.update(task, advance=1)
 
-    console.print(
-        f"  [green]✓[/green] Wrote {num_frames} frame PDBs and CoCoMaps input JSON files"
-    )
+    console.print(f"  [green]✓[/green] Split into {num_frames} frames")
 
     # ──────────────────────────────────────────────────────────────────────
-    # STEP 2: Run CoCoMaps Docker on each frame
+    # STEP 2: Create input JSON files (with merged CoCoMaps params)
     # ──────────────────────────────────────────────────────────────────────
-    console.print("\n[bold cyan]STEP 2/4[/bold cyan] — Running CoCoMaps analysis …")
+    console.print("\n[bold cyan]STEP 2/5[/bold cyan] — Creating CoCoMaps input files …")
+
+    input_file_name = os.environ.get("INPUT_FILE_NAME", "example_input.json")
+
+    for i in range(1, num_frames + 1):
+        frame_folder = os.path.join(output_dir, f"frame_{i}")
+        json_data = {
+            "pdb_file": f"/app/data/frame_{i}.pdb",
+            "chains_set_1": [chain_a],
+            "chains_set_2": [chain_b],
+            "ranges_1": [[0, 100000]],
+            "ranges_2": [[0, 100000], [0, 100000]],
+            **cocomaps_params,
+        }
+
+        json_path = os.path.join(frame_folder, input_file_name)
+        with open(json_path, 'w') as f:
+            json.dump(json_data, f, indent=4)
+
+    console.print(f"  [green]✓[/green] Created {num_frames} input JSON files")
+
+    # ──────────────────────────────────────────────────────────────────────
+    # STEP 3: Run CoCoMaps Docker on each frame
+    # ──────────────────────────────────────────────────────────────────────
+    console.print("\n[bold cyan]STEP 3/5[/bold cyan] — Running CoCoMaps analysis …")
 
     docker_image = _resolve_docker_image(use_reduce)
     successful = 0
@@ -284,9 +294,9 @@ def run_pipeline(
     console.print(f"  [green]✓[/green] CoCoMaps: {successful}/{num_frames} successful, {failed} failed")
 
     # ──────────────────────────────────────────────────────────────────────
-    # STEP 3: Conserved island analysis
+    # STEP 4: Conserved island analysis
     # ──────────────────────────────────────────────────────────────────────
-    console.print("\n[bold cyan]STEP 3/4[/bold cyan] — Running conserved island analysis …")
+    console.print("\n[bold cyan]STEP 4/5[/bold cyan] — Running conserved island analysis …")
 
     try:
         from engine import run_conserved_islands
@@ -301,9 +311,9 @@ def run_pipeline(
         console.print(f"  [yellow]Warning: Conserved islands failed: {e}[/yellow]")
 
     # ──────────────────────────────────────────────────────────────────────
-    # STEP 4: Aggregate CSV files
+    # STEP 5: Aggregate CSV files
     # ──────────────────────────────────────────────────────────────────────
-    console.print("\n[bold cyan]STEP 4/4[/bold cyan] — Aggregating system CSV files …")
+    console.print("\n[bold cyan]STEP 5/5[/bold cyan] — Aggregating system CSV files …")
 
     try:
         from engine import aggregate_system
