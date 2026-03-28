@@ -89,7 +89,14 @@ def process_pdb_async(app, job_id, pdb_file, pdb_name, use_reduce=True, chain1='
     with app.app_context():
         try:
             upload_folder = app.config['UPLOAD_FOLDER']
-            system_dir = os.path.join(upload_folder, 'systems', pdb_name)
+            base_dir = os.path.join(upload_folder, 'systems', pdb_name)
+            # If a directory already exists for this pdb_name (e.g. a previous or
+            # concurrent job), give this submission its own unique directory so they
+            # don't overwrite each other's frame files and results.
+            if os.path.exists(base_dir):
+                system_dir = base_dir + '_' + job_id[:8]
+            else:
+                system_dir = base_dir
 
             # Run the full pipeline (engine package)
             from engine import run_pipeline

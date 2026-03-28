@@ -260,17 +260,28 @@ const loadAllJobs = async () => {
     ])
 
     // Build a merged list
-    // Start with completed systems (these have full metadata)
     const merged = new Map()
 
+    // Collect pdbNames that currently have an active (in-progress) job so we
+    // can suppress the prematurely-detected 'ready' system directory entry —
+    // frame folders are created before Docker finishes, so the filesystem scan
+    // would otherwise show a false completed row alongside the real active one.
+    const activePdbNames = new Set(
+      jobs
+        .filter(j => !['completed', 'failed'].includes(j.status))
+        .map(j => j.pdb_name)
+    )
+
+    // Add completed systems, skipping any whose directory is still being
+    // written by an active job (avoids the duplicate row problem).
     for (const system of systems) {
+      if (activePdbNames.has(system.id)) continue
       merged.set(system.id, {
         id: system.id,
         name: system.name,
         dateCreated: system.dateCreated,
         frames: system.frames,
         status: system.status || 'ready',
-        // Public analysis jobId (canonical link); from system or from backend job record
         jobId: system.jobId || null,
         job_id: null,
         step_label: null,
@@ -278,16 +289,14 @@ const loadAllJobs = async () => {
       })
     }
 
-    // Overlay active/recent jobs (these have progress info); for completed, keep analysis_job_id when present
+    // Overlay active/recent jobs keyed by UUID so multiple concurrent jobs for
+    // the same pdb_name each get their own row instead of overriding each other.
     for (const job of jobs) {
       const pdbName = job.pdb_name
       const isActive = !['completed', 'failed'].includes(job.status)
 
       if (isActive) {
-        // Key by pdbName so this overwrites the prematurely-detected system
-        // directory entry that the filesystem scan picks up as 'ready' as soon
-        // as frame folders are created (before Docker analysis completes).
-        merged.set(pdbName, {
+        merged.set(job.job_id, {
           id: job.job_id,
           name: pdbName,
           dateCreated: job.created_at,
@@ -298,7 +307,7 @@ const loadAllJobs = async () => {
           progress: job.progress || 0
         })
       } else if (job.status === 'failed') {
-        // Failed jobs show only if not already in systems
+        // Show failed jobs that don't have a completed system entry
         if (!merged.has(pdbName)) {
           merged.set(job.job_id, {
             id: job.job_id,
