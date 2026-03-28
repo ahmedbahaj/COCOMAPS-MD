@@ -480,7 +480,8 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_
         
         container_input_path = f"/app/data/{INPUT_FILE_NAME}"
         docker_command = (
-            f'docker run '
+            f'docker run --rm '
+            f'--platform linux/amd64 '
             f'-v "{os.path.abspath(frame_path)}":/app/data '
             f'{docker_image} '
             f'python /app/coco2/begin.py {container_input_path}'
@@ -563,7 +564,21 @@ def run_pipeline(
 
         create_input_jsons(output_dir, frame_count, [chain_a, chain_b], interface_cutoff=interface_cutoff)
 
-        run_cocomaps_analysis(output_dir, use_reduce=use_reduce, step_num=None, progress_callback=progress_callback)
+        _, successful, failed = run_cocomaps_analysis(
+            output_dir, use_reduce=use_reduce, step_num=None, progress_callback=progress_callback
+        )
+
+        if successful == 0 and failed > 0:
+            docker_image = DOCKER_IMAGE_REDUCE if use_reduce else DOCKER_IMAGE_NO_REDUCE
+            return 0, (
+                f'CoCoMaps Docker analysis failed for all {failed} frame(s). '
+                f'Image "{docker_image}" could not run — check that the image exists and '
+                f'Docker Desktop is running. On Apple Silicon Macs ensure the image supports '
+                f'linux/amd64 or arm64.'
+            )
+
+        if failed > 0:
+            print(f'[pipeline] Warning: {failed}/{successful + failed} frames failed CoCoMaps analysis and will be skipped.')
 
         if progress_callback:
             progress_callback(step_label='Running conserved island analysis', progress=92)
