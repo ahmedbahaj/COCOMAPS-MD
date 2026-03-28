@@ -244,7 +244,7 @@ const canStartAnalysis = computed(() => {
 })
 
 // On mount: check for active job in localStorage or query param
-onMounted(() => {
+onMounted(async () => {
   const jobIdFromQuery = route.query.job
   const savedJobId = localStorage.getItem('activeJobId')
   const jobId = jobIdFromQuery || savedJobId
