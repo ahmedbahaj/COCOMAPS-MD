@@ -252,10 +252,29 @@ onMounted(() => {
   if (jobId) {
     activeJobId.value = jobId
     isProcessing.value = true
-    // Show a minimal status card while we wait for the first poll
     processingStatus.value = { status: 'resuming', progress: 0, step_label: 'Resuming job…' }
-    // We set uploadedFile to a placeholder so the config section shows
-    uploadedFile.value = { name: jobId, size: 0 }
+
+    // Restore UI state from the job record so the file card and chain info
+    // show the correct values instead of zeros when navigating back.
+    try {
+      const jobStatus = await api.getStatus(jobId)
+      const pdbName = jobStatus.pdb_name || jobId
+      const chain1 = jobStatus.chain1 || 'A'
+      const chain2 = jobStatus.chain2 || 'B'
+
+      // endFrame from the job record tells us how many frames were submitted
+      // (frames field starts at 0 and is only set on completion)
+      const endFrame = typeof jobStatus.endFrame === 'number' ? jobStatus.endFrame : jobStatus.frames || 0
+
+      uploadedFile.value = { name: pdbName + '.pdb', size: 0 }
+      detectedChains.value = [chain1, chain2]
+      detectedFrames.value = endFrame
+      chainSelection.value = { chain1, chain2, isValid: true }
+    } catch {
+      // Fallback: show placeholder so the config section at least renders
+      uploadedFile.value = { name: jobId, size: 0 }
+    }
+
     pollStatus(jobId)
   }
 })
