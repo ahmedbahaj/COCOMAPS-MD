@@ -263,6 +263,7 @@ def run_pipeline(
 
                 docker_command = [
                     'docker', 'run', '--rm',
+                    '--platform', 'linux/amd64',
                     '-v', f'{mount_path}:/app/data',
                     docker_image,
                     'python', '/app/coco2/begin.py', container_input_path,
