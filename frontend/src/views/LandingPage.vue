@@ -238,13 +238,9 @@ const activeJobId = ref(null)
 let statusPollInterval = null
 
 const canStartAnalysis = computed(() => {
-  const jobName = (advancedSettings.value.jobName || '').trim()
-  const email = (advancedSettings.value.email || '').trim()
   return uploadedFile.value &&
          chainSelection.value.isValid &&
-         detectedChains.value.length >= 2 &&
-         jobName.length > 0 &&
-         email.length > 0
+         detectedChains.value.length >= 2
 })
 
 // On mount: check for active job in localStorage or query param
