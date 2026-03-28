@@ -243,40 +243,40 @@ const canStartAnalysis = computed(() => {
          detectedChains.value.length >= 2
 })
 
-// On mount: check for active job in localStorage or query param
+// On mount: only restore job tracking when an explicit ?job= query param is
+// present. Never auto-restore from localStorage on a plain navigation to "/",
+// because the user may want to submit a new job independently. The URL is the
+// single source of truth — startAnalysis updates it to /?job=<uuid> so a page
+// refresh also restores correctly without blocking new submissions.
 onMounted(async () => {
-  const jobIdFromQuery = route.query.job
-  const savedJobId = localStorage.getItem('activeJobId')
-  const jobId = jobIdFromQuery || savedJobId
+  const jobId = route.query.job
+  if (!jobId) return
 
-  if (jobId) {
-    activeJobId.value = jobId
-    isProcessing.value = true
-    processingStatus.value = { status: 'resuming', progress: 0, step_label: 'Resuming job…' }
+  activeJobId.value = jobId
+  isProcessing.value = true
+  processingStatus.value = { status: 'resuming', progress: 0, step_label: 'Resuming job…' }
 
-    // Restore UI state from the job record so the file card and chain info
-    // show the correct values instead of zeros when navigating back.
-    try {
-      const jobStatus = await api.getStatus(jobId)
-      const pdbName = jobStatus.pdb_name || jobId
-      const chain1 = jobStatus.chain1 || 'A'
-      const chain2 = jobStatus.chain2 || 'B'
+  // Restore UI state from the job record so the file card and chain info
+  // show the correct values instead of zeros when navigating back.
+  try {
+    const jobStatus = await api.getStatus(jobId)
+    const pdbName = jobStatus.pdb_name || jobId
+    const chain1 = jobStatus.chain1 || 'A'
+    const chain2 = jobStatus.chain2 || 'B'
 
-      // endFrame from the job record tells us how many frames were submitted
-      // (frames field starts at 0 and is only set on completion)
-      const endFrame = typeof jobStatus.endFrame === 'number' ? jobStatus.endFrame : jobStatus.frames || 0
+    // endFrame from the job record tells us how many frames were submitted
+    // (frames field starts at 0 and is only set on completion)
+    const endFrame = typeof jobStatus.endFrame === 'number' ? jobStatus.endFrame : jobStatus.frames || 0
 
-      uploadedFile.value = { name: pdbName + '.pdb', size: 0 }
-      detectedChains.value = [chain1, chain2]
-      detectedFrames.value = endFrame
-      chainSelection.value = { chain1, chain2, isValid: true }
-    } catch {
-      // Fallback: show placeholder so the config section at least renders
-      uploadedFile.value = { name: jobId, size: 0 }
-    }
-
-    pollStatus(jobId)
+    uploadedFile.value = { name: pdbName + '.pdb', size: 0 }
+    detectedChains.value = [chain1, chain2]
+    detectedFrames.value = endFrame
+    chainSelection.value = { chain1, chain2, isValid: true }
+  } catch {
+    uploadedFile.value = { name: jobId, size: 0 }
   }
+
+  pollStatus(jobId)
 })
 
 const triggerFileInput = () => {
@@ -385,7 +385,7 @@ const resetUpload = () => {
   }
   processingStatus.value = null
   activeJobId.value = null
-  localStorage.removeItem('activeJobId')
+  router.replace({ name: 'Landing', query: {} })
   if (fileInput.value) {
     fileInput.value.value = ''
   }
@@ -444,9 +444,9 @@ const startAnalysis = async () => {
     if (result.success) {
       const jobId = result.job_id
       activeJobId.value = jobId
-      // Persist job ID so we can resume on refresh
-      localStorage.setItem('activeJobId', jobId)
-      // Start polling for status
+      // Put the job ID in the URL so a page refresh restores tracking without
+      // blocking new submissions on plain navigation to "/".
+      router.replace({ name: 'Landing', query: { job: jobId } })
       pollStatus(jobId)
     } else {
       throw new Error(result.error || 'Upload failed')
@@ -473,7 +473,7 @@ const pollStatus = (jobId) => {
         clearInterval(statusPollInterval)
         isProcessing.value = false
         activeJobId.value = null
-        localStorage.removeItem('activeJobId')
+        router.replace({ name: 'Landing', query: {} })
         // Store timeUnit in dataStore for charts to use
         dataStore.setTimeUnit(advancedSettings.value.timeUnit)
 
@@ -500,7 +500,7 @@ const pollStatus = (jobId) => {
         clearInterval(statusPollInterval)
         isProcessing.value = false
         activeJobId.value = null
-        localStorage.removeItem('activeJobId')
+        router.replace({ name: 'Landing', query: {} })
       }
     } catch (error) {
       console.error('Status poll error:', error)
