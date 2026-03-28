@@ -284,8 +284,10 @@ const loadAllJobs = async () => {
       const isActive = !['completed', 'failed'].includes(job.status)
 
       if (isActive) {
-        // Active jobs always show
-        merged.set(job.job_id, {
+        // Key by pdbName so this overwrites the prematurely-detected system
+        // directory entry that the filesystem scan picks up as 'ready' as soon
+        // as frame folders are created (before Docker analysis completes).
+        merged.set(pdbName, {
           id: job.job_id,
           name: pdbName,
           dateCreated: job.created_at,
