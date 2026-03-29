@@ -69,7 +69,7 @@
             <div class="dependency-card">
               <h3>CoCoMaps 2.0</h3>
               <p class="description">Contact and Contact Maps - web application for analyzing biomolecular interfaces.</p>
-              <p class="authors">Vangone A. et al.</p>
+              <p class="authors">Chawla M. et al.</p>
               <a href="https://aocdweb.com/BioTools/cocomaps2" target="_blank" class="link">Visit CoCoMaps 2.0 ↗</a>
             </div>
 
