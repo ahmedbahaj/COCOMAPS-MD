@@ -262,20 +262,21 @@ const loadAllJobs = async () => {
     // Build a merged list
     const merged = new Map()
 
-    // Collect pdbNames that currently have an active (in-progress) job so we
-    // can suppress the prematurely-detected 'ready' system directory entry —
-    // frame folders are created before Docker finishes, so the filesystem scan
-    // would otherwise show a false completed row alongside the real active one.
-    const activePdbNames = new Set(
+    // Collect the exact system directory stems for all active (in-progress) jobs
+    // so we can suppress the prematurely-detected 'ready' filesystem entry.
+    // We use system_id (the actual directory name, e.g. "protein_abc12345") rather
+    // than pdb_name ("protein") because a second submission for the same PDB gets
+    // a suffixed directory — pdb_name alone would miss that entry.
+    const activeSystemIds = new Set(
       jobs
         .filter(j => !['completed', 'failed'].includes(j.status))
-        .map(j => j.pdb_name)
+        .map(j => j.system_id || j.pdb_name)  // fall back for older job records
     )
 
     // Add completed systems, skipping any whose directory is still being
     // written by an active job (avoids the duplicate row problem).
     for (const system of systems) {
-      if (activePdbNames.has(system.id)) continue
+      if (activeSystemIds.has(system.id)) continue
       merged.set(system.id, {
         id: system.id,
         name: system.name,

@@ -83,20 +83,11 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def process_pdb_async(app, job_id, pdb_file, pdb_name, use_reduce=True, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1, frame_step=1, job_name=None, email=None):
+def process_pdb_async(app, job_id, pdb_file, pdb_name, system_dir, use_reduce=True, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1, frame_step=1, job_name=None, email=None):
     """Process PDB file asynchronously — full pipeline. job_name and email are written to .metadata.json on success.
-    pdb_file is a temp path; it is deleted after processing."""
+    pdb_file is a temp path; it is deleted after processing. system_dir is pre-resolved by the caller."""
     with app.app_context():
         try:
-            upload_folder = app.config['UPLOAD_FOLDER']
-            base_dir = os.path.join(upload_folder, 'systems', pdb_name)
-            # If a directory already exists for this pdb_name (e.g. a previous or
-            # concurrent job), give this submission its own unique directory so they
-            # don't overwrite each other's frame files and results.
-            if os.path.exists(base_dir):
-                system_dir = base_dir + '_' + job_id[:8]
-            else:
-                system_dir = base_dir
 
             # Run the full pipeline (engine package)
             from engine import run_pipeline
@@ -255,6 +246,16 @@ def upload_file():
         # Generate a unique job ID
         job_id = str(uuid.uuid4())
 
+        # Resolve the system output directory now (before the thread starts) so
+        # the exact directory stem can be stored in the job record. This lets the
+        # frontend suppress the prematurely-detected 'ready' filesystem entry by
+        # matching on system_id rather than pdb_name (which may differ when a
+        # suffix is appended to avoid collisions with an existing directory).
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        base_system_dir = os.path.join(upload_folder, 'systems', pdb_name)
+        system_dir = base_system_dir if not os.path.exists(base_system_dir) else base_system_dir + '_' + job_id[:8]
+        system_id = os.path.basename(system_dir)
+
         # Ensure jobs are loaded
         _init_jobs_for_app(current_app)
 
@@ -263,6 +264,7 @@ def upload_file():
             _jobs[job_id] = {
                 'job_id': job_id,
                 'pdb_name': pdb_name,
+                'system_id': system_id,
                 'status': 'queued',
                 'progress': 0,
                 'step_label': 'Queued',
@@ -281,7 +283,7 @@ def upload_file():
         app_instance = current_app._get_current_object()
         thread = threading.Thread(
             target=process_pdb_async,
-            args=(app_instance, job_id, filepath, pdb_name, use_reduce, chain1, chain2, interface_cutoff, start_frame, end_frame, frame_step, job_name, email)
+            args=(app_instance, job_id, filepath, pdb_name, system_dir, use_reduce, chain1, chain2, interface_cutoff, start_frame, end_frame, frame_step, job_name, email)
         )
         thread.daemon = True
         thread.start()
