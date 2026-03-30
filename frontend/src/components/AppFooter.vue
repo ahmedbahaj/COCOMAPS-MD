@@ -1,6 +1,6 @@
 <template>
   <footer class="app-footer">
-    <p>Trajectory Analysis • Powered by CoCoMaps 2.0 and MDAnalysis</p>
+    <p>COCOMAPS-MD • Powered by CoCoMaps 2.0 and MDAnalysis</p>
   </footer>
 </template>
 

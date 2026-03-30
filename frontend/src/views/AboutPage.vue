@@ -3,7 +3,7 @@
     <!-- Navigation -->
     <nav class="nav-bar">
       <div class="nav-left">
-        <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
+        <router-link to="/" class="nav-logo">COCOMAPS-MD</router-link>
         <div class="nav-links">
           <router-link to="/" class="nav-link">Home</router-link>
           <router-link to="/jobs" class="nav-link">Jobs</router-link>
@@ -16,7 +16,7 @@
 
     <!-- Header -->
     <header class="page-header">
-      <h1>About Trajectory Analysis</h1>
+      <h1>About COCOMAPS-MD</h1>
       <p class="subtitle">Understanding Protein-Protein Interface Interactions</p>
     </header>
 
@@ -25,9 +25,9 @@
       <div class="container">
         <!-- Introduction -->
         <section class="section">
-          <h2>What is Trajectory Analysis?</h2>
+          <h2>What is COCOMAPS-MD?</h2>
           <p>
-            Trajectory Analysis is a comprehensive tool for analyzing protein-protein 
+            <strong>COCOMAPS-MD</strong> is a comprehensive tool for analyzing protein-protein 
             and protein-nucleic acid interfaces across molecular dynamics trajectories. 
             It identifies and classifies atomic interactions at molecular interfaces based 
             on precise geometric criteria.

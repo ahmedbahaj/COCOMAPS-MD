@@ -3,7 +3,7 @@
     <!-- Navigation -->
     <nav class="nav-bar">
       <div class="nav-left">
-        <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
+        <router-link to="/" class="nav-logo">COCOMAPS-MD</router-link>
         <div class="nav-links">
           <router-link to="/" class="nav-link">Home</router-link>
           <router-link to="/jobs" class="nav-link active">Jobs</router-link>

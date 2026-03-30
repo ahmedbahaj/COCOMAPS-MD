@@ -3,7 +3,7 @@
     <!-- Navigation -->
     <nav class="nav-bar">
       <div class="nav-left">
-        <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
+        <router-link to="/" class="nav-logo">COCOMAPS-MD</router-link>
         <div class="nav-links">
           <router-link to="/" class="nav-link">Home</router-link>
           <router-link to="/jobs" class="nav-link">Jobs</router-link>
@@ -27,7 +27,7 @@
         <section class="section">
           <h2>How to Cite</h2>
           <p class="section-intro">
-            If you use Trajectory Analysis in your research, please cite the following publication:
+            If you use COCOMAPS-MD in your research, please cite the following publication:
           </p>
 
           <div class="references-list">
@@ -62,7 +62,7 @@
         <section class="section">
           <h2>Core Analysis Tools</h2>
           <p class="section-intro">
-            Trajectory Analysis relies on CoCoMaps 2.0 and these established bioinformatics tools:
+            COCOMAPS-MD relies on CoCoMaps 2.0 and these established bioinformatics tools:
           </p>
 
           <div class="dependencies-grid">
@@ -177,7 +177,7 @@
         <section class="section">
           <h2>License & Usage</h2>
           <p>
-            Trajectory Analysis is provided for academic and research purposes. 
+            COCOMAPS-MD is provided for academic and research purposes. 
             Please ensure proper citation when using this tool in publications.
           </p>
           <p>

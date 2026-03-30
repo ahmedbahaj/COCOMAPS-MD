@@ -3,7 +3,7 @@
     <!-- Navigation -->
     <nav class="nav-bar">
       <div class="nav-left">
-        <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
+        <router-link to="/" class="nav-logo">COCOMAPS-MD</router-link>
         <div class="nav-links">
           <router-link to="/" class="nav-link active">Home</router-link>
           <router-link to="/jobs" class="nav-link">Jobs</router-link>
@@ -26,8 +26,7 @@
             </svg>
           </div>
         </div>
-        <h1 class="title">Trajectory Analysis</h1>
-        <p class="subtitle">MD Trajectory Analysis</p>
+        <h1 class="title">COCOMAPS-MD</h1>
         <p class="description">
           A comprehensive tool for analyzing protein-protein interface interactions across 
           molecular dynamics trajectories. Upload a multi-model PDB file, select chains, 

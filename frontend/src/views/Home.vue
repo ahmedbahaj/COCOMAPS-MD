@@ -8,7 +8,7 @@
           <span></span>
           <span></span>
         </button>
-        <router-link to="/" class="nav-logo">Trajectory Analysis</router-link>
+        <router-link to="/" class="nav-logo">COCOMAPS-MD</router-link>
         <div class="nav-links">
           <router-link to="/" class="nav-link">Home</router-link>
           <router-link to="/jobs" class="nav-link">Jobs</router-link>
