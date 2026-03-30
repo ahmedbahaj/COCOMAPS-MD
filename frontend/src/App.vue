@@ -1,11 +1,16 @@
 <template>
   <div id="app">
-    <RouterView />
+    <AppNavbar :sidebarOpen="sidebarOpen" @toggle-sidebar="sidebarOpen = !sidebarOpen" />
+    <RouterView :sidebarOpen="sidebarOpen" @toggle-sidebar="sidebarOpen = !sidebarOpen" />
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { RouterView } from 'vue-router'
+import AppNavbar from './components/AppNavbar.vue'
+
+const sidebarOpen = ref(false)
 </script>
 
 <style>

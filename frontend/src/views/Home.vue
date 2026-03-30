@@ -1,26 +1,7 @@
 <template>
   <div class="home">
-    <!-- Navigation Bar -->
-    <nav class="nav-bar">
-      <div class="nav-left">
-        <button class="hamburger-btn" @click="toggleSidebar" :class="{ active: sidebarOpen }">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <router-link to="/" class="nav-logo">COCOMAPS-MD</router-link>
-        <div class="nav-links">
-          <router-link to="/" class="nav-link">Home</router-link>
-          <router-link to="/jobs" class="nav-link">Jobs</router-link>
-          <router-link to="/about" class="nav-link">About</router-link>
-          <router-link to="/references" class="nav-link">References</router-link>
-        </div>
-      </div>
-      <div class="nav-right"></div>
-    </nav>
-
     <!-- System Sidebar -->
-    <SystemSidebar :isOpen="sidebarOpen" @close="toggleSidebar" />
+    <SystemSidebar :isOpen="sidebarOpen" @close="$emit('toggle-sidebar')" />
 
     <!-- Main Content -->
     <div class="main-content">
@@ -64,21 +45,15 @@ import UploadModal from '../components/UploadModal.vue'
 import SystemSidebar from '../components/SystemSidebar.vue'
 import AppFooter from '../components/AppFooter.vue'
 
+const props = defineProps({
+  sidebarOpen: { type: Boolean, default: false }
+})
+defineEmits(['toggle-sidebar'])
+
 const dataStore = useDataStore()
 const route = useRoute()
 const router = useRouter()
-const sidebarOpen = ref(false)
 const uploadModal = ref(null)
-
-const toggleSidebar = () => {
-  sidebarOpen.value = !sidebarOpen.value
-}
-
-const openUploadModal = () => {
-  if (uploadModal.value) {
-    uploadModal.value.open()
-  }
-}
 
 onMounted(async () => {
   await dataStore.loadSystems()
@@ -109,129 +84,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-}
-
-/* Navigation Bar */
-.nav-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 24px;
-  background: #ffffff;
-  border-bottom: 1px solid #e8e8ed;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.hamburger-btn {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: 36px;
-  height: 36px;
-  padding: 8px;
-  background: #f5f5f7;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.hamburger-btn:hover {
-  background: #e8e8ed;
-}
-
-.hamburger-btn span {
-  display: block;
-  width: 100%;
-  height: 2px;
-  background: #1d1d1f;
-  border-radius: 1px;
-  transition: all 0.2s ease;
-}
-
-.hamburger-btn.active span:nth-child(1) {
-  transform: rotate(45deg) translate(5px, 5px);
-}
-
-.hamburger-btn.active span:nth-child(2) {
-  opacity: 0;
-}
-
-.hamburger-btn.active span:nth-child(3) {
-  transform: rotate(-45deg) translate(5px, -5px);
-}
-
-.nav-logo {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1d1d1f;
-  text-decoration: none;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-left: 32px;
-}
-
-.nav-link {
-  font-size: 14px;
-  font-weight: 500;
-  color: #6e6e73;
-  text-decoration: none;
-  transition: color 0.15s ease;
-  position: relative;
-  padding-bottom: 4px;
-}
-
-.nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: #1d1d1f;
-  transition: width 0.15s ease;
-}
-
-.nav-link:hover {
-  color: #1d1d1f;
-}
-
-.nav-link.router-link-active {
-  color: #1d1d1f;
-}
-
-.nav-link.router-link-active::after {
-  width: 100%;
-}
-
-.nav-upload-btn {
-  padding: 8px 16px;
-  background: #1d1d1f;
-  color: #ffffff;
-  border: none;
-  border-radius: 980px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s ease;
-}
-
-.nav-upload-btn:hover {
-  background: #000000;
 }
 
 /* Main Content */
@@ -273,14 +125,6 @@ h1 {
 }
 
 @media (max-width: 768px) {
-  .nav-links {
-    gap: 16px;
-  }
-
-  .nav-link {
-    font-size: 13px;
-  }
-
   h1 {
     font-size: 32px;
   }
