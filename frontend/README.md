@@ -40,7 +40,7 @@ src/
 │   ├── chartHelpers.js         # Color palette, type matching, residue formatting
 │   └── highchartsConfig.js     # Shared Highcharts export configuration
 ├── router/
-│   └── index.js                # Vue Router (5 routes, base: /BioTools/trajectory_analysis/)
+│   └── index.js                # Vue Router (5 routes, base: /BioTools/COCOMAPS-MD/)
 ├── App.vue                     # Root component
 └── main.js                     # App entry (Pinia, Router, Highcharts modules)
 ```
@@ -82,7 +82,7 @@ System sidebar, chart selector tabs, dynamic chart container, conservation thres
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `VITE_API_URL` | `http://localhost:5001/api` | Backend API base URL |
-| `base` (vite.config.js) | `/BioTools/trajectory_analysis/` | Deploy path prefix |
+| `base` (vite.config.js) | `/BioTools/COCOMAPS-MD/` | Deploy path prefix |
 
 ## Tech Stack
 

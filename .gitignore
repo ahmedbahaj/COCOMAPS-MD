@@ -6,6 +6,7 @@ theAtomProblem.md
 
 # Systems folder contains large PDB files and analysis data
 systems/
+systems.zip
 
 # Python build artifacts
 __pycache__/

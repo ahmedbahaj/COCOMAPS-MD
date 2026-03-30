@@ -34,7 +34,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory('/BioTools/trajectory_analysis'),
+  history: createWebHistory('/BioTools/COCOMAPS-MD'),
   routes
 })
 

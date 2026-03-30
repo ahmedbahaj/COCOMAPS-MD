@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
-  base: '/BioTools/trajectory_analysis/',
+  base: '/BioTools/COCOMAPS-MD/',
   plugins: [vue()],
   server: {
     port: 5173,
