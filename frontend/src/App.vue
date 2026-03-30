@@ -27,5 +27,11 @@ body {
 #app {
   min-height: 100vh;
 }
+
+/* Hide app chrome when the Mol* viewer is expanded */
+body.molstar-expanded .chart-selector,
+body.molstar-expanded .nav-bar {
+  display: none !important;
+}
 </style>
 

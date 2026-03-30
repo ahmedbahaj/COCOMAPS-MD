@@ -45,6 +45,7 @@ const containerId = ref(`molstar-${Math.random().toString(36).slice(2, 11)}`)
 const loading = ref(true)
 const loadError = ref(null)
 let viewer = null
+let layoutSub = null
 
 const testPageUrl = computed(() => {
   if (typeof window === 'undefined') return '#'
@@ -97,6 +98,11 @@ async function initViewer() {
     })
     await viewer.loadStructureFromUrl(url, 'pdb', false)
     if (viewer?.handleResize) viewer.handleResize()
+
+    layoutSub = viewer.plugin.layout.events.updated.subscribe(() => {
+      document.body.classList.toggle('molstar-expanded', !!viewer.plugin.layout.state.isExpanded)
+    })
+
     highlightResidues(props.selectedResidues)
   } catch (err) {
     console.error('Mol* load error:', err)
@@ -107,6 +113,11 @@ async function initViewer() {
 }
 
 function disposeViewer() {
+  if (layoutSub) {
+    try { layoutSub.unsubscribe() } catch (_) { /* ignore */ }
+    layoutSub = null
+  }
+  document.body.classList.remove('molstar-expanded')
   if (viewer) {
     try { viewer.dispose() } catch (e) { console.warn('Mol* dispose:', e) }
     viewer = null
