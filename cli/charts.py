@@ -398,7 +398,7 @@ def generate_area_chart(
             return base_name
         return (
             f'{base_name} <span style="color:{color};font-weight:600">'
-            f'(Mean = {stats["mean"]:.2f}, ±Std = {stats["stdDev"]:.2f})</span>'
+            f'mean={stats["mean"]:.2f} ± {stats["stdDev"]:.2f}</span>'
         )
 
     series = [

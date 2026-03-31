@@ -86,7 +86,7 @@ const updateChart = () => {
 
   const buildLegendName = (baseName, color, stats) => {
     if (!showStats.value) return baseName
-    return `${baseName} <span style="color:${color};font-weight:600">(Mean = ${stats.mean.toFixed(2)}, ±Std = ${stats.stdDev.toFixed(2)})</span>`
+    return `${baseName} <span style="color:${color};font-weight:600">mean=${stats.mean.toFixed(2)} ± ${stats.stdDev.toFixed(2)}</span>`
   }
 
   const buildRangeSeries = (id, color, stats, baseData) => {
