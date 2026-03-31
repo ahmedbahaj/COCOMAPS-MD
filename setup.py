@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='pdb-trajectory-cli',
     version='1.0.0',
-    description='PDB Trajectory Analysis CLI — local version of the web GUI pipeline',
+    description='COCOMAPS-MD CLI — local version of the web GUI pipeline',
     packages=find_packages(),
     python_requires='>=3.10',
     install_requires=[
@@ -15,7 +15,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'pdb-cli=cli.main:main',
+            'coco-md=cli.main:main',
         ],
     },
 )

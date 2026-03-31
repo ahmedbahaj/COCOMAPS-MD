@@ -1,6 +1,6 @@
 # Frontend
 
-Vue 3 single-page application for visualizing PDB trajectory analysis results. Communicates with the Flask [backend](../backend/) via REST API.
+Vue 3 single-page application for visualizing COCOMAPS-MD results. Communicates with the Flask [backend](../backend/) via REST API.
 
 ## Running
 

@@ -1,8 +1,8 @@
 """
-CLI entry point for PDB trajectory analysis.
+CLI entry point for COCOMAPS-MD.
 
 Usage:
-    pdb-cli [pdb_file] [OPTIONS]
+    coco-md [pdb_file] [OPTIONS]
     python -m cli [pdb_file] [OPTIONS]
 """
 import argparse
@@ -33,7 +33,7 @@ def _print_welcome():
     """Show the welcome banner."""
     console.print()
     console.print(Panel(
-        "[bold]PDB Trajectory Analysis CLI[/bold]\n"
+        "[bold]COCOMAPS-MD CLI[/bold]\n"
         "[dim]Local version of the web GUI pipeline[/dim]\n\n"
         "Analyze PDB trajectories, compute residue-level interactions\n"
         "via CoCoMaps, and generate publication-ready charts.",
@@ -44,15 +44,15 @@ def _print_welcome():
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog='pdb-cli',
-        description='PDB Trajectory Analysis CLI — local tool matching the web GUI pipeline',
+        prog='coco-md',
+        description='COCOMAPS-MD CLI — local tool matching the web GUI pipeline',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-  pdb-cli my_protein.pdb                        # run with defaults
-  pdb-cli my_protein.pdb -o results/run1         # specify output dir
-  pdb-cli my_protein.pdb -C                      # interactive customization
-  pdb-cli my_protein.pdb -c A B -o out/ -s 1 -e 100 -n 2 -i 7.0 -t 70
+  coco-md my_protein.pdb                        # run with defaults
+  coco-md my_protein.pdb -o results/run1         # specify output dir
+  coco-md my_protein.pdb -C                      # interactive customization
+  coco-md my_protein.pdb -c A B -o out/ -s 1 -e 100 -n 2 -i 7.0 -t 70
         """,
     )
 

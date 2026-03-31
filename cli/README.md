@@ -1,6 +1,6 @@
 # CLI
 
-Command-line interface for the PDB Trajectory Analysis pipeline. A local, distributable alternative to the web GUI — runs the same analysis engine with interactive configuration, rich terminal output, and publication-ready chart generation.
+Command-line interface for the COCOMAPS-MD pipeline. A local, distributable alternative to the web GUI — runs the same analysis engine with interactive configuration, rich terminal output, and publication-ready chart generation.
 
 ## Quick Start
 
