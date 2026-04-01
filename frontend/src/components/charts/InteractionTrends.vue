@@ -129,9 +129,24 @@ const validateTypeThresholdInput = (event) => {
   updateChart()
 }
 
+// Check if an interaction type has per-pair persistence >= threshold in any pair,
+// mirroring the Conservation Matrix filter logic
+const typeHasConservedPair = (interactionType) => {
+  const keywords = interactionType.keywords.map(k => k.toLowerCase())
+  const threshold = dataStore.typeConservationThreshold
+
+  return dataStore.interactions.some(interaction => {
+    if (!interaction.typePersistence) return false
+    return interaction.typesArray.some(rawType => {
+      const rawTypeLower = rawType.toLowerCase()
+      if (!keywords.some(kw => rawTypeLower.includes(kw))) return false
+      return (interaction.typePersistence[rawType] || 0) >= threshold
+    })
+  })
+}
+
 const buildSeries = (frameCount) => {
   const useLogScale = dataStore.useLogScale
-  const typeThreshold = dataStore.typeConservationThreshold
   
   const series = INTERACTION_TYPES.map((type) => {
     const trendKey = type.trendLabel || type.label
@@ -139,13 +154,8 @@ const buildSeries = (frameCount) => {
     const hasTrendData = Array.isArray(trendData) && trendData.length > 0
     const hasNonZero = hasTrendData ? trendData.some(value => value > 0) : false
 
-    // Apply type conservation threshold: only show types present in >= N% of frames
-    let meetsThreshold = hasNonZero
-    if (hasNonZero && frameCount > 0) {
-      const nonZeroCount = trendData.filter(value => value > 0).length
-      const presence = nonZeroCount / frameCount
-      meetsThreshold = presence >= typeThreshold
-    }
+    // Apply type conservation threshold using per-pair persistence (same as Conservation Matrix)
+    const meetsThreshold = hasNonZero && typeHasConservedPair(type)
 
     // Build padded data - use null for missing/zero values when using log scale
     let paddedData
@@ -374,7 +384,8 @@ watch([
   () => dataStore.totalFrames,
   () => dataStore.trendFrameNumbers,
   () => dataStore.timeUnit,
-  () => dataStore.typeConservationThreshold
+  () => dataStore.typeConservationThreshold,
+  () => dataStore.interactions.length
 ], () => {
   if (dataStore.currentChartType === 'line') {
     updateChart()
