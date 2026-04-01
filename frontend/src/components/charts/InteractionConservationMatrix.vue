@@ -67,7 +67,7 @@
               min="0.5"
               max="1.0"
               step="0.1"
-              :value="conservationThreshold"
+              :value="dataStore.typeConservationThreshold"
               @input="updateThreshold"
             />
             <div class="slider-ticks">
@@ -83,7 +83,7 @@
           <div class="slider-value-input">
             <input
               type="number"
-              :value="Math.round(conservationThreshold * 100)"
+              :value="Math.round(dataStore.typeConservationThreshold * 100)"
               @input="updateThresholdFromInput"
               @blur="validateThresholdInput"
               min="50"
@@ -168,7 +168,7 @@ const chartLoading = ref(false)
 let chart = null
 const distanceData = ref(null)
 const atomPairDataByPair = ref(new Map()) // Map<pairKey, atomPairData>
-const conservationThreshold = ref(0.5) // Default 50% for type conservation
+// Type conservation threshold now uses dataStore.typeConservationThreshold (shared across charts)
 // pairConservationThreshold now uses dataStore.currentThreshold (shared with ConservationAnalysis)
 const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
@@ -218,7 +218,7 @@ const residueTooltips = computed(() => ({
 }))
 
 const atomicTooltips = computed(() => ({
-  ca: `Count of pair-type combinations (residue pair + interaction type) with ≥${Math.round(conservationThreshold.value * 100)}% type conservation`,
+  ca: `Count of pair-type combinations (residue pair + interaction type) with ≥${Math.round(dataStore.typeConservationThreshold * 100)}% type conservation`,
   count: 'Total number of type conservation score samples meeting the threshold',
   mean: 'Average type conservation across all qualifying pair-type combinations',
   median: 'Middle value of sorted type conservation scores',
@@ -262,7 +262,7 @@ const pairConservationTicks = computed(() => {
 })
 
 const updateThreshold = (event) => {
-  conservationThreshold.value = parseFloat(event.target.value)
+  dataStore.setTypeConservationThreshold(parseFloat(event.target.value))
   updateChart()
 }
 
@@ -296,7 +296,7 @@ const validatePairThresholdInput = (event) => {
 const updateThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 50 && value <= 100) {
-    conservationThreshold.value = value / 100
+    dataStore.setTypeConservationThreshold(value / 100)
     updateChart()
   }
 }
@@ -304,13 +304,13 @@ const updateThresholdFromInput = (event) => {
 const validateThresholdInput = (event) => {
   let value = parseFloat(event.target.value)
   if (isNaN(value)) {
-    event.target.value = Math.round(conservationThreshold.value * 100)
+    event.target.value = Math.round(dataStore.typeConservationThreshold * 100)
     return
   }
   // Clamp value between 50 and 100
   value = Math.max(50, Math.min(100, value))
   event.target.value = value
-  conservationThreshold.value = value / 100
+  dataStore.setTypeConservationThreshold(value / 100)
   updateChart()
 }
 
@@ -435,7 +435,7 @@ const updateChart = async () => {
         const typeConservation = typePersistence[type] || 0
         
         // Check if type meets conservation threshold
-        if (typeConservation < conservationThreshold.value) {
+        if (typeConservation < dataStore.typeConservationThreshold) {
           return
         }
         
@@ -475,7 +475,7 @@ const updateChart = async () => {
       chart.destroy()
       chart = null
     }
-    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interaction types meet the ${Math.round(conservationThreshold.value * 100)}% conservation threshold in stable pairs.</div>`
+    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interaction types meet the ${Math.round(dataStore.typeConservationThreshold * 100)}% conservation threshold in stable pairs.</div>`
     return
   }
 
@@ -490,7 +490,7 @@ const updateChart = async () => {
         const typeConservation = typePersistence[type] || 0
         
         // LEVEL 2 FILTER: Only show if type conservation ≥ threshold
-        if (typeConservation < conservationThreshold.value) {
+        if (typeConservation < dataStore.typeConservationThreshold) {
           return // Skip this interaction type
         }
         
@@ -1358,7 +1358,8 @@ watch([
   () => dataStore.totalFrames,
   () => dataStore.currentSystem?.id,
   () => dataStore.selectedInteractionTypes.size,
-  () => dataStore.currentThreshold
+  () => dataStore.currentThreshold,
+  () => dataStore.typeConservationThreshold
 ], async () => {
   if (dataStore.currentChartType === 'interactionConservationMatrix') {
     if (dataStore.currentSystem?.id && !distanceData.value) {

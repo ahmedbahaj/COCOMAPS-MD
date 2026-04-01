@@ -24,6 +24,7 @@ export const useDataStore = defineStore('data', {
     currentThreshold: 0.5,
     useLogScale: false,
     selectedInteractionTypes: new Set(INTERACTION_TYPES.filter(t => t.id !== 'proximal').map(t => t.id)), // All except proximal by default
+    typeConservationThreshold: 0.5, // Interaction type conservation threshold (0.5–1.0), shared across charts
     timeUnit: null, // User-defined time unit label (e.g., 'ns', 'ps', 'μs'); null means use 'Frame'
 
     // Loading states
@@ -168,6 +169,10 @@ export const useDataStore = defineStore('data', {
 
     setLogScale(useLog) {
       this.useLogScale = useLog
+    },
+
+    setTypeConservationThreshold(value) {
+      this.typeConservationThreshold = value
     },
 
     setTimeUnit(unit) {
