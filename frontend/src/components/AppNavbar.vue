@@ -16,6 +16,7 @@
         <router-link to="/" class="nav-link" exact>Home</router-link>
         <router-link to="/jobs" class="nav-link">Jobs</router-link>
         <router-link to="/about" class="nav-link">About</router-link>
+        <router-link to="/help" class="nav-link">Help</router-link>
         <router-link to="/references" class="nav-link">References</router-link>
       </div>
     </div>
