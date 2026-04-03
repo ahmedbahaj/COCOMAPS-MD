@@ -110,9 +110,6 @@
                       <span class="status-text"><strong>{{ st.label }}</strong>: {{ st.desc }}</span>
                     </li>
                   </ul>
-                  <p v-if="sub.note" class="subsection-note">
-                    <span class="note-label">Editable parameters:</span> {{ sub.note }}
-                  </p>
                 </div>
                 <div v-if="sub.image" class="docs-card-image">
                   <img :src="sub.image" :alt="sub.imageAlt || 'Diagram'" />
@@ -287,7 +284,17 @@ const interactionSections = [
   {
     id: 'int-overview',
     title: 'Overview',
-    description: 'CoCoMaps-MD identifies and classifies 18 types of atomic interactions at molecular interfaces. These include 16 specific interaction types defined by precise geometric criteria, plus proximal contacts and clashes. Each section below describes the interaction, its detection criteria, the editable threshold parameters, and the relevant literature references.',
+    description: 'CoCoMaps-MD identifies and classifies 18 types of atomic interactions at molecular interfaces. These include 16 specific interaction types defined by precise geometric criteria, plus proximal contacts and clashes. Each section below describes the interaction and its detection criteria.',
+    subsections: []
+  },
+  {
+    id: 'int-table',
+    title: 'Table of Atomic Interactions',
+    description: [
+      'Based on a cut-off distance between any pair of heavy (non-hydrogen) atoms from the chains whose interaction interface is under analysis, an overall analysis of residues contacting each other at the interface is derived. The default cut-off value is 5 \u00C5.',
+      'Each pair of contacting residues at the interface is tagged with its associated specific atomic interactions, as detailed below. All contacts occurring within the cut-off distance and not falling in any class of the considered atomic interactions, are categorized as \u201CProximal contacts\u201D (see below).',
+      'In the following, all the types of atomic interactions identified and visualized by the web server are listed.'
+    ],
     subsections: []
   },
   {
@@ -306,7 +313,6 @@ const interactionSections = [
           'The distance between the donor (D) and the acceptor (A) atoms must be within 4.0 Å.',
           'The θ angle formed by the donor (D), hydrogen (H), and acceptor (A) atoms must exceed 90°.'
         ],
-        note: 'H-bond dist, H-bond angle'
       }
     ]
   },
@@ -328,7 +334,6 @@ const interactionSections = [
         criteria: [
           'The distance between the positive and negative charged atoms must be within 4.5 Å.'
         ],
-        note: 'Salt-bridge dist'
       }
     ]
   },
@@ -347,7 +352,6 @@ const interactionSections = [
         criteria: [
           'The distance between the water oxygen and H-bonded electronegative atoms must be within 4.0 Å.'
         ],
-        note: 'Water mediated dist'
       }
     ]
   },
@@ -367,7 +371,6 @@ const interactionSections = [
           'The distance d(C–X) must be within 4.0 Å.',
           'The angle θ(C-H-X) must exceed 110°.'
         ],
-        note: 'CH-O/N dist, CH-O/N theta'
       }
     ]
   },
@@ -386,7 +389,6 @@ const interactionSections = [
         criteria: [
           'The SG–SG distance must be within 3.0 Å.'
         ],
-        note: 'Disulfide bridge dist'
       }
     ]
   },
@@ -407,7 +409,6 @@ const interactionSections = [
           'The angle θ₁(C-Z-X) must exceed 165°.',
           'The angle θ₂(Z-X-Y) must exceed 120°.'
         ],
-        note: 'Halogen theta 1, Halogen theta 2'
       }
     ]
   },
@@ -426,7 +427,6 @@ const interactionSections = [
         criteria: [
           'The M–X distance must be within 3.2 Å.'
         ],
-        note: 'Metal dist'
       }
     ]
   },
@@ -434,10 +434,10 @@ const interactionSections = [
     id: 'int-pi-framework',
     title: 'Geometrical Framework for π Interactions',
     description: [
-      'All π interaction types (Cation-π, Anion-π, Amino-π, lp-π, π-π, CH-π, O/N/SH-π) share a common geometrical framework for detection.',
-      'The centroid, ring plane, and normal vector of each aromatic ring are computed. The ConvexHull methodology is used to identify the ring atoms and compute the centroid. The vertical distance from the interacting atom (or ring centroid for π-π) to the ring plane is the primary geometric parameter for detection.',
-      'Aromatic rings considered include His, Phe, Trp, Tyr side chains in proteins, and nucleobases (A, G, C, U/T) in nucleic acids.'
+      '\u03C0 (Pi) interactions may involve the \u03C0 cloud of the single or double aromatic ring of the nucleobases: G, U, A, T/U in nucleic acids, and aromatic rings of the amino acids: His, Phe, Trp, and Tyr in proteins. To detect such interactions, we set up a geometrical frame on the \u03C0 rings, both single and double, as detailed below.',
+      'For each aromatic ring, we assign its geometrical center (centroid), then define a ring plane (shown as a gray grid in the figure below), passing through the above centroid and the two ring atoms listed first in the corresponding .pdb/.cif file. Then, to define whether an interaction exists between a given atom/ion and the aromatic ring, we orthogonally project the atom into the ring plane and measure this orthogonal distance. The interaction is assigned if: i) the orthogonal distance is within a given threshold, and ii) the projection falls within the perimeter of the ring (to this aim we use the ConvexHull function available from the SciPy library in Python).'
     ],
+    references: ['https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.ConvexHull.html'],
     subsections: []
   },
   {
@@ -455,7 +455,6 @@ const interactionSections = [
         criteria: [
           'The vertical distance from the cation to the ring plane must be within 5.0 Å.'
         ],
-        note: 'CATION_PI_DIST'
       }
     ]
   },
@@ -474,7 +473,6 @@ const interactionSections = [
         criteria: [
           'The vertical distance from the anion to the ring plane must be within 5.0 Å.'
         ],
-        note: 'ANION_PI_DIST'
       }
     ]
   },
@@ -493,7 +491,6 @@ const interactionSections = [
         criteria: [
           'The vertical distance from the amino atom to the ring plane must be within 5.0 Å.'
         ],
-        note: 'AMINO_PI_DIST'
       }
     ]
   },
@@ -512,7 +509,6 @@ const interactionSections = [
         criteria: [
           'The vertical distance from the lone-pair-presenting atom to the ring plane must be within 5.0 Å.'
         ],
-        note: 'LONEPAIR_PI_DIST'
       }
     ]
   },
@@ -533,7 +529,6 @@ const interactionSections = [
           'The center-normal angle (θ) must be within 80°.',
           'The normal-normal angle (γ) must be within 90°.'
         ],
-        note: 'PI_PI_DIST, PI_PI_THETA, PI_PI_GAMMA'
       }
     ]
   },
@@ -554,7 +549,6 @@ const interactionSections = [
           'The angle θ₁(C-πm-πn) must be within 30°.',
           'The angle θ₂ between the C-H bond and the H-πm vector must be at least 120°.'
         ],
-        note: 'CH-Pi dist, CH-Pi theta 1, CH-Pi theta 2'
       }
     ]
   },
@@ -575,7 +569,6 @@ const interactionSections = [
           'The angle θ₁(X-origin-z) must be within 30°.',
           'The angle θ₂ between the X-H bond and the H-origin vector must be at least 120°.'
         ],
-        note: 'N/O/S-Pi dist, N/O/S-Pi teta 1, N/O/S-Pi teta 2'
       }
     ]
   },
@@ -594,7 +587,6 @@ const interactionSections = [
         criteria: [
           'The distance must be within the sum of van der Waals radii + 0.5 Å tolerance (for C at 1.7 Å, this gives a cutoff of 3.9 Å).'
         ],
-        note: 'Apolar tolerance'
       }
     ]
   },
@@ -613,7 +605,6 @@ const interactionSections = [
         criteria: [
           'The distance must be within the sum of van der Waals radii + 0.5 Å tolerance.'
         ],
-        note: 'Polar tolerance'
       }
     ]
   },
@@ -632,6 +623,73 @@ const interactionSections = [
     description: 'Contacts between heavy atoms occurring at a distance below the sum of their van der Waals radii, indicating steric overlap.',
     references: ['10.1016/j.jmb.2016.12.004'],
     subsections: []
+  },
+  {
+    id: 'int-vdw-radii',
+    title: 'Van der Waals radii',
+    subsections: [
+      {
+        items: [
+          'Br \u2013 1.85 \u00C5',
+          'C \u2013 1.70 \u00C5',
+          'Cl \u2013 1.75 \u00C5',
+          'F \u2013 1.47 \u00C5',
+          'I \u2013 1.98 \u00C5',
+          'N \u2013 1.55 \u00C5',
+          'O \u2013 1.52 \u00C5',
+          'S \u2013 1.80 \u00C5',
+          'P \u2013 1.80 \u00C5'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'int-detection-tools',
+    title: 'Interaction detection',
+    subsections: [
+      {
+        items: [
+          'Reduce v4.14 \u2013 for adding hydrogen atoms to proteins and nucleic acids.',
+          'HBPLUS v3.2 \u2013 for detecting hydrogen bonds and water-mediated contacts.',
+          'NACCESS v2.1.1 \u2013 for solvent accessible surface area calculations.',
+          'HBADD \u2013 for additional hydrogen bond analyses.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'int-overlap',
+    title: 'Handling of overlapping classifications',
+    description: 'When more than one interaction type is detected for a residue pair, we apply the following hierarchy:',
+    subsections: [
+      {
+        items: [
+          'If \u03C0\u2013\u03C0 stacking is present together with apolar van der Waals (vdW) contacts, only the \u03C0\u2013\u03C0 stacking is retained.',
+          'If both a salt bridge and a hydrogen bond are identified for the same atom pair, the contact will be classified as a salt bridge.',
+          'If hydrogen bonds, halogen bonds, or weak H-bonds coexist with polar vdW contacts, only the directional bonds are kept.'
+        ],
+        paragraphs: [
+          'Clashes are defined when the observed interatomic distance is less than the sum of the van der Waals radii. If the interaction also falls into one of the standard categories (e.g., hydrogen bond, CH\u2013O/N bond, polar/apolar vdW, halogen bond, disulfide bond, salt bridge), it is reported with an asterisk alongside the respective interaction label.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'int-interface-area',
+    title: 'Interface area and residues',
+    description: [
+      'Buried surface areas are calculated with NACCESS. Residues at the interface are defined as those having an ASA (Accessible Surface Area) decreased by > 1.0 \u00C5\u00B2 upon the complex formation.',
+      'POLAR and NON POLAR interface percentages (%) refer to the calculated interface area (\u00C5\u00B2) for the complex and sum up to 100.',
+      'In the ASA tables for chain 1 & 2, ASA values in the complex and in the isolated molecule (\u201Cfree\u201D), along with the difference between them are reported for each residue.'
+    ],
+    references: ['https://wolf.bms.umist.ac.uk/naccess/'],
+    subsections: [
+      {
+        paragraphs: [
+          'Reference: Hubbard, S. J. and Thornton, J. M. \u201CNACCESS\u201D Computer Program, 1993.'
+        ]
+      }
+    ]
   }
 ]
 
@@ -1018,14 +1076,10 @@ watch(() => route.query.tab, (newTab) => {
 /* ── Subsections ── */
 .docs-subsection {
   margin-bottom: 28px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid #f0f0f2;
 }
 
 .docs-subsection:last-child {
   margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
 }
 
 .docs-card-text h3 {
@@ -1077,21 +1131,6 @@ watch(() => route.query.tab, (newTab) => {
   font-weight: 600;
 }
 
-/* ── Editable Parameters Note ── */
-.subsection-note {
-  margin-top: 16px !important;
-  padding: 10px 14px;
-  background: #f5f5f7;
-  border-radius: 8px;
-  font-size: 14px !important;
-  color: #6e6e73 !important;
-  border-left: 3px solid #d2d2d7;
-}
-
-.note-label {
-  font-weight: 600;
-  color: #424245;
-}
 
 /* ── Status List ── */
 .status-list {
@@ -1130,9 +1169,8 @@ watch(() => route.query.tab, (newTab) => {
 
 /* ── References Footer ── */
 .section-references {
-  margin-top: 24px;
+  margin-top: 0;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
