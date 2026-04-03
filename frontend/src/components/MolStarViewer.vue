@@ -12,7 +12,7 @@
         class="molstar-error-overlay"
       >
         <p>{{ loadError }}</p>
-        <p class="hint">Ensure the backend is running on port 5001. Try <a :href="testPageUrl" target="_blank">standalone test</a>.</p>
+        <p class="hint">Ensure the backend is running on port 5001.</p>
       </div>
       <div
         v-else-if="loading"
@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 
 const props = defineProps({
   systemId: { type: String, default: null },
@@ -46,11 +46,6 @@ const loading = ref(true)
 const loadError = ref(null)
 let viewer = null
 let layoutSub = null
-
-const testPageUrl = computed(() => {
-  if (typeof window === 'undefined') return '#'
-  return `${window.location.origin}/molstar-test.html`
-})
 
 function getPdbUrl() {
   if (typeof window === 'undefined') return ''
