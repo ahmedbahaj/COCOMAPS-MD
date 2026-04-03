@@ -21,7 +21,7 @@
     <!-- Docs Layout -->
     <div class="docs-layout">
       <!-- Sidebar -->
-      <aside :class="['docs-sidebar', { open: sidebarOpen }]" ref="sidebarEl">
+      <aside :class="['docs-sidebar', { open: sidebarOpen }]">
         <div
           v-for="tab in tabs"
           :key="'sidebar-' + tab.id"
@@ -104,6 +104,12 @@
                   <ul v-if="sub.items && sub.items.length">
                     <li v-for="(item, ii) in sub.items" :key="ii">{{ item }}</li>
                   </ul>
+                  <ul v-if="sub.statusList && sub.statusList.length" class="status-list">
+                    <li v-for="(st, sti) in sub.statusList" :key="sti" class="status-list-item">
+                      <span class="status-indicator" :style="{ background: st.color }"></span>
+                      <span class="status-text"><strong>{{ st.label }}</strong>: {{ st.desc }}</span>
+                    </li>
+                  </ul>
                   <p v-if="sub.note" class="subsection-note">
                     <span class="note-label">Editable parameters:</span> {{ sub.note }}
                   </p>
@@ -132,12 +138,15 @@
         </div>
       </main>
     </div>
+
+    <AppFooter />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AppFooter from '../components/AppFooter.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -145,10 +154,134 @@ const router = useRouter()
 const activeTab = ref('usage')
 const activeSection = ref('')
 const sidebarOpen = ref(false)
-const sidebarEl = ref(null)
 let observer = null
 
 const IMG = import.meta.env.BASE_URL + 'images/help/'
+
+const usageSections = [
+  {
+    id: 'usage-intro',
+    title: 'Introduction',
+    description: [
+      'COCOMAPS-MD is a web application for analyzing non-covalent interactions at protein–protein interfaces across molecular dynamics trajectories. You upload a multi-model PDB (trajectory), choose two chains, and the server computes interface contacts frame by frame. Results are explored through contact maps, trend charts, conservation-style summaries, and structure viewing.',
+      'The workflow is: upload a PDB on the home page → select two chains → optionally adjust advanced settings → start the analysis. When processing finishes, you are taken to the analysis view for that job. You can also open past jobs from the Jobs page.'
+    ],
+    subsections: [
+      {
+        heading: 'Key features',
+        items: [
+          'Interface-focused analysis between two protein chains over many frames.',
+          'Automatic detection of chains and frame count from your PDB; long trajectories are sampled so a manageable number of frames are analyzed.',
+          'Detailed categorization of interaction types (see the Interactions tab in this Help section for definitions and geometric criteria).',
+          'Job list with status, search, and quick access to completed analyses.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'usage-upload',
+    title: '1. Upload a PDB file',
+    description: [
+      'From the home page, provide your structure by uploading a file. The server expects a standard PDB file with the .pdb extension.',
+      'Drag and drop the file onto the upload area, or click the area to open the file picker. Only one file is processed at a time. If your structure is not in PDB format, convert it to PDB before uploading.'
+    ],
+    subsections: [
+      {
+        heading: 'What happens after you choose a file',
+        paragraphs: [
+          'The browser reads the file to list chain identifiers found in ATOM and HETATM records, and counts trajectory frames from MODEL records. If there are no MODEL records, the structure is treated as a single frame.',
+          'At least two distinct chains are required for interface analysis. If fewer than two chains are found, you will be prompted to choose a different file.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'usage-chains',
+    title: '2. Select two chains',
+    description: [
+      'After a valid PDB is loaded, use Select Chains for Analysis to choose Chain 1 and Chain 2. These define the two protein chains whose mutual interface will be analyzed. The two selections must be different chains.',
+      'The page shows the file name, approximate size, number of chains, and number of frames detected.',
+      'If there are more than 50 frames, the home page shows a short note about how many frames will be analyzed and the step size used. Full details on step size, defaults, and custom frame ranges are under Advanced Settings → Frame sampling.'
+    ],
+    subsections: []
+  },
+  {
+    id: 'usage-advanced',
+    title: '3. Advanced Settings',
+    description: [
+      'Open the Advanced Settings section to optionally customize the job. Defaults are appropriate for most runs.',
+      'Geometric thresholds for each interaction class (hydrogen bonds, π-stacking, and so on) are fixed for a given server configurationm, they are documented under Help → Interactions.'
+    ],
+    subsections: [
+      {
+        heading: 'Job name',
+        paragraphs: [
+          'Job name identifies the run in the Jobs list and in analysis views. By default it is the same as your PDB file name (without the .pdb extension), unless you type a different value.'
+        ]
+      },
+      {
+        heading: 'Email',
+        paragraphs: [
+          'Optionally enter your email address. When you submit a job, you will receive an email containing the job ID and a link to the job.'
+        ]
+      },
+      {
+        heading: 'Use Reduce',
+        paragraphs: [
+          'When enabled, structures can be preprocessed to add hydrogens using Reduce before analysis. This can improve consistency for structures that lack hydrogens at the cost of longer runtime.',
+          'Reference: Word, J. M., Lovell, S. C., Richardson, J. S., & Richardson, D. C. (1999). Asparagine and glutamine: Using hydrogen atom contacts in the choice of side-chain amide orientation. J. Mol. Biol. 285, 1735\u20131747.'
+        ]
+      },
+      {
+        heading: 'Time unit',
+        paragraphs: [
+          'An optional label (for example ns or ps) is used for time-like axes in charts when provided. If left empty, axes are labeled in frames.'
+        ]
+      },
+      {
+        heading: 'Frame sampling',
+        paragraphs: [
+          'When the trajectory contains more than 50 frames, the interface does not analyze every frame by default. Step size controls subsampling: only a subset of frames are sent to the analysis, taken at regular intervals from the first frame to the last.',
+          'What step size means: a step size of N keeps every Nth frame in order. For example, step 2 keeps frames 1, 3, 5, … (every other frame); step 10 keeps frames 1, 11, 21, … Larger steps mean fewer, more widely spaced samples. Step 1 means every frame—which is appropriate when you have at most 50 frames overall, or when you use a short custom range in this section.',
+          'Default: the app sets the step size automatically so that spanning the full trajectory yields roughly on the order of 50 analyzed frames (the step is derived from the total frame count). Before you open Advanced Settings, a short note on the home page already states how many frames will be analyzed and which step size is used.',
+          'The Step size field in Advanced Settings matches that default and can be changed: increase the step to lighten the job or decrease it for denser sampling. Use custom interval turns off regular stepping across the entire trajectory and lets you pick a specific start and end frame (within the limits shown). The panel displays how many frames will be analyzed for your current choices.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'usage-run',
+    title: '4. Run the analysis',
+    description: [
+      'When Chain 1 and Chain 2 are set, Start Analysis becomes available. Click it to upload the file and queue the job on the server.',
+      'Progress appears on the same page with a progress indicator. The page URL may include a job query parameter so that refreshing the browser can resume tracking that run.',
+      'When the job completes successfully, you are redirected to the analysis view for that result. If the analysis URL cannot be resolved, you may be sent to the Jobs page instead. If the job fails, an error message is shown on the home page.',
+      'To use a different structure, use Change on the file card to clear the upload and start over.'
+    ],
+    subsections: []
+  },
+  {
+    id: 'usage-jobs',
+    title: 'Jobs page',
+    description: [
+      'Open Jobs from the navigation bar to see all your jobs in a searchable, sortable table: status, name, creation date, and frame count.',
+      'Use Submit a new job to return to the home page and upload another PDB.'
+    ],
+    subsections: [
+      {
+        heading: 'Job status',
+        paragraphs: [
+          'Each job row shows a colored icon reflecting its current state:'
+        ],
+        statusList: [
+          { label: 'Completed', color: '#34c759', desc: 'The analysis finished successfully. Click the row to open the results in the analysis view.' },
+          { label: 'Processing', color: '#ff9500', desc: 'The job is still running. Click the row to return to the home page and track its progress in real time.' },
+          { label: 'Failed', color: '#ff3b30', desc: 'The analysis encountered an error. The row is not clickable; you can submit a new job instead.' }
+        ]
+      }
+    ]
+  }
+]
 
 const interactionSections = [
   {
@@ -507,19 +640,7 @@ const tabs = [
     id: 'usage',
     label: 'Usage',
     icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
-    sections: [
-      {
-        id: 'usage-overview',
-        title: 'Overview',
-        description: 'Getting started with COCOMAPS-MD.',
-        subsections: [
-          {
-            heading: 'Placeholder',
-            paragraphs: ['Content will be added here.']
-          }
-        ]
-      }
-    ]
+    sections: usageSections
   },
   {
     id: 'results',
@@ -970,6 +1091,41 @@ watch(() => route.query.tab, (newTab) => {
 .note-label {
   font-weight: 600;
   color: #424245;
+}
+
+/* ── Status List ── */
+.status-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.status-list-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #424245;
+  border-bottom: 1px solid #f0f0f2;
+}
+
+.status-list-item:last-child {
+  border-bottom: none;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+  top: 2px;
+}
+
+.status-text strong {
+  color: #1d1d1f;
 }
 
 /* ── References Footer ── */
