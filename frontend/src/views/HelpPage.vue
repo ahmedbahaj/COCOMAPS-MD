@@ -293,9 +293,17 @@ const interactionSections = [
     description: [
       'Based on a cut-off distance between any pair of heavy (non-hydrogen) atoms from the chains whose interaction interface is under analysis, an overall analysis of residues contacting each other at the interface is derived. The default cut-off value is 5 \u00C5.',
       'Each pair of contacting residues at the interface is tagged with its associated specific atomic interactions, as detailed below. All contacts occurring within the cut-off distance and not falling in any class of the considered atomic interactions, are categorized as \u201CProximal contacts\u201D (see below).',
-      'In the following, all the types of atomic interactions identified and visualized by the web server are listed.'
+      'In the interactions table, each interaction type can be toggled on or off. By default, Proximal contacts is turned off: the table initially includes the other interaction classes only, so you can focus on specific interaction types first. Turn Proximal contacts on when you also want to see contacts that fall only in that category.'
     ],
-    subsections: []
+    image: IMG + 'interactions-table-proximal.png',
+    imageAlt: 'Interactions table with Proximal contacts toggle off by default',
+    subsections: [
+      {
+        paragraphs: [
+          'In the following, all the types of atomic interactions identified and visualized by the web server are listed.'
+        ]
+      }
+    ]
   },
   {
     id: 'int-hbonds',
