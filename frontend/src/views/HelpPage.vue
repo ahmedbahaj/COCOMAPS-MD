@@ -701,6 +701,136 @@ const interactionSections = [
   }
 ]
 
+const legendsSections = [
+  {
+    id: 'legends-abbreviations-units',
+    title: 'Abbreviations & Units',
+    description: [
+      'Several abbreviations and symbols are used throughout the application. The following glossary explains the meaning of each symbol and the context in which it appears.'
+    ],
+    subsections: [
+      {
+        heading: 'Area & Conservation metrics',
+        items: [
+          'BSA \u2013 Buried Surface Area. The surface area of the protein\u2013protein interface that becomes inaccessible to solvent upon complex formation. Measured in \u00C5\u00B2 and displayed in the Area Composition chart.',
+          'CR (Conserved Residues) \u2013 the number of unique residue pairs that appear in at least the specified percentage of trajectory frames. The subscript indicates the active pair conservation threshold (e.g. CR\u2085\u2080 at 50%).',
+          'CA (Conserved Atomic interactions) \u2013 the number of pair\u2013type combinations (e.g., A-LYS8 \u2013 B-ASP45 via H-bond) that meet the interaction type conservation threshold.'
+        ]
+      },
+      {
+        heading: 'Units of measurement',
+        items: [
+          '\u00C5 (Ångström) \u2013 a unit of length equal to 10\u207B\u00B9\u2070 m. Used for interatomic distances and distance cutoff thresholds throughout the analysis.',
+          'vdW (van der Waals) \u2013 refers to van der Waals radii. The sum of the vdW radii of two atoms is used as a reference distance for detecting clashes and apolar contacts.',
+          'ns, ps, fs, \u03BCs \u2013 nanoseconds, picoseconds, femtoseconds, and microseconds. These time units may appear on chart axes if a time unit label was configured at job submission. If none is provided, axes default to frame numbers.'
+        ]
+      },
+      {
+        heading: 'Identifiers',
+        items: [
+          'PDB \u2013 Protein Data Bank, the standard file format for structural data. The application accepts trajectory files in .pdb format containing MODEL records.',
+          'Atom type symbols \u2013 P (Phosphorus), N (Nitrogen), S (Sulfur), O (Oxygen), H (Hydrogen). These appear in atomic-level details in trajectory analysis panels.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'legends-residue-notation',
+    title: 'Residue Notation',
+    description: [
+      'Residues are identified using a standardised notation that combines the amino acid name, sequence number, and chain identifier to ensure unambiguous references across all charts and panels.'
+    ],
+    subsections: [
+      {
+        heading: 'Individual residues',
+        paragraphs: [
+          'Residues are formatted as: RESNAMENUM\u2082CHAIN (for example, LYS8\u2082A or ASP45\u2082B).'
+        ],
+        items: [
+          'RESNAME \u2013 the three-letter amino acid code (e.g., LYS for lysine, ASP for aspartic acid).',
+          'NUM \u2013 the residue sequence number from the PDB file.',
+          'CHAIN \u2013 the chain identifier (a single letter or character) from the PDB file.',
+          'A hyphen prefixes the chain identifier for the second residue in a pair (e.g., B-ASP45) to signal that the residue belongs to a different chain.'
+        ]
+      },
+      {
+        heading: 'Residue pairs',
+        paragraphs: [
+          'Interactions are between two residues, displayed as: LYS8\u2082A \u2194 B-ASP45\u2082B.'
+        ],
+        items: [
+          'The \u2194 symbol is used as the delimiter to visually separate the two residues in a cross-chain pair.',
+          'This format is used consistently across the conservation matrix, trajectory analysis panels, ranking cards, and conservation analysis summaries.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'legends-conservation-modifiers',
+    title: 'Conservation Modifiers & Suffixes',
+    description: [
+      'Special notations in the analysis results indicate additional properties of detected contacts or reflect the active threshold settings.'
+    ],
+    subsections: [
+      {
+        heading: 'Asterisk superscript',
+        paragraphs: [
+          'An asterisk (*) next to an interaction type label indicates that the same pair of atoms also qualifies as a clash\u2014that is, the interatomic distance falls below the sum of the van der Waals radii of the two atoms. This marks contacts that may be sterically strained or unusually close.'
+        ]
+      },
+      {
+        heading: 'Threshold subscripts',
+        paragraphs: [
+          'Conservation metrics display a subscript to indicate the threshold at which they are computed.'
+        ],
+        items: [
+          'CR\u2085\u2080 \u2013 Conserved Residues computed at 50% pair conservation threshold. The subscript changes to match the value selected via the Pair Conservation Threshold slider (e.g., CR\u2087\u2080 at 70%).',
+          'CA\u2085\u2080 \u2013 Conserved Atomic interactions computed at 50% type conservation threshold. The subscript reflects the Interaction Type Conservation Threshold setting.',
+          'Changing the threshold sliders on the controls panel updates these subscripts in real time across all summary cards.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'legends-conservation-rankings',
+    title: 'Conservation Analysis Rankings',
+    description: [
+      'The Conservation Analysis panel at the bottom of each chart page presents three ranked lists that summarise the most notable contacts at the interface.'
+    ],
+    subsections: [
+      {
+        heading: 'Most Conserved Pairs',
+        paragraphs: [
+          'Ranking of residue pairs by their average conservation across all interaction types they participate in. A pair that forms multiple interaction types at high conservation will rank higher.'
+        ],
+        items: [
+          'Each entry shows the residue pair, the number of frames it was detected in, and coloured interaction type tags.',
+          'Coloured type tags use the global interaction palette. Hovering over a tag reveals the exact conservation: \u201cType \u2014 XX% (Y/Z frames)\u201d.',
+          'Clicking the \u201c+N more\u201d button opens a modal with the complete ranked list.'
+        ]
+      },
+      {
+        heading: 'Longest Conserved Stretch',
+        paragraphs: [
+          'Ranking of pairs by the maximum number of consecutive frames during which at least one interaction type persisted without interruption. This identifies sustained contacts, even if their overall frequency across the whole trajectory is moderate.'
+        ],
+        items: [
+          'A long consecutive stretch suggests a structurally stable contact that may serve as an anchor point at the interface.'
+        ]
+      },
+      {
+        heading: 'Most Conserved Types',
+        paragraphs: [
+          'Ranking of interaction types by their average conservation across all pairs at the interface. This reveals which molecular forces (e.g., hydrogen bonds, \u03C0-\u03C0 stacking) dominate the interface overall.'
+        ],
+        items: [
+          'A highly conserved type indicates a pervasive interaction mechanism at the interface, independent of the specific residues involved.'
+        ]
+      }
+    ]
+  }
+]
+
 const chartsSections = [
   {
     id: 'chart-conservation-matrix',
@@ -996,19 +1126,7 @@ const tabs = [
     id: 'legends',
     label: 'Legends',
     icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
-    sections: [
-      {
-        id: 'legends-overview',
-        title: 'Overview',
-        description: 'Color codes, symbols, and chart legends explained.',
-        subsections: [
-          {
-            heading: 'Placeholder',
-            paragraphs: ['Content will be added here.']
-          }
-        ]
-      }
-    ]
+    sections: legendsSections
   }
 ]
 
