@@ -701,6 +701,278 @@ const interactionSections = [
   }
 ]
 
+const chartsSections = [
+  {
+    id: 'chart-conservation-matrix',
+    title: 'Interaction Conservation Matrix',
+    description: [
+      'A comprehensive heatmap that visualises how consistently each residue pair interacts across all interaction types throughout the trajectory. The chart lets you see at a glance which contacts persist and which change over time.',
+      'Alongside the matrix, an Atom Change Detection mode highlights where new interactions appear or existing ones break when you move from frame to frame.'
+    ],
+    image: IMG + 'screenshots/interaction-conservation-matrix.png',
+    imageAlt: 'Interaction conservation matrix heatmap with color-coded interaction types',
+    subsections: [
+      {
+        heading: 'What it shows',
+        paragraphs: [
+          'Rows represent individual residue pairs (e.g., A-LYS8 \u2013 B-ASP45). Each column corresponds to a specific interaction type and is coloured according to the global interaction palette. A filled cell means that the pair forms that interaction type in at least the minimum percentage of frames defined by the Interaction Type Conservation Threshold.',
+          'Hovering over a cell reveals the exact conservation percentage for that pair\u2013type combination.'
+        ]
+      },
+      {
+        heading: 'How to read it',
+        paragraphs: [
+          'A densely filled row means a pair forms many different interaction types over the trajectory. A sparsely filled row means the pair is less versatile or short-lived. Click the legend items to show or hide individual interaction types.'
+        ]
+      },
+      {
+        heading: 'Filters: Conservation thresholds',
+        paragraphs: [
+          'Two sliders control which data are displayed.'
+        ],
+        items: [
+          'Pair Conservation Threshold \u2013 sets the minimum percentage of frames a residue pair must be present in to appear at all (0\u2013100%). Raising this removes infrequent pairs.',
+          'Interaction Type Conservation Threshold \u2013 sets the minimum percentage of frames a specific interaction type must persist in for a given pair to show a cell (50\u2013100%).'
+        ]
+      },
+      {
+        heading: 'Atom Change Detection Mode',
+        paragraphs: [
+          'A selector above the chart lets you choose what the overlay dots are compared against. Changes are highlighted as orange dots with connecting lines on the heatmap. Three comparison modes are available:'
+        ],
+        items: [
+          'Previous Frame \u2013 highlights atom-level differences between the current frame and the immediately preceding frame.',
+          'Most Dominant Atom Pair \u2013 compares the current frame with the most frequently occurring atom pair for that cell across the whole trajectory.',
+          'First Frame \u2013 compares the current frame with the first frame in which that interaction appears, using it as a baseline.'
+        ]
+      },
+      {
+        heading: 'Trajectory Analysis',
+        paragraphs: [
+          'Clicking any heatmap cell opens the Trajectory Analysis panel. This modal shows the binary timeline (present or absent) for that specific residue pair and interaction type across every frame of the simulation.',
+          'The timeline bar at the top uses blue segments for frames where the interaction is present and gray for absent frames. Click on any segment to highlight it and see atom-level details for that frame\u2014which atoms are connected, bond distance, and the individual conservation of each atom pair.',
+          'Statistical summary cards show the overall persistence, average distance, and the longest consecutive stretch where the interaction persists without interruption.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'chart-heatmap',
+    title: 'Interaction Heatmap',
+    description: [
+      'A residue\u2013residue contact map that summarises the full interface between the two chains. Each cell represents a pair of residues, coloured by how frequently that pair interacts across the analysed frames.'
+    ],
+    image: IMG + 'screenshots/heatmap.png',
+    imageAlt: 'Interaction heatmap contact map between Chain A and Chain B',
+    subsections: [
+      {
+        heading: 'What it shows',
+        paragraphs: [
+          'The x-axis lists residues from Chain A and the y-axis lists residues from Chain B. The colour intensity of each cell encodes the interaction consistency\u2014the proportion of frames in which that pair is in contact\u2014ranging from light gray (rare) to deep blue (persistent).'
+        ]
+      },
+      {
+        heading: 'How to read it',
+        paragraphs: [
+          'A compact, continuous hotspot (a dark block or diagonal band) suggests a stable interface patch. Scattered dots indicate transient or localised contacts. Hover over a cell to see the pair name, list of interaction types, and the number of frames it appeared in.'
+        ]
+      },
+      {
+        heading: 'Controls',
+        paragraphs: [
+          'A toggle switch lets you choose how residue labels are displayed.'
+        ],
+        items: [
+          'Full labels (default) \u2013 shows the full residue identifier (e.g., A-LYS8) for maximum clarity when there are few residues.',
+          'Numbers only \u2013 shows only the sequence number for compactness on larger interfaces.',
+          'The main interaction type filter and conservation threshold slider in the global Controls Panel above the chart also apply to this heatmap.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'chart-interaction-trends',
+    title: 'Interaction Trends',
+    description: [
+      'A line chart that tracks the evolution of interaction counts at the interface over the trajectory timeline. It shows how many contacts of each type exist frame by frame, making it easy to spot trends such as stable contacts, sudden disruptions, or gradual shifts in interaction composition.'
+    ],
+    image: IMG + 'screenshots/interaction-trends.png',
+    imageAlt: 'Interaction trends line chart showing interaction counts over time',
+    subsections: [
+      {
+        heading: 'What it shows',
+        paragraphs: [
+          'Each coloured line corresponds to one of the 18 interaction types, coloured consistently with the rest of the application. The x-axis represents frames (or a time unit such as ns or ps if configured). The y-axis shows the count of contacts of that interaction type in each frame.'
+        ]
+      },
+      {
+        heading: 'How to read it',
+        paragraphs: [
+          'A flat, persistent line indicates a stable interaction throughout the simulation. Spikes suggest brief but intense events. A declining trend may indicate structural rearrangement. Multiple lines with similar trajectories suggest coupling between interaction types.',
+          'The lines are sorted so that the most active interaction types are drawn first, ensuring they remain visible on top.'
+        ]
+      },
+      {
+        heading: 'Controls',
+        items: [
+          'Interaction Type Conservation Threshold slider \u2013 filters out interaction types that do not meet the minimum conservation requirement, reducing visual clutter on long trajectories.',
+          'Log scale toggle \u2013 available via the global Controls Panel, useful when interaction counts span several orders of magnitude.',
+          'Time unit \u2013 the x-axis label reflects the configured time unit (frames, ns, ps) if one was provided during job submission.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'chart-distance-distribution',
+    title: 'Distance Distribution',
+    description: [
+      'Violin plots showing the distribution of interatomic distances between residue pairs, broken down by interaction type. This view reveals not just the average separation of paired residues, but the spread and density of their distances over the full trajectory.'
+    ],
+    image: IMG + 'screenshots/distance-distribution.png',
+    imageAlt: 'Distance distribution violin plots with global mean overlay',
+    subsections: [
+      {
+        heading: 'What it shows',
+        paragraphs: [
+          'Each violin represents the distance distribution of a single residue pair for the selected interaction type. The width of the violin at a given distance indicates how frequently that distance occurs. A narrow, tall violin means the pair stays at a very consistent distance; a wide, short violin indicates more variability.'
+        ]
+      },
+      {
+        heading: 'How to read it',
+        paragraphs: [
+          'A dashed horizontal line marks the global mean distance across all displayed pairs. Individual mean markers (small dots) show where each pair\u2019s average falls. Pairs clustered near the global mean are typical of the interface, while outliers may represent unusually tight or loose contacts.'
+        ]
+      },
+      {
+        heading: 'Controls',
+        items: [
+          'Interaction Type Filter Chips \u2013 colour-coded buttons at the top of the chart let you select one or more interaction types to display. Click to include; click an active chip to remove.',
+          'Pair Conservation Threshold slider \u2013 filters pairs by their overall conservation, from 0% to 100%. The chart is limited to the top 50 pairs by conservation to maintain rendering performance.',
+          'Hover tooltips \u2013 hovering over a violin displays the residue pair name and the number of frames contributing to the plot.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'chart-area-composition',
+    title: 'Area Composition',
+    description: [
+      'Tracks the Buried Surface Area (BSA) at the protein\u2013protein interface across frames. BSA is a key indicator of interface stability and provides a macroscopic complement to the per-residue interaction data.'
+    ],
+    image: IMG + 'screenshots/area-composition.png',
+    imageAlt: 'Buried Surface Area chart showing total, polar, and non-polar composition over frames',
+    subsections: [
+      {
+        heading: 'What it shows',
+        paragraphs: [
+          'Three overlaid series track the interface area over time:'
+        ],
+        items: [
+          'Total BSA (solid blue line) \u2013 the total buried surface area of the interface in \u00C5\u00B2.',
+          'Polar Buried Area (dashed red line) \u2013 the portion of buried area contributed by polar residues.',
+          'Non-Polar Buried Area (dotted green line) \u2013 the portion contributed by non-polar residues.'
+        ]
+      },
+      {
+        heading: 'How to read it',
+        paragraphs: [
+          'A stable total BSA across frames indicates a structurally stable interface. Divergence between polar and non-polar traces can indicate shifts in interface character, such as a growing hydrophobic core or an emerging polar patch.',
+          'Toggle \"Mean \u00B1 Std Dev\" to display shaded bands around each line showing the average range. The legend includes the numerical mean and standard deviation values.',
+          'Toggling \"Show Percentages\" switches the y-axis from absolute \u00C5\u00B2 values to the relative percentage contribution of each series.'
+        ]
+      },
+      {
+        heading: 'Controls',
+        items: [
+          'Mean \u00B1 Std Dev toggle \u2013 shows or hides the shaded standard deviation bands, giving a quick visual sense of variability.',
+          'Show Percentages toggle \u2013 switches between absolute buried area values (\u00C5\u00B2) and relative proportions (%).'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'chart-conserved-islands',
+    title: 'Conserved Islands',
+    description: [
+      'Conserved Islands are clusters of residues that maintain persistent interactions across the trajectory. Rather than looking at pairs in isolation, this view groups spatially connected residues into islands, giving a higher-level picture of the stable core(s) of the interface.',
+      'Integrated with the MolStar 3D viewer, you can highlight selected islands or pairs directly on the molecular structure to see their spatial arrangement.'
+    ],
+    image: IMG + 'screenshots/conserved-islands.png',
+    imageAlt: 'Conserved islands list with bipartite graph visualization',
+    subsections: [
+      {
+        heading: 'What it shows',
+        paragraphs: [
+          'An island is a connected component of residue pairs that meet the chosen conservation threshold. Each island card lists its residues, the chains involved, and provides a mini bipartite graph (or table) of the internal pairs. Conservation bars indicate how frequently each contact persists.'
+        ]
+      },
+      {
+        heading: 'View modes',
+        paragraphs: [
+          'Two highlight modes are available via radio card buttons above the list:'
+        ],
+        items: [
+          'Conserved Islands \u2013 displays each island as a card. Toggle between a graph view (SVG bipartite network) and a tabular view (residue, chain, residue number, and connected neighbours). Click an island to highlight all its residues in the 3D viewer using ball-and-stick representation.',
+          'Most Conserved Pairs \u2013 a sortable, searchable table listing individual residue pairs ranked by their conservation percentage. Features checkboxes, conservation bars, and frame counts. Clicking a pair highlights those specific residues in the 3D viewer.'
+        ]
+      },
+      {
+        heading: '3D Visualisation',
+        paragraphs: [
+          'The MolStar viewer sits above the list. When you select an island or pair, the corresponding residues are highlighted on the 3D structure. In Islands mode, the representation is ball-and-stick to show the complete connectivity. In Pairs mode, it is a selection-based highlight.',
+          'Clicking the same item again clears the selection.'
+        ],
+        image: IMG + 'screenshots/conserved-islands-selection.png',
+        imageAlt: 'Conserved islands highlighted on the 3D MolStar viewer'
+      },
+      {
+        heading: 'Controls',
+        items: [
+          'Pair Conservation Threshold slider \u2013 filters which pairs and islands appear. Raise the threshold to see only the most persistent networks; lower it to include transient contacts.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'chart-conservation-analysis',
+    title: 'Conservation Analysis',
+    description: [
+      'The Conservation Analysis panel provides quantitative summary metrics about the stability of the interface. It appears at the bottom of each chart page and distills the full trajectory into two key numbers and three ranked lists.'
+    ],
+    image: IMG + 'screenshots/conservation-analysis.png',
+    imageAlt: 'Conservation analysis panel showing CR, CA, and top-ranked interaction metrics',
+    subsections: [
+      {
+        heading: 'What it shows',
+        paragraphs: [
+          'Two primary metrics are displayed as large summary cards:'
+        ],
+        items: [
+          'CR (Conserved Residue count) \u2013 the number of unique residue pairs that appear in at least the specified percentage of trajectory frames. The subscript indicates the active pair conservation threshold (e.g. CR_{50} at 50%).',
+          'CA (Conserved Atomic interactions) \u2013 the number of pair\u2013type combinations (e.g., A-LYS8 \u2013 B-ASP45 via H-bond) that meet the type conservation threshold.'
+        ]
+      },
+      {
+        heading: 'Insight rankings',
+        paragraphs: [
+          'Three ranked cards provide deeper insight into the most significant contacts:'
+        ],
+        items: [
+          'Most Conserved Pairs \u2013 residue pairs ranked by their average conservation across all interaction types. The top 3 are shown with frame counts and coloured interaction type tags. Click the \"+N more\" button for the full list.',
+          'Longest Conserved Stretch \u2013 pairs ranked by the maximum number of consecutive frames with any interaction maintained. This highlights contacts that persist without interruption, even if their overall frequency is moderate.',
+          'Most Conserved Types \u2013 interaction types ranked by their average conservation across all pairs. Reveals which molecular forces dominate the interface.'
+        ]
+      },
+      {
+        heading: 'How to read it',
+        paragraphs: [
+          'Together these metrics let you quickly assess interface quality. A high CR with a high CA and long consecutive stretches indicates a tight, stable interface. A large discrepancy between CR and CA may suggest many pairs interact, but only through a narrow range of interaction types. The coloured type tags are consistent with the rest of the application\u2014hover for the exact conservation percentage.'
+        ]
+      }
+    ]
+  }
+]
+
 const tabs = [
   {
     id: 'usage',
@@ -709,22 +981,10 @@ const tabs = [
     sections: usageSections
   },
   {
-    id: 'results',
-    label: 'Results',
+    id: 'charts',
+    label: 'Charts',
     icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>',
-    sections: [
-      {
-        id: 'results-overview',
-        title: 'Overview',
-        description: 'Understanding your analysis results.',
-        subsections: [
-          {
-            heading: 'Placeholder',
-            paragraphs: ['Content will be added here.']
-          }
-        ]
-      }
-    ]
+    sections: chartsSections
   },
   {
     id: 'interactions',
