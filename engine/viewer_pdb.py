@@ -2,16 +2,19 @@
 Mol* viewer PDB: full first processed frame from the original uploaded PDB,
 minus waters/metals/ions that never appear in interaction data.
 
+Protein/DNA/ligand atoms use coordinates from the **first processed frame** of
+the original upload.  Mediated waters/metals/ions use coordinates from the
+**first trimmed frame where that identity actually appears**, giving a more
+realistic placement of bridging molecules.
+
 Interaction keys are merged from:
   - _interactions.csv and *_final_file.csv (explicit HOH/MG/… on a side)
   - System-level ``_water_mediated.csv`` / ``_metal_mediated.csv`` (from
     ``aggregate_system``), or per-frame ``*_Water_Mediated.csv`` /
     ``*_Metal_Mediated.csv``. **All frames** are unioned: any water/metal that
-    mediated in **any** frame is kept in the viewer PDB (coordinates still from
-    the **first processed** frame of the original upload).
-  - Mapping trimmed → original uses the **first** ``frame_k`` trimmed PDB where
-    that CoCoMaps identity appears, then nearest oxygen/COM in the original
-    first frame.
+    mediated in **any** frame is kept in the viewer PDB.
+  - Mediated atom coordinates are extracted directly from the trimmed-frame PDB
+    where the identity first appears (not mapped back to the original frame).
 
 Web upload only (not used by CLI).
 """
@@ -406,6 +409,95 @@ def _collect_mediated_identities(system_path: Path) -> Tuple[Set[Tuple[str, int,
     return water_id, metal_id
 
 
+def _extract_pdb_lines_for_residue(pdb_path: Path, chain: str, resnum: int) -> list[str]:
+    """Extract ATOM/HETATM lines for a specific (chain, resnum) from a PDB file."""
+    lines: list[str] = []
+    with open(pdb_path, "r", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            record = line[:6].strip()
+            if record not in ("ATOM", "HETATM"):
+                continue
+            line_chain = line[21:22].strip()
+            try:
+                line_resnum = int(line[22:26].strip())
+            except ValueError:
+                continue
+            if line_chain == chain and line_resnum == resnum:
+                lines.append(line)
+    return lines
+
+
+def _extract_mediated_atom_lines(
+    system_path: Path,
+    water_idents: Set[Tuple[str, int, str]],
+    metal_idents: Set[Tuple[str, int, str]],
+    *,
+    verbose: bool = False,
+) -> Tuple[list[str], Set[Tuple[str, int]]]:
+    """
+    Extract ATOM/HETATM PDB lines for mediated waters/metals/ions from the
+    first trimmed-frame PDB where each identity appears.
+
+    Returns (pdb_lines, extracted_keys) where extracted_keys contains
+    (chain, resnum) pairs that were successfully extracted.
+    """
+    pdb_lines: list[str] = []
+    extracted_keys: Set[Tuple[str, int]] = set()
+
+    pending_w = set(water_idents)
+    pending_m = set(metal_idents)
+
+    for fd in _sorted_frame_dirs(system_path):
+        if not pending_w and not pending_m:
+            break
+        tp = _find_trimmed_frame_pdb(fd)
+        if tp is None or not tp.is_file():
+            continue
+
+        resolved_w: list[Tuple[str, int, str]] = []
+        for ident in list(pending_w):
+            ch, rn, rname = ident
+            key = (ch, rn)
+            if key in extracted_keys:
+                resolved_w.append(ident)
+                continue
+            lines = _extract_pdb_lines_for_residue(tp, ch, rn)
+            if lines:
+                pdb_lines.extend(lines)
+                extracted_keys.add(key)
+                resolved_w.append(ident)
+        for ident in resolved_w:
+            pending_w.discard(ident)
+
+        resolved_m: list[Tuple[str, int, str]] = []
+        for ident in list(pending_m):
+            ch, rn, rname = ident
+            key = (ch, rn)
+            if key in extracted_keys:
+                resolved_m.append(ident)
+                continue
+            lines = _extract_pdb_lines_for_residue(tp, ch, rn)
+            if lines:
+                pdb_lines.extend(lines)
+                extracted_keys.add(key)
+                resolved_m.append(ident)
+        for ident in resolved_m:
+            pending_m.discard(ident)
+
+    if verbose and pending_w:
+        print(
+            f"[viewer_pdb] warn: {len(pending_w)} water identity/identities "
+            "never appeared in any trimmed frame PDB"
+        )
+    if verbose and pending_m:
+        print(
+            f"[viewer_pdb] warn: {len(pending_m)} metal identity/identities "
+            "never appeared in any trimmed frame PDB"
+        )
+
+    return pdb_lines, extracted_keys
+
+
 def _select_trimmed_residue(u: mda.Universe, chain: str, resnum: int):
     """Select residue in trimmed PDB; chain may be segid or chainID."""
     for sel in (
@@ -661,16 +753,12 @@ def write_viewer_frame_pdb(
 
         universe = mda.Universe(tmp_path)
 
-        w_map, m_map, ion_map = _map_mediated_identities_to_original_keys(
-            universe,
+        mediated_lines, mediated_keys = _extract_mediated_atom_lines(
             system_path,
             wid,
             mid,
             verbose=verbose,
         )
-        water_keep |= w_map
-        metal_keep |= m_map
-        ion_keep |= ion_map
 
         groups = []
         for residue in universe.residues:
@@ -678,29 +766,46 @@ def write_viewer_frame_pdb(
             key = _residue_key(atom0)
             rname = residue.resname
             if _is_water_resname(rname):
-                if key in water_keep:
+                if key in water_keep and key not in mediated_keys:
                     groups.append(residue.atoms)
             elif _is_metal_resname(rname):
-                if key in metal_keep:
+                if key in metal_keep and key not in mediated_keys:
                     groups.append(residue.atoms)
             elif _is_ion_resname(rname):
-                if key in ion_keep:
+                if key in ion_keep and key not in mediated_keys:
                     groups.append(residue.atoms)
             else:
                 groups.append(residue.atoms)
 
-        if not groups:
+        if not groups and not mediated_lines:
             return False
 
         out_dir = system_path / "frame_1"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / "frame_1_viewer.pdb"
 
-        # AtomGroup.write — avoid mda.Merge() which may return a Universe in some MDAnalysis versions
-        combined = universe.atoms[:0]
-        for ag in groups:
-            combined += ag
-        combined.write(str(out_path))
+        if groups:
+            combined = universe.atoms[:0]
+            for ag in groups:
+                combined += ag
+            combined.write(str(out_path))
+
+            if mediated_lines:
+                with open(out_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                stripped = content.rstrip()
+                if stripped.endswith("END"):
+                    stripped = stripped[:-3].rstrip()
+                with open(out_path, "w", encoding="utf-8") as f:
+                    f.write(stripped + "\n")
+                    for line in mediated_lines:
+                        f.write(line if line.endswith("\n") else line + "\n")
+                    f.write("END\n")
+        else:
+            with open(out_path, "w", encoding="utf-8") as f:
+                for line in mediated_lines:
+                    f.write(line if line.endswith("\n") else line + "\n")
+                f.write("END\n")
 
         if verbose:
             print(f"[viewer_pdb] Wrote {out_path}")
