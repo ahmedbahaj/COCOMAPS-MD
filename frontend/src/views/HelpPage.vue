@@ -151,7 +151,57 @@ const router = useRouter()
 const activeTab = ref('usage')
 const activeSection = ref('')
 const sidebarOpen = ref(false)
-let observer = null
+
+/** Match .docs-section scroll-margin-top — section is "active" once its top passes this line below the sticky header/tabs */
+const SCROLL_ACTIVE_OFFSET = 140
+
+let scrollRaf = null
+
+function updateActiveFromScroll() {
+  const currentTab = tabs.find(t => t.id === activeTab.value)
+  if (!currentTab?.sections?.length) return
+
+  const ids = currentTab.sections.map(s => s.id)
+  let activeId = ''
+
+  for (const id of ids) {
+    const el = document.getElementById(id)
+    if (!el) continue
+    if (el.getBoundingClientRect().top <= SCROLL_ACTIVE_OFFSET) {
+      activeId = id
+    }
+  }
+
+  if (!activeId) {
+    activeId = ids[0] || ''
+  }
+
+  const doc = document.documentElement
+  const scrollBottom = window.scrollY + window.innerHeight
+  if (ids.length && scrollBottom >= doc.scrollHeight - 8) {
+    activeId = ids[ids.length - 1]
+  }
+
+  if (activeSection.value !== activeId) {
+    activeSection.value = activeId
+  }
+}
+
+function onScroll() {
+  if (scrollRaf != null) return
+  scrollRaf = requestAnimationFrame(() => {
+    scrollRaf = null
+    updateActiveFromScroll()
+  })
+}
+
+function onResize() {
+  updateActiveFromScroll()
+}
+
+function setupScrollSpy() {
+  updateActiveFromScroll()
+}
 
 const IMG = import.meta.env.BASE_URL + 'images/help/'
 
@@ -298,7 +348,7 @@ const interactionSections = [
     image: IMG + 'interactions-table-proximal.png',
     imageAlt: 'Interactions table with Proximal contacts toggle off by default',
     subsections: [
-      {
+      {     
         paragraphs: [
           'In the following, all the types of atomic interactions identified and visualized by the web server are listed.'
         ]
@@ -1135,7 +1185,7 @@ function switchTab(tabId) {
   sidebarOpen.value = false
   router.replace({ query: { tab: tabId }, hash: '' })
   nextTick(() => {
-    setupObserver()
+    setupScrollSpy()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   })
 }
@@ -1143,35 +1193,10 @@ function switchTab(tabId) {
 function scrollToSection(sectionId) {
   const el = document.getElementById(sectionId)
   if (el) {
+    activeSection.value = sectionId
     el.scrollIntoView({ behavior: 'smooth' })
     sidebarOpen.value = false
   }
-}
-
-function setupObserver() {
-  if (observer) observer.disconnect()
-
-  const currentTab = tabs.find(t => t.id === activeTab.value)
-  if (!currentTab) return
-
-  const sectionEls = currentTab.sections
-    .map(s => document.getElementById(s.id))
-    .filter(Boolean)
-
-  if (sectionEls.length === 0) return
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          activeSection.value = entry.target.id
-        }
-      }
-    },
-    { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
-  )
-
-  sectionEls.forEach(el => observer.observe(el))
 }
 
 function restoreFromURL() {
@@ -1180,30 +1205,45 @@ function restoreFromURL() {
     activeTab.value = tabParam
   }
   nextTick(() => {
-    setupObserver()
+    setupScrollSpy()
     if (route.hash) {
       const id = route.hash.slice(1)
       const el = document.getElementById(id)
       if (el) {
-        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100)
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' })
+          setTimeout(() => updateActiveFromScroll(), 400)
+        }, 100)
       }
     }
   })
 }
 
 onMounted(() => {
+  window.addEventListener('scroll', onScroll, { passive: true })
+  window.addEventListener('resize', onResize, { passive: true })
   restoreFromURL()
 })
 
 onBeforeUnmount(() => {
-  if (observer) observer.disconnect()
+  window.removeEventListener('scroll', onScroll)
+  window.removeEventListener('resize', onResize)
+  if (scrollRaf != null) cancelAnimationFrame(scrollRaf)
 })
 
 watch(() => route.query.tab, (newTab) => {
   if (newTab && newTab !== activeTab.value && tabs.some(t => t.id === newTab)) {
     activeTab.value = newTab
-    nextTick(() => setupObserver())
+    nextTick(() => setupScrollSpy())
   }
+})
+
+watch(activeSection, (id) => {
+  if (!id) return
+  nextTick(() => {
+    const link = document.querySelector(`.docs-sidebar a[href="#${CSS.escape(id)}"]`)
+    if (link) link.scrollIntoView({ block: 'nearest' })
+  })
 })
 </script>
 
