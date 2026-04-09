@@ -1,20 +1,15 @@
 """
-Mol* viewer PDB: full first processed frame from the original uploaded PDB,
-minus waters/metals/ions that never appear in interaction data.
+Mol* viewer PDB: first processed frame only.
 
-Protein/DNA/ligand atoms use coordinates from the **first processed frame** of
-the original upload.  Mediated waters/metals/ions use coordinates from the
-**first trimmed frame where that identity actually appears**, giving a more
-realistic placement of bridging molecules.
+Contains **all chains** (protein / DNA / ligand) from the original uploaded PDB's
+first processed frame, plus **mediated waters / metals / ions** that appear in
+frame 1's mediated-interaction data.  Both use first-frame coordinates.
 
-Interaction keys are merged from:
-  - _interactions.csv and *_final_file.csv (explicit HOH/MG/… on a side)
-  - System-level ``_water_mediated.csv`` / ``_metal_mediated.csv`` (from
-    ``aggregate_system``), or per-frame ``*_Water_Mediated.csv`` /
-    ``*_Metal_Mediated.csv``. **All frames** are unioned: any water/metal that
-    mediated in **any** frame is kept in the viewer PDB.
-  - Mediated atom coordinates are extracted directly from the trimmed-frame PDB
-    where the identity first appears (not mapped back to the original frame).
+Mediated identities come from:
+  - System-level ``_water_mediated.csv`` / ``_metal_mediated.csv`` filtered to
+    frame 1, **or** per-frame ``frame_1/*_Water_Mediated.csv`` /
+    ``frame_1/*_Metal_Mediated.csv`` as a fallback.
+  - Atom coordinates are extracted directly from the frame 1 trimmed PDB.
 
 Web upload only (not used by CLI).
 """
@@ -346,11 +341,16 @@ def _read_aggregate_mediated_csv(path: Path) -> list[dict]:
 
 def _collect_mediated_identities_from_frame_folders(
     system_path: Path,
+    *,
+    first_frame_only: bool = False,
 ) -> Tuple[Set[Tuple[str, int, str]], Set[Tuple[str, int, str]]]:
-    """Parse Water/Metal Identity from every frame_N/*_Water_Mediated.csv (fallback when no aggregates)."""
+    """Parse Water/Metal Identity from frame_N/*_Water_Mediated.csv (fallback when no aggregates)."""
     water_id: Set[Tuple[str, int, str]] = set()
     metal_id: Set[Tuple[str, int, str]] = set()
-    for frame_dir in _sorted_frame_dirs(system_path):
+    frame_dirs = _sorted_frame_dirs(system_path)
+    if first_frame_only:
+        frame_dirs = frame_dirs[:1]
+    for frame_dir in frame_dirs:
         cp = _get_chain_pattern(frame_dir)
         for base in (f"{frame_dir.name}.pd_h.pdb", f"{frame_dir.name}.pdb"):
             for csv_name, dest, col in (
@@ -375,32 +375,42 @@ def _collect_mediated_identities_from_frame_folders(
     return water_id, metal_id
 
 
-def _collect_mediated_identities(system_path: Path) -> Tuple[Set[Tuple[str, int, str]], Set[Tuple[str, int, str]]]:
+def _collect_mediated_identities(
+    system_path: Path,
+    *,
+    first_frame_only: bool = False,
+) -> Tuple[Set[Tuple[str, int, str]], Set[Tuple[str, int, str]]]:
     """
-    Union of Water/Metal Identity across **all frames** (from _water_mediated.csv /
-    _metal_mediated.csv or per-frame CSVs). Viewer PDB uses **first processed frame**
-    coordinates from the original PDB but keeps any solvent that mediated in **any** frame.
+    Collect Water/Metal Identity tokens from mediated-interaction CSVs.
+
+    When *first_frame_only* is True, only frame 1 rows from the aggregate CSVs
+    (or per-frame ``frame_1/`` CSVs) are included.  Otherwise all frames are
+    unioned.
     """
     water_id: Set[Tuple[str, int, str]] = set()
     metal_id: Set[Tuple[str, int, str]] = set()
     wa = system_path / "_water_mediated.csv"
     ma = system_path / "_metal_mediated.csv"
 
+    ff = 1 if first_frame_only else None
+
     if wa.is_file():
         rows = _read_aggregate_mediated_csv(wa)
         _add_identities_from_mediated_aggregate_rows(
-            rows, "Water Identity", water_id, frame_filter=None
+            rows, "Water Identity", water_id, frame_filter=ff
         )
     if ma.is_file():
         rows = _read_aggregate_mediated_csv(ma)
         _add_identities_from_mediated_aggregate_rows(
-            rows, "Metal Identity", metal_id, frame_filter=None
+            rows, "Metal Identity", metal_id, frame_filter=ff
         )
 
     need_water_fb = not wa.is_file() or not water_id
     need_metal_fb = not ma.is_file() or not metal_id
     if need_water_fb or need_metal_fb:
-        w_fb, m_fb = _collect_mediated_identities_from_frame_folders(system_path)
+        w_fb, m_fb = _collect_mediated_identities_from_frame_folders(
+            system_path, first_frame_only=first_frame_only
+        )
         if need_water_fb:
             water_id |= w_fb
         if need_metal_fb:
@@ -432,11 +442,14 @@ def _extract_mediated_atom_lines(
     water_idents: Set[Tuple[str, int, str]],
     metal_idents: Set[Tuple[str, int, str]],
     *,
+    first_frame_only: bool = False,
     verbose: bool = False,
 ) -> Tuple[list[str], Set[Tuple[str, int]]]:
     """
-    Extract ATOM/HETATM PDB lines for mediated waters/metals/ions from the
-    first trimmed-frame PDB where each identity appears.
+    Extract ATOM/HETATM PDB lines for mediated waters/metals/ions from
+    trimmed-frame PDBs.
+
+    When *first_frame_only* is True only the first frame directory is checked.
 
     Returns (pdb_lines, extracted_keys) where extracted_keys contains
     (chain, resnum) pairs that were successfully extracted.
@@ -447,7 +460,11 @@ def _extract_mediated_atom_lines(
     pending_w = set(water_idents)
     pending_m = set(metal_idents)
 
-    for fd in _sorted_frame_dirs(system_path):
+    frame_dirs = _sorted_frame_dirs(system_path)
+    if first_frame_only:
+        frame_dirs = frame_dirs[:1]
+
+    for fd in frame_dirs:
         if not pending_w and not pending_m:
             break
         tp = _find_trimmed_frame_pdb(fd)
@@ -487,12 +504,12 @@ def _extract_mediated_atom_lines(
     if verbose and pending_w:
         print(
             f"[viewer_pdb] warn: {len(pending_w)} water identity/identities "
-            "never appeared in any trimmed frame PDB"
+            "not found in trimmed frame PDB(s)"
         )
     if verbose and pending_m:
         print(
             f"[viewer_pdb] warn: {len(pending_m)} metal identity/identities "
-            "never appeared in any trimmed frame PDB"
+            "not found in trimmed frame PDB(s)"
         )
 
     return pdb_lines, extracted_keys
@@ -696,10 +713,14 @@ def write_viewer_frame_pdb(
     verbose: bool = False,
 ) -> bool:
     """
-    Write frame_1/frame_1_viewer.pdb from the original uploaded PDB's first *processed* frame,
-    dropping water/metal/ion residues with no entry in merged interaction data (see module docstring).
+    Write ``frame_1/frame_1_viewer.pdb`` containing:
 
-    Returns True if the viewer PDB was written, False if skipped (missing inputs or nothing to write).
+    * All chains (protein / DNA / ligand) from the first processed frame of the
+      original uploaded PDB.
+    * Mediated waters / metals / ions that appear in frame 1 interaction data,
+      with coordinates from the frame 1 trimmed PDB.
+
+    Returns True if the viewer PDB was written, False if skipped.
     """
     system_path = Path(system_dir)
     interactions_path = system_path / "_interactions.csv"
@@ -714,13 +735,9 @@ def write_viewer_frame_pdb(
             print("[viewer_pdb] No original PDB at system root; skip viewer PDB")
         return False
 
-    w_i, m_i, ion_i = _collect_keys_from_interactions_csv(interactions_path)
-    w_f, m_f, ion_f = _collect_keys_from_final_files(system_path)
-    water_keep = w_i | w_f
-    metal_keep = m_i | m_f
-    ion_keep = ion_i | ion_f
-
-    wid, mid = _collect_mediated_identities(system_path)
+    wid, mid = _collect_mediated_identities(
+        system_path, first_frame_only=True
+    )
 
     raw_frames = _parse_raw_frames(original)
     num_frames = len(raw_frames)
@@ -742,6 +759,14 @@ def write_viewer_frame_pdb(
     first_raw_idx = frames_to_process[0]
     raw_text = raw_frames[first_raw_idx]
 
+    mediated_lines, _mediated_keys = _extract_mediated_atom_lines(
+        system_path,
+        wid,
+        mid,
+        first_frame_only=True,
+        verbose=verbose,
+    )
+
     tmp = tempfile.NamedTemporaryFile(suffix=".pdb", delete=False, mode="w", encoding="utf-8")
     tmp_path = tmp.name
     universe = None
@@ -753,29 +778,12 @@ def write_viewer_frame_pdb(
 
         universe = mda.Universe(tmp_path)
 
-        mediated_lines, mediated_keys = _extract_mediated_atom_lines(
-            system_path,
-            wid,
-            mid,
-            verbose=verbose,
-        )
-
         groups = []
         for residue in universe.residues:
-            atom0 = residue.atoms[0]
-            key = _residue_key(atom0)
             rname = residue.resname
-            if _is_water_resname(rname):
-                if key in water_keep and key not in mediated_keys:
-                    groups.append(residue.atoms)
-            elif _is_metal_resname(rname):
-                if key in metal_keep and key not in mediated_keys:
-                    groups.append(residue.atoms)
-            elif _is_ion_resname(rname):
-                if key in ion_keep and key not in mediated_keys:
-                    groups.append(residue.atoms)
-            else:
-                groups.append(residue.atoms)
+            if _is_water_resname(rname) or _is_metal_resname(rname) or _is_ion_resname(rname):
+                continue
+            groups.append(residue.atoms)
 
         if not groups and not mediated_lines:
             return False
