@@ -29,7 +29,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { useDataStore } from '../stores/dataStore'
+import { useDataStore } from '../../stores/dataStore'
 
 const props = defineProps({
   isOpen: {

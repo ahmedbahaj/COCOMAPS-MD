@@ -180,9 +180,9 @@
 <script setup>
 import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import Highcharts from 'highcharts'
-import api from '../services/api'
-import { useDataStore } from '../stores/dataStore'
-import { parseResidueId } from '../utils/chartHelpers'
+import api from '../../services/api'
+import { useDataStore } from '../../stores/dataStore'
+import { parseResidueId } from '../../utils/chartHelpers'
 
 const props = defineProps({
   visible: {

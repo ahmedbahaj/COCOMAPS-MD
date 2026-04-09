@@ -161,9 +161,9 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import ChainSelector from '../components/ChainSelector.vue'
-import AdvancedSettings from '../components/AdvancedSettings.vue'
-import AppFooter from '../components/AppFooter.vue'
+import ChainSelector from '../components/landing/ChainSelector.vue'
+import AdvancedSettings from '../components/landing/AdvancedSettings.vue'
+import AppFooter from '../components/layout/AppFooter.vue'
 import api from '../services/api'
 import { useDataStore } from '../stores/dataStore'
 

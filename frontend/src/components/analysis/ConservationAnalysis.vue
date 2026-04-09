@@ -197,9 +197,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useDataStore } from '../stores/dataStore'
-import { useConservationStatistics } from '../composables/useConservationStatistics'
-import { getInteractionBaseColor, getTextColorForBg, formatResiduePairFromIds } from '../utils/chartHelpers'
+import { useDataStore } from '../../stores/dataStore'
+import { useConservationStatistics } from '../../composables/useConservationStatistics'
+import { getInteractionBaseColor, getTextColorForBg, formatResiduePairFromIds } from '../../utils/chartHelpers'
 
 const props = defineProps({
   pairThreshold: {

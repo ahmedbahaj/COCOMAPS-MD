@@ -26,9 +26,12 @@ The Vite dev server proxies `/api` requests to `http://localhost:5001` (Flask ba
 
 ```
 src/
-├── views/                      # Page-level components (5)
-├── components/                 # Reusable UI components (15)
-│   └── charts/                 # Chart visualizations (7)
+├── views/                      # Route-level pages
+├── components/
+│   ├── layout/                 # App chrome (navbar, footer)
+│   ├── landing/                # Upload flow (chain selector, advanced settings, tooltips)
+│   ├── analysis/               # Dashboard (charts shell, controls, Mol*, modals, sidebar)
+│   └── charts/                 # Chart visualizations (Highcharts, Plotly, etc.)
 ├── composables/                # Vue composables
 │   └── useConservationStatistics.js
 ├── services/

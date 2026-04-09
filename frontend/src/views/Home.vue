@@ -36,14 +36,14 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDataStore } from '../stores/dataStore'
-import ChartSelector from '../components/ChartSelector.vue'
-import ControlsPanel from '../components/ControlsPanel.vue'
-import ChartContainer from '../components/ChartContainer.vue'
-import StatsPanel from '../components/StatsPanel.vue'
-import ConservationAnalysis from '../components/ConservationAnalysis.vue'
-import UploadModal from '../components/UploadModal.vue'
-import SystemSidebar from '../components/SystemSidebar.vue'
-import AppFooter from '../components/AppFooter.vue'
+import ChartSelector from '../components/analysis/ChartSelector.vue'
+import ControlsPanel from '../components/analysis/ControlsPanel.vue'
+import ChartContainer from '../components/analysis/ChartContainer.vue'
+import StatsPanel from '../components/analysis/StatsPanel.vue'
+import ConservationAnalysis from '../components/analysis/ConservationAnalysis.vue'
+import UploadModal from '../components/analysis/UploadModal.vue'
+import SystemSidebar from '../components/analysis/SystemSidebar.vue'
+import AppFooter from '../components/layout/AppFooter.vue'
 
 const props = defineProps({
   sidebarOpen: { type: Boolean, default: false }

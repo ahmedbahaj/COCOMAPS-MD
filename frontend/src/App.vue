@@ -8,7 +8,7 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterView } from 'vue-router'
-import AppNavbar from './components/AppNavbar.vue'
+import AppNavbar from './components/layout/AppNavbar.vue'
 
 const sidebarOpen = ref(false)
 </script>

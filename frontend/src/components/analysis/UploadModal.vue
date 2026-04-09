@@ -37,8 +37,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import api from '../services/api'
-import { useDataStore } from '../stores/dataStore'
+import api from '../../services/api'
+import { useDataStore } from '../../stores/dataStore'
 
 const dataStore = useDataStore()
 const isOpen = ref(false)

@@ -180,7 +180,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import AppFooter from '../components/AppFooter.vue'
+import AppFooter from '../components/layout/AppFooter.vue'
 
 const copiedBib = ref(null)
 

@@ -229,9 +229,9 @@
 <script setup>
 import { ref, watch, computed, nextTick } from 'vue'
 import Highcharts from 'highcharts'
-import { useDataStore } from '../stores/dataStore'
-import api from '../services/api'
-import { getInteractionBaseColor, parseResidueId, formatPairKey } from '../utils/chartHelpers'
+import { useDataStore } from '../../stores/dataStore'
+import api from '../../services/api'
+import { getInteractionBaseColor, parseResidueId, formatPairKey } from '../../utils/chartHelpers'
 
 const props = defineProps({
   visible: {

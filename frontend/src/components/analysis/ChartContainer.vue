@@ -21,13 +21,13 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useDataStore } from '../stores/dataStore'
-import FilteredHeatmap from './charts/FilteredHeatmap.vue'
-import AreaChart from './charts/AreaChart.vue'
-import InteractionTrends from './charts/InteractionTrends.vue'
-import InteractionConservationMatrix from './charts/InteractionConservationMatrix.vue'
-import DistanceDistribution from './charts/DistanceDistribution.vue'
-import ConservedIslandsList from './charts/ConservedIslandsList.vue'
+import { useDataStore } from '../../stores/dataStore'
+import FilteredHeatmap from '../charts/FilteredHeatmap.vue'
+import AreaChart from '../charts/AreaChart.vue'
+import InteractionTrends from '../charts/InteractionTrends.vue'
+import InteractionConservationMatrix from '../charts/InteractionConservationMatrix.vue'
+import DistanceDistribution from '../charts/DistanceDistribution.vue'
+import ConservedIslandsList from '../charts/ConservedIslandsList.vue'
 
 const dataStore = useDataStore()
 

@@ -20,7 +20,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { useDataStore } from '../stores/dataStore'
+import { useDataStore } from '../../stores/dataStore'
 
 const dataStore = useDataStore()
 const tabRefs = ref({})

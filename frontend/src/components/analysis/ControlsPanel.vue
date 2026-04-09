@@ -181,9 +181,9 @@
 
 <script setup>
 import { computed, ref, nextTick } from 'vue'
-import { useDataStore } from '../stores/dataStore'
-import { INTERACTION_TYPES } from '../utils/constants'
-import { getInteractionBaseColor } from '../utils/chartHelpers'
+import { useDataStore } from '../../stores/dataStore'
+import { INTERACTION_TYPES } from '../../utils/constants'
+import { getInteractionBaseColor } from '../../utils/chartHelpers'
 
 const dataStore = useDataStore()
 

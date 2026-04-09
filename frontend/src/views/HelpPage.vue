@@ -143,7 +143,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppFooter from '../components/AppFooter.vue'
+import AppFooter from '../components/layout/AppFooter.vue'
 
 const route = useRoute()
 const router = useRouter()

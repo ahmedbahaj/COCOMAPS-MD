@@ -320,7 +320,7 @@ import { ref, computed, watch } from 'vue'
 import { useDataStore } from '../../stores/dataStore'
 import { useConservationStatistics } from '../../composables/useConservationStatistics'
 import { parseResidueId, getInteractionBaseColor, getTextColorForBg } from '../../utils/chartHelpers'
-import MolStarViewer from '../MolStarViewer.vue'
+import MolStarViewer from '../analysis/MolStarViewer.vue'
 import IslandGraph from './IslandGraph.vue'
 
 const dataStore = useDataStore()

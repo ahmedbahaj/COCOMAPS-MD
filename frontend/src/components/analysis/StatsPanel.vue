@@ -55,7 +55,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { useDataStore } from '../stores/dataStore'
+import { useDataStore } from '../../stores/dataStore'
 
 const dataStore = useDataStore()
 

@@ -153,7 +153,7 @@ import { useDataStore } from '../../stores/dataStore'
 import { getInteractionBaseColor, matchesSelectedTypes, formatResiduePairFromIds, formatPairKey, parseResidueId } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
 import api from '../../services/api'
-import InteractionTrajectoryModal from '../InteractionTrajectoryModal.vue'
+import InteractionTrajectoryModal from '../analysis/InteractionTrajectoryModal.vue'
 
 HeatmapModule(Highcharts)
 

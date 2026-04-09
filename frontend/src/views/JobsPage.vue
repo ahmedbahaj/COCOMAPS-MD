@@ -203,7 +203,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDataStore } from '../stores/dataStore'
 import api from '../services/api'
-import AppFooter from '../components/AppFooter.vue'
+import AppFooter from '../components/layout/AppFooter.vue'
 
 const router = useRouter()
 const dataStore = useDataStore()
