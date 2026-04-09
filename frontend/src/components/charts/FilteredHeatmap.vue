@@ -18,13 +18,17 @@ import { ref, onMounted, watch } from 'vue'
 import Highcharts from '../../utils/highchartsConfig'
 import { withExporting } from '../../utils/highchartsConfig'
 import HeatmapModule from 'highcharts/modules/heatmap'
-import { useDataStore } from '../../stores/dataStore'
+import { useAnalysisStore } from '../../stores/analysisStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import { matchesSelectedTypes } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
 
 HeatmapModule(Highcharts)
 
-const dataStore = useDataStore()
+const analysisStore = useAnalysisStore()
+const chartUiStore = useChartUiStore()
+const systemsStore = useSystemsStore()
 const chartContainer = ref(null)
 let chart = null
 const showFullLabels = ref(true) // Default to showing full labels
@@ -32,7 +36,7 @@ const showFullLabels = ref(true) // Default to showing full labels
 const updateChart = () => {
   if (!chartContainer.value) return
 
-  const filteredData = dataStore.filteredInteractions
+  const filteredData = analysisStore.filteredInteractions
 
   if (filteredData.length === 0) {
     if (chart) {
@@ -147,7 +151,7 @@ const updateChart = () => {
       height: dynamicHeight
     },
     title: {
-      text: `${dataStore.currentSystem?.name || 'System'} - Residue Interaction Heatmap (${heatmapData.length} interactions)`,
+      text: `${systemsStore.currentSystem?.name || 'System'} - Residue Interaction Heatmap (${heatmapData.length} interactions)`,
       style: {
         fontSize: '24px',
         fontWeight: '600',
@@ -163,7 +167,7 @@ const updateChart = () => {
     xAxis: {
       categories: chainACategories,
       title: {
-        text: `Chain ${dataStore.currentSystem?.chain1 || 'A'} Residues`,
+        text: `Chain ${systemsStore.currentSystem?.chain1 || 'A'} Residues`,
         style: {
           fontSize: '18px',
           fontWeight: '600',
@@ -188,7 +192,7 @@ const updateChart = () => {
     yAxis: {
       categories: chainBCategories,
       title: {
-        text: `Chain ${dataStore.currentSystem?.chain2 || 'B'} Residues`,
+        text: `Chain ${systemsStore.currentSystem?.chain2 || 'B'} Residues`,
         style: {
           fontSize: '18px',
           fontWeight: '600',
@@ -283,7 +287,7 @@ const updateChart = () => {
               <span style="color: #1d1d1f; font-weight: 600;">Overall Conservation: ${persistencePercent}%</span>
             </div>
             <div style="margin-bottom: 4px;">
-              <span style="color: #6e6e73;">Frames: ${this.point.frameCount} / ${dataStore.totalFrames}</span>
+              <span style="color: #6e6e73;">Frames: ${this.point.frameCount} / ${systemsStore.totalFrames}</span>
             </div>
             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e8e8ed;">
               <div style="color: #1d1d1f; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Interaction Types:</div>
@@ -297,7 +301,7 @@ const updateChart = () => {
     }
   }
 
-  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const systemName = systemsStore.currentSystem?.id || 'unknown'
   const exportOptions = withExporting(chartOptions, `filtered-heatmap-${systemName}`)
   chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
@@ -307,13 +311,13 @@ onMounted(() => {
 })
 
 watch([
-  () => dataStore.currentChartType,
-  () => dataStore.currentThreshold,
-  () => dataStore.filteredInteractions.length,
-  () => dataStore.selectedInteractionTypes.size,
+  () => chartUiStore.currentChartType,
+  () => chartUiStore.currentThreshold,
+  () => analysisStore.filteredInteractions.length,
+  () => chartUiStore.selectedInteractionTypes.size,
   () => showFullLabels.value
 ], () => {
-  if (dataStore.currentChartType === 'filteredHeatmap') {
+  if (chartUiStore.currentChartType === 'filteredHeatmap') {
     updateChart()
   }
 }, { deep: true })

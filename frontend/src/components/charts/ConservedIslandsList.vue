@@ -1,8 +1,8 @@
 <template>
   <div class="conserved-islands-wrapper">
     <MolStarViewer
-      v-if="dataStore.currentSystem?.id"
-      :system-id="dataStore.currentSystem.id"
+      v-if="systemsStore.currentSystem?.id"
+      :system-id="systemsStore.currentSystem.id"
       :selected-residues="selectedResiduesForViewer"
       :highlight-mode="viewMode === 'islands' ? 'ball-and-stick' : 'select'"
       class="structure-viewer"
@@ -60,17 +60,17 @@
     </div>
 
     <template v-if="viewMode === 'islands'">
-      <div v-if="dataStore.loading.conservedIslands" class="loading-state">
+      <div v-if="analysisStore.loading.conservedIslands" class="loading-state">
         <div class="loading-spinner"></div>
         <p>Loading conserved islands...</p>
       </div>
-      <div v-else-if="dataStore.errors.conservedIslands" class="error-state">
-        <p>{{ dataStore.errors.conservedIslands }}</p>
-        <p class="hint">Run the pipeline or <code>python conserved_islands.py systems/{{ dataStore.currentSystem?.id }}</code> to generate.</p>
+      <div v-else-if="analysisStore.errors.conservedIslands" class="error-state">
+        <p>{{ analysisStore.errors.conservedIslands }}</p>
+        <p class="hint">Run the pipeline or <code>python conserved_islands.py systems/{{ systemsStore.currentSystem?.id }}</code> to generate.</p>
       </div>
-      <div v-else-if="!dataStore.conservedIslands || dataStore.conservedIslands.length === 0" class="empty-state">
+      <div v-else-if="!analysisStore.conservedIslands || analysisStore.conservedIslands.length === 0" class="empty-state">
         <p>No conserved islands found for this system.</p>
-        <p class="hint">Run the pipeline or <code>python conserved_islands.py systems/{{ dataStore.currentSystem?.id }}</code> to generate.</p>
+        <p class="hint">Run the pipeline or <code>python conserved_islands.py systems/{{ systemsStore.currentSystem?.id }}</code> to generate.</p>
       </div>
       <div v-else class="islands-content">
         <p class="selection-hint">
@@ -79,7 +79,7 @@
         </p>
         <div class="islands-list" role="radiogroup" aria-label="Conserved islands">
         <div
-          v-for="island in dataStore.conservedIslands"
+          v-for="island in analysisStore.conservedIslands"
           :key="island.id"
           class="island-card"
           :class="{ selected: selectedIslandId === island.id }"
@@ -193,7 +193,7 @@
                 min="0"
                 max="1"
                 step="0.1"
-                :value="dataStore.currentThreshold"
+                :value="chartUiStore.currentThreshold"
                 @input="updateThreshold"
               />
               <div class="slider-ticks">
@@ -297,7 +297,7 @@
                   </td>
                   <td class="col-frames">
                     <span class="frames-value">{{ item.frameCount }}</span>
-                    <span class="frames-total"> / {{ dataStore.totalFrames }}</span>
+                    <span class="frames-total"> / {{ systemsStore.totalFrames }}</span>
                   </td>
                 </tr>
               </template>
@@ -317,13 +317,17 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useDataStore } from '../../stores/dataStore'
+import { useAnalysisStore } from '../../stores/analysisStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import { useConservationStatistics } from '../../composables/useConservationStatistics'
 import { parseResidueId, getInteractionBaseColor, getTextColorForBg } from '../../utils/chartHelpers'
 import MolStarViewer from '../analysis/MolStarViewer.vue'
 import IslandGraph from './IslandGraph.vue'
 
-const dataStore = useDataStore()
+const analysisStore = useAnalysisStore()
+const chartUiStore = useChartUiStore()
+const systemsStore = useSystemsStore()
 const { statistics } = useConservationStatistics()
 
 const viewMode = ref('islands')
@@ -357,7 +361,7 @@ const filteredPairsList = computed(() => {
         cmp = a.pair.localeCompare(b.pair)
         break
       case 'conservation':
-        cmp = (a.frameCount / (dataStore.totalFrames || 1)) - (b.frameCount / (dataStore.totalFrames || 1))
+        cmp = (a.frameCount / (systemsStore.totalFrames || 1)) - (b.frameCount / (systemsStore.totalFrames || 1))
         break
       case 'frames':
         cmp = a.frameCount - b.frameCount
@@ -385,7 +389,7 @@ function sortIndicatorClass(col) {
 
 // --- Conservation display helpers ---
 function conservationPercent(item) {
-  const totalFrames = dataStore.totalFrames || 1
+  const totalFrames = systemsStore.totalFrames || 1
   return Math.round((item.frameCount / totalFrames) * 100)
 }
 
@@ -482,8 +486,8 @@ function deselectAllPairs() {
 }
 
 const selectedIslandResidues = computed(() => {
-  if (!selectedIslandId.value || !dataStore.conservedIslands) return null
-  const island = dataStore.conservedIslands.find((i) => i.id === selectedIslandId.value)
+  if (!selectedIslandId.value || !analysisStore.conservedIslands) return null
+  const island = analysisStore.conservedIslands.find((i) => i.id === selectedIslandId.value)
   return island?.residues ?? null
 })
 
@@ -509,7 +513,7 @@ const selectedResiduesForViewer = computed(() => {
 })
 
 // --- Pair Conservation Threshold slider ---
-const thresholdPercent = computed(() => Math.round(dataStore.currentThreshold * 100))
+const thresholdPercent = computed(() => Math.round(chartUiStore.currentThreshold * 100))
 
 const conservationTicks = computed(() => {
   const ticks = []
@@ -523,13 +527,13 @@ const conservationTicks = computed(() => {
 })
 
 const updateThreshold = (event) => {
-  dataStore.setThreshold(parseFloat(event.target.value))
+  chartUiStore.setThreshold(parseFloat(event.target.value))
 }
 
 const updateThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0 && value <= 100) {
-    dataStore.setThreshold(value / 100)
+    chartUiStore.setThreshold(value / 100)
   }
 }
 
@@ -541,7 +545,7 @@ const validateThresholdInput = (event) => {
   }
   value = Math.max(0, Math.min(100, value))
   event.target.value = value
-  dataStore.setThreshold(value / 100)
+  chartUiStore.setThreshold(value / 100)
 }
 </script>
 

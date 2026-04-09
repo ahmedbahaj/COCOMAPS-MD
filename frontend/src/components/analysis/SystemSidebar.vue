@@ -10,13 +10,13 @@
       <button class="close-sidebar" @click="$emit('close')">×</button>
     </div>
     
-    <div v-if="dataStore.loading.systems" class="loading">Loading Jobs...</div>
+    <div v-if="systemsStore.isLoading" class="loading">Loading Jobs...</div>
     
     <div v-else class="systems-list">
       <div
-        v-for="system in dataStore.systems"
+        v-for="system in systemsStore.systems"
         :key="system.id"
-        :class="['system-item', { active: dataStore.currentSystem?.id === system.id }]"
+        :class="['system-item', { active: systemsStore.currentSystem?.id === system.id }]"
         @click="selectSystem(system.id)"
       >
         <div class="system-name">{{ system.name }}</div>
@@ -29,7 +29,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { useDataStore } from '../../stores/dataStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 
 const props = defineProps({
   isOpen: {
@@ -40,13 +40,13 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'select-system'])
 
-const dataStore = useDataStore()
+const systemsStore = useSystemsStore()
 const router = useRouter()
 
 const selectSystem = async (systemId) => {
-  await dataStore.setCurrentSystem(systemId)
+  await systemsStore.setCurrentSystem(systemId)
 
-  const system = dataStore.systems.find(s => s.id === systemId)
+  const system = systemsStore.systems.find(s => s.id === systemId)
   if (system && system.jobId) {
     router.push({ name: 'Analysis', params: { jobId: system.jobId } })
   }

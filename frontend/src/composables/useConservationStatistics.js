@@ -3,7 +3,9 @@
  * Used by ConservationAnalysis and 3D Visualization (ConservedIslandsList).
  */
 import { ref, watch, computed, unref } from 'vue'
-import { useDataStore } from '../stores/dataStore'
+import { useAnalysisStore } from '../stores/analysisStore'
+import { useChartUiStore } from '../stores/chartUiStore'
+import { useSystemsStore } from '../stores/systemsStore'
 import { formatResiduePairFromIds, formatPairKey, matchesSelectedTypes } from '../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../utils/constants'
 
@@ -52,17 +54,19 @@ function assignRanks(sortedItems, valueKey) {
 
 /**
  * @param {Object} [options]
- * @param {import('vue').Ref<number>} [options.pairThreshold] - Override pair conservation threshold (default: dataStore.currentThreshold)
+ * @param {import('vue').Ref<number>} [options.pairThreshold] - Override pair conservation threshold (default: chart UI store currentThreshold)
  * @param {import('vue').Ref<number>} [options.typeThreshold] - Override type conservation threshold (default: 0.5)
  * @returns {{ statistics: import('vue').Ref<Object|null> }}
  */
 export function useConservationStatistics(options = {}) {
-  const dataStore = useDataStore()
+  const analysisStore = useAnalysisStore()
+  const chartUiStore = useChartUiStore()
+  const systemsStore = useSystemsStore()
   const statistics = ref(null)
 
   const effectivePairThreshold = computed(() => {
     const t = unref(options.pairThreshold)
-    return t !== undefined && t !== null ? t : dataStore.currentThreshold
+    return t !== undefined && t !== null ? t : chartUiStore.currentThreshold
   })
   const effectiveTypeThreshold = computed(() => {
     const t = unref(options.typeThreshold)
@@ -70,7 +74,7 @@ export function useConservationStatistics(options = {}) {
   })
 
   function computeStatistics() {
-    const allInteractions = dataStore.filteredInteractions
+    const allInteractions = analysisStore.filteredInteractions
     if (allInteractions.length === 0) {
       statistics.value = null
       return
@@ -163,9 +167,9 @@ export function useConservationStatistics(options = {}) {
           ) {
             return
           }
-          if (dataStore.selectedInteractionTypes.size > 0) {
+          if (chartUiStore.selectedInteractionTypes.size > 0) {
             if (
-              !matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)
+              !matchesSelectedTypes(type, chartUiStore.selectedInteractionTypes, INTERACTION_TYPES)
             ) {
               return
             }
@@ -311,9 +315,9 @@ export function useConservationStatistics(options = {}) {
 
   watch(
     [
-      () => dataStore.filteredInteractions,
-      () => dataStore.totalFrames,
-      () => [...dataStore.selectedInteractionTypes],
+      () => analysisStore.filteredInteractions,
+      () => systemsStore.totalFrames,
+      () => [...chartUiStore.selectedInteractionTypes],
       effectivePairThreshold,
       effectiveTypeThreshold
     ],

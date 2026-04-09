@@ -23,7 +23,7 @@
               min="0"
               max="1.0"
               step="0.1"
-              :value="dataStore.currentThreshold"
+              :value="chartUiStore.currentThreshold"
               @input="updatePairThreshold"
             />
             <div class="slider-ticks">
@@ -39,7 +39,7 @@
           <div class="slider-value-input">
             <input
               type="number"
-              :value="Math.round(dataStore.currentThreshold * 100)"
+              :value="Math.round(chartUiStore.currentThreshold * 100)"
               @input="updatePairThresholdFromInput"
               @blur="validatePairThresholdInput"
               min="0"
@@ -50,7 +50,7 @@
             <span class="percent-symbol">%</span>
           </div>
         </div>
-        <p class="slider-description">Show pairs present in at least {{ Math.round(dataStore.currentThreshold * 100) }}% of frames</p>
+        <p class="slider-description">Show pairs present in at least {{ Math.round(chartUiStore.currentThreshold * 100) }}% of frames</p>
       </div>
       
       <!-- Type Conservation Threshold -->
@@ -67,7 +67,7 @@
               min="0.5"
               max="1.0"
               step="0.1"
-              :value="dataStore.typeConservationThreshold"
+              :value="chartUiStore.typeConservationThreshold"
               @input="updateThreshold"
             />
             <div class="slider-ticks">
@@ -83,7 +83,7 @@
           <div class="slider-value-input">
             <input
               type="number"
-              :value="Math.round(dataStore.typeConservationThreshold * 100)"
+              :value="Math.round(chartUiStore.typeConservationThreshold * 100)"
               @input="updateThresholdFromInput"
               @blur="validateThresholdInput"
               min="50"
@@ -149,7 +149,9 @@ import { ref, onMounted, watch, computed } from 'vue'
 import Highcharts from '../../utils/highchartsConfig'
 import { withExporting } from '../../utils/highchartsConfig'
 import HeatmapModule from 'highcharts/modules/heatmap'
-import { useDataStore } from '../../stores/dataStore'
+import { useAnalysisStore } from '../../stores/analysisStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import { getInteractionBaseColor, matchesSelectedTypes, formatResiduePairFromIds, formatPairKey, parseResidueId } from '../../utils/chartHelpers'
 import { INTERACTION_TYPES } from '../../utils/constants'
 import api from '../../services/api'
@@ -162,14 +164,16 @@ if (typeof Highcharts === 'object') {
   HeatmapModule(Highcharts)
 }
 
-const dataStore = useDataStore()
+const analysisStore = useAnalysisStore()
+const chartUiStore = useChartUiStore()
+const systemsStore = useSystemsStore()
 const chartContainer = ref(null)
 const chartLoading = ref(false)
 let chart = null
 const distanceData = ref(null)
 const atomPairDataByPair = ref(new Map()) // Map<pairKey, atomPairData>
-// Type conservation threshold now uses dataStore.typeConservationThreshold (shared across charts)
-// pairConservationThreshold now uses dataStore.currentThreshold (shared with ConservationAnalysis)
+// Type conservation threshold now uses chartUiStore.typeConservationThreshold (shared across charts)
+// pairConservationThreshold now uses chartUiStore.currentThreshold (shared with ConservationAnalysis)
 const showTrajectoryModal = ref(false)
 const selectedInteraction = ref(null)
   const hiddenTypes = ref(new Set()) // Track hidden interaction types from legend clicks
@@ -203,7 +207,7 @@ const hideTooltip = () => {
 
 // Tooltip descriptions for each metric
 const residueTooltips = computed(() => ({
-  cr: `Count of unique residue pairs present in ≥${Math.round(dataStore.currentThreshold * 100)}% of trajectory frames`,
+  cr: `Count of unique residue pairs present in ≥${Math.round(chartUiStore.currentThreshold * 100)}% of trajectory frames`,
   count: 'Total number of conservation score samples from all qualifying pairs',
   mean: 'Average pair conservation across all interactions meeting the threshold',
   median: 'Middle value of sorted conservation scores; half above, half below',
@@ -218,7 +222,7 @@ const residueTooltips = computed(() => ({
 }))
 
 const atomicTooltips = computed(() => ({
-  ca: `Count of pair-type combinations (residue pair + interaction type) with ≥${Math.round(dataStore.typeConservationThreshold * 100)}% type conservation`,
+  ca: `Count of pair-type combinations (residue pair + interaction type) with ≥${Math.round(chartUiStore.typeConservationThreshold * 100)}% type conservation`,
   count: 'Total number of type conservation score samples meeting the threshold',
   mean: 'Average type conservation across all qualifying pair-type combinations',
   median: 'Middle value of sorted type conservation scores',
@@ -262,20 +266,20 @@ const pairConservationTicks = computed(() => {
 })
 
 const updateThreshold = (event) => {
-  dataStore.setTypeConservationThreshold(parseFloat(event.target.value))
+  chartUiStore.setTypeConservationThreshold(parseFloat(event.target.value))
   updateChart()
 }
 
 // Pair conservation threshold functions — write to shared store
 const updatePairThreshold = (event) => {
-  dataStore.setThreshold(parseFloat(event.target.value))
+  chartUiStore.setThreshold(parseFloat(event.target.value))
   updateChart()
 }
 
 const updatePairThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0 && value <= 100) {
-    dataStore.setThreshold(value / 100)
+    chartUiStore.setThreshold(value / 100)
     updateChart()
   }
 }
@@ -283,20 +287,20 @@ const updatePairThresholdFromInput = (event) => {
 const validatePairThresholdInput = (event) => {
   let value = parseFloat(event.target.value)
   if (isNaN(value)) {
-    event.target.value = Math.round(dataStore.currentThreshold * 100)
+    event.target.value = Math.round(chartUiStore.currentThreshold * 100)
     return
   }
   // Clamp value between 0 and 100
   value = Math.max(0, Math.min(100, value))
   event.target.value = value
-  dataStore.setThreshold(value / 100)
+  chartUiStore.setThreshold(value / 100)
   updateChart()
 }
 
 const updateThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 50 && value <= 100) {
-    dataStore.setTypeConservationThreshold(value / 100)
+    chartUiStore.setTypeConservationThreshold(value / 100)
     updateChart()
   }
 }
@@ -304,13 +308,13 @@ const updateThresholdFromInput = (event) => {
 const validateThresholdInput = (event) => {
   let value = parseFloat(event.target.value)
   if (isNaN(value)) {
-    event.target.value = Math.round(dataStore.typeConservationThreshold * 100)
+    event.target.value = Math.round(chartUiStore.typeConservationThreshold * 100)
     return
   }
   // Clamp value between 50 and 100
   value = Math.max(50, Math.min(100, value))
   event.target.value = value
-  dataStore.setTypeConservationThreshold(value / 100)
+  chartUiStore.setTypeConservationThreshold(value / 100)
   updateChart()
 }
 
@@ -364,7 +368,7 @@ const updateChart = async () => {
   await loadAtomPairDataForAllPairs()
 
   // Use filteredInteractions which already applies the interaction type filter
-  const allInteractions = dataStore.filteredInteractions
+  const allInteractions = analysisStore.filteredInteractions
 
   if (allInteractions.length === 0) {
     if (chart) {
@@ -376,14 +380,14 @@ const updateChart = async () => {
   }
 
   // LEVEL 1: Filter pairs by overall conservation (using pairConservationThreshold)
-  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= dataStore.currentThreshold)
+  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= chartUiStore.currentThreshold)
 
   if (stablePairs.length === 0) {
     if (chart) {
       chart.destroy()
       chart = null
     }
-    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No pairs found with ≥${Math.round(dataStore.currentThreshold * 100)}% conservation.</div>`
+    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No pairs found with ≥${Math.round(chartUiStore.currentThreshold * 100)}% conservation.</div>`
     return
   }
 
@@ -414,7 +418,7 @@ const updateChart = async () => {
     return numA2 - numB2
   })
 
-  const totalFrames = dataStore.totalFrames
+  const totalFrames = systemsStore.totalFrames
 
   // Prepare data: group by interaction type for each pair-frame combination
   // LEVEL 2: Only show interaction types with conservation ≥ threshold
@@ -435,13 +439,13 @@ const updateChart = async () => {
         const typeConservation = typePersistence[type] || 0
         
         // Check if type meets conservation threshold
-        if (typeConservation < dataStore.typeConservationThreshold) {
+        if (typeConservation < chartUiStore.typeConservationThreshold) {
           return
         }
         
         // Check if type matches selected interaction types filter
-        if (dataStore.selectedInteractionTypes.size > 0) {
-          if (!matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)) {
+        if (chartUiStore.selectedInteractionTypes.size > 0) {
+          if (!matchesSelectedTypes(type, chartUiStore.selectedInteractionTypes, INTERACTION_TYPES)) {
             return // Skip this type if it doesn't match filter
           }
         }
@@ -475,7 +479,7 @@ const updateChart = async () => {
       chart.destroy()
       chart = null
     }
-    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interaction types meet the ${Math.round(dataStore.typeConservationThreshold * 100)}% conservation threshold in stable pairs.</div>`
+    chartContainer.value.innerHTML = `<div style="text-align: center; padding: 100px 20px; color: #6e6e73; font-size: 19px;">No interaction types meet the ${Math.round(chartUiStore.typeConservationThreshold * 100)}% conservation threshold in stable pairs.</div>`
     return
   }
 
@@ -490,13 +494,13 @@ const updateChart = async () => {
         const typeConservation = typePersistence[type] || 0
         
         // LEVEL 2 FILTER: Only show if type conservation ≥ threshold
-        if (typeConservation < dataStore.typeConservationThreshold) {
+        if (typeConservation < chartUiStore.typeConservationThreshold) {
           return // Skip this interaction type
         }
         
         // LEVEL 3 FILTER: Only show if type matches selected interaction types
-        if (dataStore.selectedInteractionTypes.size > 0) {
-          if (!matchesSelectedTypes(type, dataStore.selectedInteractionTypes, INTERACTION_TYPES)) {
+        if (chartUiStore.selectedInteractionTypes.size > 0) {
+          if (!matchesSelectedTypes(type, chartUiStore.selectedInteractionTypes, INTERACTION_TYPES)) {
             return // Skip this type if it doesn't match filter
           }
         }
@@ -627,8 +631,8 @@ const updateChart = async () => {
   
   // Helper to check if an INTERACTION_TYPE matches the selected filter
   const typeMatchesFilter = (interactionType) => {
-    if (dataStore.selectedInteractionTypes.size === 0) return true
-    return dataStore.selectedInteractionTypes.has(interactionType.id)
+    if (chartUiStore.selectedInteractionTypes.size === 0) return true
+    return chartUiStore.selectedInteractionTypes.has(interactionType.id)
   }
   
   // Helper to check if type already exists in series (using keyword matching)
@@ -742,7 +746,7 @@ const updateChart = async () => {
       marginRight: 200
     },
     title: {
-      text: `${dataStore.currentSystem?.name || 'System'} - Interaction Conservation Timeline (${pairTypeCombinations.length} pair-type combinations, ${uniquePairCount} unique pairs)`,
+      text: `${systemsStore.currentSystem?.name || 'System'} - Interaction Conservation Timeline (${pairTypeCombinations.length} pair-type combinations, ${uniquePairCount} unique pairs)`,
       style: {
         fontSize: '24px',
         fontWeight: '600',
@@ -1083,7 +1087,7 @@ const updateChart = async () => {
     }
   }
 
-  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const systemName = systemsStore.currentSystem?.id || 'unknown'
   const exportOptions = withExporting(chartOptions, `interaction-conservation-matrix-${systemName}`)
   if (!chartContainer.value) return
   chart = Highcharts.chart(chartContainer.value, exportOptions)
@@ -1093,10 +1097,10 @@ const updateChart = async () => {
 }
 
 const loadDistanceData = async () => {
-  if (!dataStore.currentSystem) return
+  if (!systemsStore.currentSystem) return
   
   try {
-    const response = await api.getInteractionDistances(dataStore.currentSystem.id)
+    const response = await api.getInteractionDistances(systemsStore.currentSystem.id)
     distanceData.value = response
   } catch (error) {
     console.error('Error loading distance data:', error)
@@ -1106,7 +1110,7 @@ const loadDistanceData = async () => {
 
 // Load atom pair data for a specific residue pair
 const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
-  if (!dataStore.currentSystem) return null
+  if (!systemsStore.currentSystem) return null
   
   // Check if already loaded
   if (atomPairDataByPair.value.has(pairKey)) {
@@ -1130,7 +1134,7 @@ const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
       chain2: res2.chain
     }
     
-    const response = await api.getAtomPairs(dataStore.currentSystem.id, params)
+    const response = await api.getAtomPairs(systemsStore.currentSystem.id, params)
     atomPairDataByPair.value.set(pairKey, response)
     return response
   } catch (error) {
@@ -1141,10 +1145,10 @@ const loadAtomPairDataForPair = async (pairKey, id1, id2) => {
 
 // Load atom pair data for all unique pairs in the current filtered interactions (BATCH)
 const loadAtomPairDataForAllPairs = async () => {
-  if (!dataStore.currentSystem) return
+  if (!systemsStore.currentSystem) return
   
-  const allInteractions = dataStore.filteredInteractions
-  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= dataStore.currentThreshold)
+  const allInteractions = analysisStore.filteredInteractions
+  const stablePairs = allInteractions.filter(interaction => interaction.consistency >= chartUiStore.currentThreshold)
   
   if (stablePairs.length === 0) return
   
@@ -1178,7 +1182,7 @@ const loadAtomPairDataForAllPairs = async () => {
   
   try {
     // Make a single batch API call
-    const batchResult = await api.getAtomPairsBatch(dataStore.currentSystem.id, pairsToLoad)
+    const batchResult = await api.getAtomPairsBatch(systemsStore.currentSystem.id, pairsToLoad)
     
     // Store results in the cache, mapping the returned keys to our expected keys
     pairsToLoad.forEach(pair => {
@@ -1353,20 +1357,20 @@ onMounted(async () => {
 })
 
 watch([
-  () => dataStore.currentChartType,
-  () => dataStore.interactions.length,
-  () => dataStore.totalFrames,
-  () => dataStore.currentSystem?.id,
-  () => dataStore.selectedInteractionTypes.size,
-  () => dataStore.currentThreshold,
-  () => dataStore.typeConservationThreshold
+  () => chartUiStore.currentChartType,
+  () => analysisStore.interactions.length,
+  () => systemsStore.totalFrames,
+  () => systemsStore.currentSystem?.id,
+  () => chartUiStore.selectedInteractionTypes.size,
+  () => chartUiStore.currentThreshold,
+  () => chartUiStore.typeConservationThreshold
 ], async () => {
-  if (dataStore.currentChartType === 'interactionConservationMatrix') {
-    if (dataStore.currentSystem?.id && !distanceData.value) {
+  if (chartUiStore.currentChartType === 'interactionConservationMatrix') {
+    if (systemsStore.currentSystem?.id && !distanceData.value) {
       await loadDistanceData()
     }
     // Clear atom pair cache when system changes
-    if (dataStore.currentSystem?.id) {
+    if (systemsStore.currentSystem?.id) {
       atomPairDataByPair.value.clear()
     }
     await updateChart()

@@ -35,7 +35,7 @@
             <div class="pair-rank-row">
               <span class="rank-text">{{ getOrdinal(item.rank) }}.</span>
               <span class="pair-name">{{ item.pair }}</span>
-              <span class="frame-count">({{ item.frameCount }}/{{ dataStore.totalFrames }} frames)</span>
+              <span class="frame-count">({{ item.frameCount }}/{{ systemsStore.totalFrames }} frames)</span>
             </div>
             <div class="type-tags">
               <span 
@@ -43,7 +43,7 @@
                 :key="tIdx" 
                 class="type-tag"
                 :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
-                @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * dataStore.totalFrames)}/${dataStore.totalFrames} frames)`)"
+                @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * systemsStore.totalFrames)}/${systemsStore.totalFrames} frames)`)"
                 @mouseleave="hideTooltip"
               >{{ typeInfo.type }}</span>
               <span v-if="item.types.length > 4" class="type-tag more-types">+{{ item.types.length - 4 }}</span>
@@ -78,7 +78,7 @@
                 :key="tIdx" 
                 class="type-tag"
                 :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
-                @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * dataStore.totalFrames)}/${dataStore.totalFrames} frames)`)"
+                @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * systemsStore.totalFrames)}/${systemsStore.totalFrames} frames)`)"
                 @mouseleave="hideTooltip"
               >{{ typeInfo.type }}</span>
             </div>
@@ -169,7 +169,7 @@
                 <div class="pair-rank-row">
                   <span class="rank-text">{{ getOrdinal(item.rank) }}.</span>
                   <span class="pair-name">{{ item.pair }}</span>
-                  <span v-if="item.frameCount !== undefined" class="frame-count">({{ item.frameCount }}/{{ dataStore.totalFrames }} frames)</span>
+                  <span v-if="item.frameCount !== undefined" class="frame-count">({{ item.frameCount }}/{{ systemsStore.totalFrames }} frames)</span>
                   <span v-else-if="item.stretchInfo" class="frame-count">{{ item.stretchInfo }}</span>
                 </div>
                 <div class="type-tags">
@@ -178,7 +178,7 @@
                     :key="tIdx" 
                     class="type-tag"
                     :style="{ backgroundColor: getInteractionBaseColor(typeInfo.type), color: getTextColorForBg(typeInfo.type) }"
-                    @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * dataStore.totalFrames)}/${dataStore.totalFrames} frames)`)"
+                    @mouseenter="showTooltip($event, `${typeInfo.type} — ${formatPercent(typeInfo.conservation)} (${Math.round(typeInfo.conservation * systemsStore.totalFrames)}/${systemsStore.totalFrames} frames)`)"
                     @mouseleave="hideTooltip"
                   >{{ typeInfo.type }}</span>
                 </div>
@@ -197,7 +197,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useDataStore } from '../../stores/dataStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import { useConservationStatistics } from '../../composables/useConservationStatistics'
 import { getInteractionBaseColor, getTextColorForBg, formatResiduePairFromIds } from '../../utils/chartHelpers'
 
@@ -212,10 +213,11 @@ const props = defineProps({
   }
 })
 
-const dataStore = useDataStore()
+const chartUiStore = useChartUiStore()
+const systemsStore = useSystemsStore()
 
 // Effective thresholds: use prop if provided, otherwise fall back to the global slider value
-const effectivePairThreshold = computed(() => props.pairThreshold ?? dataStore.currentThreshold)
+const effectivePairThreshold = computed(() => props.pairThreshold ?? chartUiStore.currentThreshold)
 const effectiveTypeThreshold = computed(() => props.typeThreshold ?? 0.5)
 
 const { statistics } = useConservationStatistics({

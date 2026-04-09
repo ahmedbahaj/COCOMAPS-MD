@@ -21,7 +21,9 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { useDataStore } from '../../stores/dataStore'
+import { useAnalysisStore } from '../../stores/analysisStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import FilteredHeatmap from '../charts/FilteredHeatmap.vue'
 import AreaChart from '../charts/AreaChart.vue'
 import InteractionTrends from '../charts/InteractionTrends.vue'
@@ -29,24 +31,26 @@ import InteractionConservationMatrix from '../charts/InteractionConservationMatr
 import DistanceDistribution from '../charts/DistanceDistribution.vue'
 import ConservedIslandsList from '../charts/ConservedIslandsList.vue'
 
-const dataStore = useDataStore()
+const analysisStore = useAnalysisStore()
+const systemsStore = useSystemsStore()
+const chartUiStore = useChartUiStore()
 
 const chartKey = ref(0)
 
 const loading = computed(() => {
-  return dataStore.loading.interactions || 
-         dataStore.loading.area || 
-         dataStore.loading.trends
+  return analysisStore.loading.interactions ||
+         analysisStore.loading.area ||
+         analysisStore.loading.trends
 })
 
 const error = computed(() => {
-  return dataStore.errors.interactions || 
-         dataStore.errors.area || 
-         dataStore.errors.trends
+  return analysisStore.errors.interactions ||
+         analysisStore.errors.area ||
+         analysisStore.errors.trends
 })
 
 const hasData = computed(() => {
-  return dataStore.currentSystem !== null
+  return systemsStore.currentSystem !== null
 })
 
 const chartComponents = {
@@ -59,16 +63,16 @@ const chartComponents = {
 }
 
 const currentChartComponent = computed(() => {
-  return chartComponents[dataStore.currentChartType] || FilteredHeatmap
+  return chartComponents[chartUiStore.currentChartType] || FilteredHeatmap
 })
 
 // Force re-render when chart type or system changes
-// NOTE: Do NOT include dataStore.currentThreshold here — charts handle threshold
+// NOTE: Do NOT include chartUiStore.currentThreshold here — charts handle threshold
 // changes internally via their own watchers. Including it here would destroy and
 // re-create the component, resetting local state (e.g. type conservation threshold).
 watch([
-  () => dataStore.currentChartType,
-  () => dataStore.currentSystem?.id
+  () => chartUiStore.currentChartType,
+  () => systemsStore.currentSystem?.id
 ], () => {
   chartKey.value++
 })

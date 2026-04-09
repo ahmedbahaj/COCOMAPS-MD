@@ -16,7 +16,7 @@
             :min="SLIDER_MIN"
             :max="SLIDER_MAX"
             :step="SLIDER_STEP"
-            :value="dataStore.currentThreshold"
+            :value="chartUiStore.currentThreshold"
             @input="updateThreshold"
           />
           <div class="slider-ticks">
@@ -59,7 +59,7 @@
           <input
             type="checkbox"
             id="logScaleToggle"
-            :checked="dataStore.useLogScale"
+            :checked="chartUiStore.useLogScale"
             @change="toggleLogScale"
             style="width: 20px; height: 20px; cursor: pointer; accent-color: #1d1d1f;"
           />
@@ -120,7 +120,7 @@
               v-for="type in INTERACTION_TYPES"
               :key="type.id"
               class="filter-dot"
-              :class="{ inactive: !dataStore.selectedInteractionTypes.has(type.id) }"
+              :class="{ inactive: !chartUiStore.selectedInteractionTypes.has(type.id) }"
               :style="{ backgroundColor: getTypeColor(type) }"
               :title="type.label"
             ></span>
@@ -155,7 +155,7 @@
           >
             <input
               type="checkbox"
-              :checked="dataStore.selectedInteractionTypes.has(type.id)"
+              :checked="chartUiStore.selectedInteractionTypes.has(type.id)"
               @change="toggleInteractionType(type.id)"
               class="interaction-checkbox-input"
             />
@@ -163,10 +163,10 @@
               class="custom-checkbox"
               :style="{ 
                 borderColor: getTypeColor(type),
-                backgroundColor: dataStore.selectedInteractionTypes.has(type.id) ? getTypeColor(type) : 'transparent'
+                backgroundColor: chartUiStore.selectedInteractionTypes.has(type.id) ? getTypeColor(type) : 'transparent'
               }"
             >
-              <svg v-if="dataStore.selectedInteractionTypes.has(type.id)" viewBox="0 0 12 12" class="checkmark">
+              <svg v-if="chartUiStore.selectedInteractionTypes.has(type.id)" viewBox="0 0 12 12" class="checkmark">
                 <path d="M2 6l3 3 5-5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </span>
@@ -181,11 +181,11 @@
 
 <script setup>
 import { computed, ref, nextTick } from 'vue'
-import { useDataStore } from '../../stores/dataStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
 import { INTERACTION_TYPES } from '../../utils/constants'
 import { getInteractionBaseColor } from '../../utils/chartHelpers'
 
-const dataStore = useDataStore()
+const chartUiStore = useChartUiStore()
 
 const interactionFilterExpanded = ref(false)
 
@@ -204,32 +204,32 @@ const customTimeUnit = ref('')
 const customTimeUnitInput = ref(null)
 
 const isCustomTimeUnit = computed(() => {
-  const currentUnit = dataStore.timeUnit
+  const currentUnit = chartUiStore.timeUnit
   if (!currentUnit) return false
   return !TIME_UNITS.some(u => u.value === currentUnit)
 })
 
 const isTimeUnitActive = (value) => {
   if (isCustomTimeUnit.value) return false
-  return dataStore.timeUnit === value
+  return chartUiStore.timeUnit === value
 }
 
 const selectTimeUnit = (value) => {
   customTimeUnit.value = ''
-  dataStore.setTimeUnit(value)
+  chartUiStore.setTimeUnit(value)
 }
 
 const enableCustomTimeUnit = async () => {
   if (!isCustomTimeUnit.value) {
-    customTimeUnit.value = dataStore.timeUnit || ''
-    dataStore.setTimeUnit(customTimeUnit.value || 'custom')
+    customTimeUnit.value = chartUiStore.timeUnit || ''
+    chartUiStore.setTimeUnit(customTimeUnit.value || 'custom')
   }
   await nextTick()
   customTimeUnitInput.value?.focus()
 }
 
 const updateCustomTimeUnit = () => {
-  dataStore.setTimeUnit(customTimeUnit.value || null)
+  chartUiStore.setTimeUnit(customTimeUnit.value || null)
 }
 
 // Get the color for an interaction type based on its keywords
@@ -243,30 +243,30 @@ const SLIDER_MAX = 1
 const SLIDER_STEP = 0.1
 
 const showSlider = computed(() => {
-  return ['filteredHeatmap'].includes(dataStore.currentChartType)
+  return ['filteredHeatmap'].includes(chartUiStore.currentChartType)
 })
 
 const showLogScale = computed(() => {
-  return ['line'].includes(dataStore.currentChartType)
+  return ['line'].includes(chartUiStore.currentChartType)
 })
 
 const showInteractionFilter = computed(() => {
-  return ['filteredHeatmap', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
+  return ['filteredHeatmap', 'interactionConservationMatrix'].includes(chartUiStore.currentChartType)
 })
 
 const showTimeUnit = computed(() => {
-  return ['line', 'area', 'interactionConservationMatrix'].includes(dataStore.currentChartType)
+  return ['line', 'area', 'interactionConservationMatrix'].includes(chartUiStore.currentChartType)
 })
 
 const hasAnyControls = computed(() => {
   return showSlider.value || showLogScale.value || showInteractionFilter.value || showTimeUnit.value
 })
 
-const selectedCount = computed(() => dataStore.selectedInteractionTypes.size)
+const selectedCount = computed(() => chartUiStore.selectedInteractionTypes.size)
 const totalCount = computed(() => INTERACTION_TYPES.length)
 
 const thresholdPercent = computed(() => {
-  return Math.round(dataStore.currentThreshold * 100)
+  return Math.round(chartUiStore.currentThreshold * 100)
 })
 
 const thresholdTicks = computed(() => {
@@ -281,13 +281,13 @@ const thresholdTicks = computed(() => {
 })
 
 const updateThreshold = (event) => {
-  dataStore.setThreshold(parseFloat(event.target.value))
+  chartUiStore.setThreshold(parseFloat(event.target.value))
 }
 
 const updateThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0 && value <= 100) {
-    dataStore.setThreshold(value / 100)
+    chartUiStore.setThreshold(value / 100)
   }
 }
 
@@ -300,23 +300,23 @@ const validateThresholdInput = (event) => {
   // Clamp value between 0 and 100
   value = Math.max(0, Math.min(100, value))
   event.target.value = value
-  dataStore.setThreshold(value / 100)
+  chartUiStore.setThreshold(value / 100)
 }
 
 const toggleLogScale = (event) => {
-  dataStore.setLogScale(event.target.checked)
+  chartUiStore.setLogScale(event.target.checked)
 }
 
 const toggleInteractionType = (typeId) => {
-  dataStore.toggleInteractionType(typeId)
+  chartUiStore.toggleInteractionType(typeId)
 }
 
 const selectAllTypes = () => {
-  dataStore.selectAllInteractionTypes()
+  chartUiStore.selectAllInteractionTypes()
 }
 
 const deselectAllTypes = () => {
-  dataStore.clearInteractionTypes()
+  chartUiStore.clearInteractionTypes()
 }
 </script>
 

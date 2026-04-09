@@ -181,7 +181,7 @@
 import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import Highcharts from 'highcharts'
 import api from '../../services/api'
-import { useDataStore } from '../../stores/dataStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import { parseResidueId } from '../../utils/chartHelpers'
 
 const props = defineProps({
@@ -197,7 +197,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const dataStore = useDataStore()
+const systemsStore = useSystemsStore()
 const loading = ref(false)
 const error = ref(null)
 const data = ref(null)
@@ -331,7 +331,7 @@ const getFrameTooltip = (frame) => {
 }
 
 const loadAtomPairData = async () => {
-  if (!props.residuePair || !dataStore.currentSystem) return
+  if (!props.residuePair || !systemsStore.currentSystem) return
 
   loading.value = true
   error.value = null
@@ -357,9 +357,9 @@ const loadAtomPairData = async () => {
       chain2: res2.chain
     }
 
-    const response = await api.getAtomPairs(dataStore.currentSystem.id, params)
+    const response = await api.getAtomPairs(systemsStore.currentSystem.id, params)
     data.value = response
-    totalFrames.value = response.totalFrames || dataStore.totalFrames
+    totalFrames.value = response.totalFrames || systemsStore.totalFrames
     
     // Process transitions
     if (response.transitions) {

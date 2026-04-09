@@ -15,7 +15,7 @@
               min="0.5"
               max="1.0"
               step="0.1"
-              :value="dataStore.typeConservationThreshold"
+              :value="chartUiStore.typeConservationThreshold"
               @input="updateTypeThreshold"
             />
             <div class="slider-ticks">
@@ -31,7 +31,7 @@
           <div class="slider-value-input">
             <input
               type="number"
-              :value="Math.round(dataStore.typeConservationThreshold * 100)"
+              :value="Math.round(chartUiStore.typeConservationThreshold * 100)"
               @input="updateTypeThresholdFromInput"
               @blur="validateTypeThresholdInput"
               min="50"
@@ -42,7 +42,7 @@
             <span class="percent-symbol">%</span>
           </div>
         </div>
-        <p class="slider-description">Show types present in at least {{ Math.round(dataStore.typeConservationThreshold * 100) }}% of frames</p>
+        <p class="slider-description">Show types present in at least {{ Math.round(chartUiStore.typeConservationThreshold * 100) }}% of frames</p>
       </div>
     </div>
 
@@ -62,11 +62,15 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import Highcharts from '../../utils/highchartsConfig'
 import { withExporting } from '../../utils/highchartsConfig'
-import { useDataStore } from '../../stores/dataStore'
+import { useAnalysisStore } from '../../stores/analysisStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import { INTERACTION_TYPES } from '../../utils/constants'
 import { getInteractionBaseColor } from '../../utils/chartHelpers'
 
-const dataStore = useDataStore()
+const analysisStore = useAnalysisStore()
+const chartUiStore = useChartUiStore()
+const systemsStore = useSystemsStore()
 const chartContainer = ref(null)
 let chart = null
 let lastHoveredSeriesName = null
@@ -105,14 +109,14 @@ const conservationTicks = computed(() => {
 })
 
 const updateTypeThreshold = (event) => {
-  dataStore.setTypeConservationThreshold(parseFloat(event.target.value))
+  chartUiStore.setTypeConservationThreshold(parseFloat(event.target.value))
   updateChart()
 }
 
 const updateTypeThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 50 && value <= 100) {
-    dataStore.setTypeConservationThreshold(value / 100)
+    chartUiStore.setTypeConservationThreshold(value / 100)
     updateChart()
   }
 }
@@ -120,12 +124,12 @@ const updateTypeThresholdFromInput = (event) => {
 const validateTypeThresholdInput = (event) => {
   let value = parseFloat(event.target.value)
   if (isNaN(value)) {
-    event.target.value = Math.round(dataStore.typeConservationThreshold * 100)
+    event.target.value = Math.round(chartUiStore.typeConservationThreshold * 100)
     return
   }
   value = Math.max(50, Math.min(100, value))
   event.target.value = value
-  dataStore.setTypeConservationThreshold(value / 100)
+  chartUiStore.setTypeConservationThreshold(value / 100)
   updateChart()
 }
 
@@ -133,9 +137,9 @@ const validateTypeThresholdInput = (event) => {
 // mirroring the Conservation Matrix filter logic
 const typeHasConservedPair = (interactionType) => {
   const keywords = interactionType.keywords.map(k => k.toLowerCase())
-  const threshold = dataStore.typeConservationThreshold
+  const threshold = chartUiStore.typeConservationThreshold
 
-  return dataStore.interactions.some(interaction => {
+  return analysisStore.interactions.some(interaction => {
     if (!interaction.typePersistence) return false
     return interaction.typesArray.some(rawType => {
       const rawTypeLower = rawType.toLowerCase()
@@ -146,11 +150,11 @@ const typeHasConservedPair = (interactionType) => {
 }
 
 const buildSeries = (frameCount) => {
-  const useLogScale = dataStore.useLogScale
+  const useLogScale = chartUiStore.useLogScale
   
   const series = INTERACTION_TYPES.map((type) => {
     const trendKey = type.trendLabel || type.label
-    const trendData = dataStore.trends?.[trendKey]
+    const trendData = analysisStore.trends?.[trendKey]
     const hasTrendData = Array.isArray(trendData) && trendData.length > 0
     const hasNonZero = hasTrendData ? trendData.some(value => value > 0) : false
 
@@ -209,8 +213,8 @@ const updateChart = () => {
   if (!chartContainer.value) return
 
   // Use actual frame numbers from backend if available
-  const frameNumbers = dataStore.trendFrameNumbers || []
-  const trendValues = Object.values(dataStore.trends || {})
+  const frameNumbers = analysisStore.trendFrameNumbers || []
+  const trendValues = Object.values(analysisStore.trends || {})
   const maxTrendLength = trendValues.reduce((max, series) => {
     if (Array.isArray(series)) {
       return Math.max(max, series.length)
@@ -226,7 +230,7 @@ const updateChart = () => {
     categories = frameNumbers.map(n => `${n}`)
   } else {
     // Fallback to sequential numbering
-    frameCount = Math.max(dataStore.totalFrames || 0, maxTrendLength)
+    frameCount = Math.max(systemsStore.totalFrames || 0, maxTrendLength)
     categories = Array.from({ length: frameCount }, (_, i) => `${i + 1}`)
   }
   
@@ -245,7 +249,7 @@ const updateChart = () => {
       height: 650
     },
     title: {
-      text: `${dataStore.currentSystem?.name || 'System'} - Interaction Type Trends Across Frames`,
+      text: `${systemsStore.currentSystem?.name || 'System'} - Interaction Type Trends Across Frames`,
       style: {
         fontSize: '24px',
         fontWeight: '600',
@@ -261,7 +265,7 @@ const updateChart = () => {
     xAxis: {
       categories: categories,
       title: {
-        text: dataStore.timeUnit ? `Time (${dataStore.timeUnit})` : 'Frame',
+        text: chartUiStore.timeUnit ? `Time (${chartUiStore.timeUnit})` : 'Frame',
         style: {
           fontSize: '15px',
           fontWeight: '600',
@@ -277,9 +281,9 @@ const updateChart = () => {
       }
     },
     yAxis: {
-      type: dataStore.useLogScale ? 'logarithmic' : 'linear',
+      type: chartUiStore.useLogScale ? 'logarithmic' : 'linear',
       title: {
-        text: `Number of Interactions${dataStore.useLogScale ? ' - Log Scale' : ''}`,
+        text: `Number of Interactions${chartUiStore.useLogScale ? ' - Log Scale' : ''}`,
         style: {
           fontSize: '15px',
           fontWeight: '600',
@@ -293,7 +297,7 @@ const updateChart = () => {
           color: '#1d1d1f'
         }
       },
-      min: dataStore.useLogScale ? 0.1 : 0,
+      min: chartUiStore.useLogScale ? 0.1 : 0,
       // Ensure proper handling of small values in log scale
       allowDecimals: true
     },
@@ -368,7 +372,7 @@ const updateChart = () => {
     }
   }
 
-  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const systemName = systemsStore.currentSystem?.id || 'unknown'
   const exportOptions = withExporting(chartOptions, `interaction-trends-${systemName}`)
   chart = Highcharts.chart(chartContainer.value, exportOptions)
 }
@@ -378,16 +382,16 @@ onMounted(() => {
 })
 
 watch([
-  () => dataStore.currentChartType,
-  () => dataStore.trends,
-  () => dataStore.useLogScale,
-  () => dataStore.totalFrames,
-  () => dataStore.trendFrameNumbers,
-  () => dataStore.timeUnit,
-  () => dataStore.typeConservationThreshold,
-  () => dataStore.interactions.length
+  () => chartUiStore.currentChartType,
+  () => analysisStore.trends,
+  () => chartUiStore.useLogScale,
+  () => systemsStore.totalFrames,
+  () => analysisStore.trendFrameNumbers,
+  () => chartUiStore.timeUnit,
+  () => chartUiStore.typeConservationThreshold,
+  () => analysisStore.interactions.length
 ], () => {
-  if (dataStore.currentChartType === 'line') {
+  if (chartUiStore.currentChartType === 'line') {
     updateChart()
   }
 }, { deep: true })

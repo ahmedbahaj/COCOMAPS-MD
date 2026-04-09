@@ -6,10 +6,10 @@
     <!-- Main Content -->
     <div class="main-content">
       <div class="container">
-        <h1 v-if="dataStore.currentSystem">{{ dataStore.currentSystem.name }}</h1>
+        <h1 v-if="systemsStore.currentSystem">{{ systemsStore.currentSystem.name }}</h1>
         <h1 v-else>Select a System</h1>
-        <p class="subtitle" v-if="dataStore.currentSystem">
-          Chain {{ dataStore.currentSystem.chain1 || 'A' }} ↔ Chain {{ dataStore.currentSystem.chain2 || 'B' }} Residue Interactions Across {{ dataStore.currentSystem.frames }} Frames
+        <p class="subtitle" v-if="systemsStore.currentSystem">
+          Chain {{ systemsStore.currentSystem.chain1 || 'A' }} ↔ Chain {{ systemsStore.currentSystem.chain2 || 'B' }} Residue Interactions Across {{ systemsStore.currentSystem.frames }} Frames
         </p>
         <p class="subtitle" v-else>
           Use the menu to select a system for analysis
@@ -20,8 +20,8 @@
           <ChartContainer />
           <ControlsPanel />
         </div>
-        <StatsPanel v-if="dataStore.currentSystem" />
-        <ConservationAnalysis v-if="dataStore.currentSystem" />
+        <StatsPanel v-if="systemsStore.currentSystem" />
+        <ConservationAnalysis v-if="systemsStore.currentSystem" />
       </div>
     </div>
 
@@ -35,7 +35,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useDataStore } from '../stores/dataStore'
+import { useSystemsStore } from '../stores/systemsStore'
 import ChartSelector from '../components/analysis/ChartSelector.vue'
 import ControlsPanel from '../components/analysis/ControlsPanel.vue'
 import ChartContainer from '../components/analysis/ChartContainer.vue'
@@ -50,28 +50,28 @@ const props = defineProps({
 })
 defineEmits(['toggle-sidebar'])
 
-const dataStore = useDataStore()
+const systemsStore = useSystemsStore()
 const route = useRoute()
 const router = useRouter()
 const uploadModal = ref(null)
 
 onMounted(async () => {
-  await dataStore.loadSystems()
+  await systemsStore.loadSystems()
 
   const jobId = route.params.jobId
 
-  if (jobId && dataStore.systems.length > 0) {
-    const systemForJob = dataStore.systems.find(s => s.jobId === jobId)
+  if (jobId && systemsStore.systems.length > 0) {
+    const systemForJob = systemsStore.systems.find(s => s.jobId === jobId)
     if (systemForJob) {
-      await dataStore.setCurrentSystem(systemForJob.id)
+      await systemsStore.setCurrentSystem(systemForJob.id)
       return
     }
   }
 
   // Fallback: set first system as default if available
-  if (dataStore.systems.length > 0 && !dataStore.currentSystem) {
-    const first = dataStore.systems[0]
-    await dataStore.setCurrentSystem(first.id)
+  if (systemsStore.systems.length > 0 && !systemsStore.currentSystem) {
+    const first = systemsStore.systems[0]
+    await systemsStore.setCurrentSystem(first.id)
     if (first.jobId) {
       router.replace({ name: 'Analysis', params: { jobId: first.jobId } })
     }

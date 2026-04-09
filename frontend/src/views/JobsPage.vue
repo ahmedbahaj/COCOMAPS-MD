@@ -201,12 +201,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { useDataStore } from '../stores/dataStore'
+import { useSystemsStore } from '../stores/systemsStore'
 import api from '../services/api'
 import AppFooter from '../components/layout/AppFooter.vue'
 
 const router = useRouter()
-const dataStore = useDataStore()
+const systemsStore = useSystemsStore()
 
 const allJobs = ref([])
 const loading = ref(true)
@@ -411,10 +411,10 @@ const openJob = async (job) => {
     return
   } else {
     // Completed system - navigate directly to analysis by its public jobId
-    await dataStore.loadSystems()
+    await systemsStore.loadSystems()
 
     // Try to find the matching system by id or by jobId from the jobs table
-    const system = dataStore.systems.find(
+    const system = systemsStore.systems.find(
       (s) => s.id === job.id || (job.jobId && s.jobId === job.jobId)
     )
 
@@ -423,7 +423,7 @@ const openJob = async (job) => {
       return
     }
 
-    await dataStore.setCurrentSystem(system.id)
+    await systemsStore.setCurrentSystem(system.id)
     router.push({ name: 'Analysis', params: { jobId: system.jobId } })
   }
 }

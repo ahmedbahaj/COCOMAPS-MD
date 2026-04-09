@@ -35,7 +35,7 @@
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">{{ dataStore.totalFrames }}</div>
+        <div class="stat-value">{{ systemsStore.totalFrames }}</div>
         <div class="stat-label">Trajectory Frames</div>
       </div>
     </div>
@@ -55,9 +55,11 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { useDataStore } from '../../stores/dataStore'
+import { useAnalysisStore } from '../../stores/analysisStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 
-const dataStore = useDataStore()
+const analysisStore = useAnalysisStore()
+const systemsStore = useSystemsStore()
 
 // Tooltip state
 const activeTooltip = ref({
@@ -83,16 +85,16 @@ const hideTooltip = () => {
 }
 
 const totalInteractions = computed(() => {
-  return dataStore.interactions.length
+  return analysisStore.interactions.length
 })
 
 const visibleInteractions = computed(() => {
-  return dataStore.filteredInteractions.length
+  return analysisStore.filteredInteractions.length
 })
 
 const avgConsistency = computed(() => {
-  if (dataStore.filteredInteractions.length === 0) return '-'
-  const avg = dataStore.filteredInteractions.reduce((sum, d) => sum + d.consistency, 0) / dataStore.filteredInteractions.length
+  if (analysisStore.filteredInteractions.length === 0) return '-'
+  const avg = analysisStore.filteredInteractions.reduce((sum, d) => sum + d.consistency, 0) / analysisStore.filteredInteractions.length
   return Math.round(avg * 100) + '%'
 })
 </script>

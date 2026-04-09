@@ -38,9 +38,9 @@
 <script setup>
 import { ref } from 'vue'
 import api from '../../services/api'
-import { useDataStore } from '../../stores/dataStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 
-const dataStore = useDataStore()
+const systemsStore = useSystemsStore()
 const isOpen = ref(false)
 const isDragging = ref(false)
 const uploading = ref(false)
@@ -130,8 +130,8 @@ const pollStatus = (pdbId) => {
         progressText.value = 'Processing complete!'
         
         // Reload systems and switch to new one
-        await dataStore.loadSystems()
-        await dataStore.setCurrentSystem(pdbId)
+        await systemsStore.loadSystems()
+        await systemsStore.setCurrentSystem(pdbId)
         
         // Close modal after delay
         setTimeout(() => {

@@ -6,7 +6,7 @@
           v-for="chart in charts"
           :key="chart.id"
           :ref="el => { if (el) tabRefs[chart.id] = el }"
-          :class="['tab', { active: dataStore.currentChartType === chart.id }]"
+          :class="['tab', { active: chartUiStore.currentChartType === chart.id }]"
           @click="selectChart(chart.id)"
         >
           <span class="tab-icon" v-html="chart.icon"></span>
@@ -20,9 +20,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { useDataStore } from '../../stores/dataStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
 
-const dataStore = useDataStore()
+const chartUiStore = useChartUiStore()
 const tabRefs = ref({})
 
 const charts = [
@@ -61,7 +61,7 @@ const charts = [
 const indicatorStyle = ref({})
 
 const updateIndicator = () => {
-  const activeTab = tabRefs.value[dataStore.currentChartType]
+  const activeTab = tabRefs.value[chartUiStore.currentChartType]
   if (activeTab) {
     indicatorStyle.value = {
       width: `${activeTab.offsetWidth}px`,
@@ -71,10 +71,10 @@ const updateIndicator = () => {
 }
 
 const selectChart = (chartId) => {
-  dataStore.setChartType(chartId)
+  chartUiStore.setChartType(chartId)
 }
 
-watch(() => dataStore.currentChartType, () => {
+watch(() => chartUiStore.currentChartType, () => {
   nextTick(updateIndicator)
 })
 

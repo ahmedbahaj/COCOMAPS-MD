@@ -165,11 +165,11 @@ import ChainSelector from '../components/landing/ChainSelector.vue'
 import AdvancedSettings from '../components/landing/AdvancedSettings.vue'
 import AppFooter from '../components/layout/AppFooter.vue'
 import api from '../services/api'
-import { useDataStore } from '../stores/dataStore'
+import { useChartUiStore } from '../stores/chartUiStore'
 
 const router = useRouter()
 const route = useRoute()
-const dataStore = useDataStore()
+const chartUiStore = useChartUiStore()
 const fileInput = ref(null)
 
 // Upload state
@@ -459,8 +459,8 @@ const pollStatus = (jobId) => {
         isProcessing.value = false
         activeJobId.value = null
         router.replace({ name: 'Landing', query: {} })
-        // Store timeUnit in dataStore for charts to use
-        dataStore.setTimeUnit(advancedSettings.value.timeUnit)
+        // Persist time unit for charts after navigation to analysis
+        chartUiStore.setTimeUnit(advancedSettings.value.timeUnit)
 
         // Prefer public analysis jobId from backend (canonical); else resolve from systems
         const analysisJobId = status.analysis_job_id

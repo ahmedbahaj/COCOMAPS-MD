@@ -229,7 +229,7 @@
 <script setup>
 import { ref, watch, computed, nextTick } from 'vue'
 import Highcharts from 'highcharts'
-import { useDataStore } from '../../stores/dataStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import api from '../../services/api'
 import { getInteractionBaseColor, parseResidueId, formatPairKey } from '../../utils/chartHelpers'
 
@@ -246,7 +246,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const dataStore = useDataStore()
+const systemsStore = useSystemsStore()
 const loading = ref(false)
 const error = ref(null)
 const distanceData = ref(null)
@@ -256,7 +256,7 @@ const timelineBar = ref(null)
 let chartInstance = null
 const selectedFrame = ref(null)
 
-const totalFrames = computed(() => dataStore.totalFrames)
+const totalFrames = computed(() => systemsStore.totalFrames)
 
 // Atom pairs present in the selected frame, filtered by the clicked interaction type
 const frameAtomPairs = computed(() => {
@@ -562,13 +562,13 @@ const updateDistanceChart = () => {
 
 // Load distance data
 const loadDistanceData = async () => {
-  if (!dataStore.currentSystem) return
+  if (!systemsStore.currentSystem) return
   
   loading.value = true
   error.value = null
   
   try {
-    const response = await api.getInteractionDistances(dataStore.currentSystem.id)
+    const response = await api.getInteractionDistances(systemsStore.currentSystem.id)
     distanceData.value = response
     
     await nextTick()
@@ -583,7 +583,7 @@ const loadDistanceData = async () => {
 
 // Load atom pair data
 const loadAtomPairData = async () => {
-  if (!dataStore.currentSystem || !props.interactionData?.pair) return
+  if (!systemsStore.currentSystem || !props.interactionData?.pair) return
   
   try {
     // Parse the pair (format: "A-LYS8 ↔ B-ASP45")
@@ -604,7 +604,7 @@ const loadAtomPairData = async () => {
       chain2: res2.chain
     }
     
-    const response = await api.getAtomPairs(dataStore.currentSystem.id, params)
+    const response = await api.getAtomPairs(systemsStore.currentSystem.id, params)
     atomPairData.value = response
   } catch (err) {
     console.error('Error loading atom pair data:', err)

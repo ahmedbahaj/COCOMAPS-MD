@@ -25,13 +25,17 @@ import { ref, onMounted, watch } from 'vue'
 import Highcharts from '../../utils/highchartsConfig'
 import { withExporting } from '../../utils/highchartsConfig'
 import HighchartsMore from 'highcharts/highcharts-more'
-import { useDataStore } from '../../stores/dataStore'
+import { useAnalysisStore } from '../../stores/analysisStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 
 HighchartsMore(Highcharts)
 
 const showStats = ref(true)
 const showPercentages = ref(false)
-const dataStore = useDataStore()
+const analysisStore = useAnalysisStore()
+const chartUiStore = useChartUiStore()
+const systemsStore = useSystemsStore()
 const chartContainer = ref(null)
 let chart = null
 let hasAnimated = false
@@ -60,7 +64,7 @@ const calculateStats = (data) => {
 const updateChart = () => {
   if (!chartContainer.value) return
 
-  if (!dataStore.areaData || dataStore.areaData.length === 0) {
+  if (!analysisStore.areaData || analysisStore.areaData.length === 0) {
     if (chart) {
       chart.destroy()
       chart = null
@@ -69,7 +73,7 @@ const updateChart = () => {
     return
   }
 
-  const sortedAreaData = [...dataStore.areaData].sort((a, b) => a.frame - b.frame) //prevents lexicographic order
+  const sortedAreaData = [...analysisStore.areaData].sort((a, b) => a.frame - b.frame) //prevents lexicographic order
 
   const categories = sortedAreaData.map(d => `${d.frame}`)
   const totalBSAData = sortedAreaData.map(d => d.totalBSA)
@@ -115,7 +119,7 @@ const updateChart = () => {
       height: 650
     },
     title: {
-      text: `${dataStore.currentSystem?.name || 'System'} - Total Buried Surface Area Across Frames`,
+      text: `${systemsStore.currentSystem?.name || 'System'} - Total Buried Surface Area Across Frames`,
       style: {
         fontSize: '24px',
         fontWeight: '600',
@@ -131,7 +135,7 @@ const updateChart = () => {
     xAxis: {
       categories: categories,
       title: {
-        text: dataStore.timeUnit ? `Time (${dataStore.timeUnit})` : 'Frame',
+        text: chartUiStore.timeUnit ? `Time (${chartUiStore.timeUnit})` : 'Frame',
         style: {
           fontSize: '15px',
           fontWeight: '600',
@@ -265,7 +269,7 @@ const updateChart = () => {
     }
   }
 
-  const systemName = dataStore.currentSystem?.id || 'unknown'
+  const systemName = systemsStore.currentSystem?.id || 'unknown'
   const exportOptions = withExporting(chartOptions, `buried-surface-area-${systemName}`)
   chart = Highcharts.chart(chartContainer.value, exportOptions)
   hasAnimated = true
@@ -276,13 +280,13 @@ onMounted(() => {
 })
 
 watch([
-  () => dataStore.currentChartType,
-  () => dataStore.areaData.length,
+  () => chartUiStore.currentChartType,
+  () => analysisStore.areaData.length,
   () => showStats.value,
   () => showPercentages.value,
-  () => dataStore.timeUnit
+  () => chartUiStore.timeUnit
 ], () => {
-  if (dataStore.currentChartType === 'area') {
+  if (chartUiStore.currentChartType === 'area') {
     updateChart()
   }
 }, { deep: true })

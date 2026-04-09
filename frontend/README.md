@@ -37,7 +37,9 @@ src/
 ├── services/
 │   └── api.js                  # Axios API client (all backend endpoints)
 ├── stores/
-│   └── dataStore.js            # Pinia store (systems, interactions, area, trends, islands)
+│   ├── systemsStore.js         # Jobs/systems list, current system, loadSystems, setCurrentSystem
+│   ├── analysisStore.js        # Interactions, area, trends, islands + filteredInteractions getter
+│   └── chartUiStore.js         # Chart type, thresholds, interaction-type filters, time unit
 ├── utils/
 │   ├── constants.js            # 18 interaction types (id, label, keywords)
 │   ├── chartHelpers.js         # Color palette, type matching, residue formatting
@@ -75,8 +77,8 @@ System sidebar, chart selector tabs, dynamic chart container, conservation thres
 
 1. `LandingPage` uploads PDB via `api.uploadFileWithOptions()`, polls `api.getStatus()` until complete
 2. On completion, redirects to `/analysis/:jobId`
-3. `Home` loads systems, resolves jobId → systemId, calls `dataStore.setCurrentSystem()`
-4. `dataStore` fetches interactions, area, trends, and conserved islands in parallel
+3. `Home` loads systems, resolves jobId → systemId, calls `systemsStore.setCurrentSystem()`
+4. `setCurrentSystem` loads interactions, area, trends, and conserved islands in parallel via `analysisStore`
 5. `filteredInteractions` getter applies conservation threshold + interaction type filters
 6. Charts and panels reactively update via Pinia store
 

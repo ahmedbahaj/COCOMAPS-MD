@@ -34,7 +34,7 @@
               min="0"
               max="1"
               step="0.1"
-              :value="dataStore.currentThreshold"
+              :value="chartUiStore.currentThreshold"
               @input="updateThreshold"
             />
             <div class="slider-ticks">
@@ -70,18 +70,22 @@
 <script setup>
 import { ref, onMounted, watch, computed, onBeforeUnmount } from 'vue'
 import Plotly from 'plotly.js-dist-min'
-import { useDataStore } from '../../stores/dataStore'
+import { useAnalysisStore } from '../../stores/analysisStore'
+import { useChartUiStore } from '../../stores/chartUiStore'
+import { useSystemsStore } from '../../stores/systemsStore'
 import { getInteractionBaseColor, formatResiduePairFromParts } from '../../utils/chartHelpers'
 import api from '../../services/api'
 
-const dataStore = useDataStore()
+const analysisStore = useAnalysisStore()
+const chartUiStore = useChartUiStore()
+const systemsStore = useSystemsStore()
 const chartContainer = ref(null)
 const selectedInteractionType = ref('')
 const distanceData = ref(null)
 const loading = ref(false)
 
 // Threshold percent (derived from store)
-const thresholdPercent = computed(() => Math.round(dataStore.currentThreshold * 100))
+const thresholdPercent = computed(() => Math.round(chartUiStore.currentThreshold * 100))
 
 // Conservation threshold ticks (0% to 100% in 10% steps)
 const conservationTicks = computed(() => {
@@ -97,14 +101,14 @@ const conservationTicks = computed(() => {
 
 // Slider update handlers — write to the shared store
 const updateThreshold = (event) => {
-  dataStore.setThreshold(parseFloat(event.target.value))
+  chartUiStore.setThreshold(parseFloat(event.target.value))
   updateChart()
 }
 
 const updateThresholdFromInput = (event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0 && value <= 100) {
-    dataStore.setThreshold(value / 100)
+    chartUiStore.setThreshold(value / 100)
     updateChart()
   }
 }
@@ -118,14 +122,14 @@ const validateThresholdInput = (event) => {
   // Clamp value between 0 and 100
   value = Math.max(0, Math.min(100, value))
   event.target.value = value
-  dataStore.setThreshold(value / 100)
+  chartUiStore.setThreshold(value / 100)
   updateChart()
 }
 
 // Get all unique interaction types from filtered data
 const availableInteractionTypes = computed(() => {
   const typesSet = new Set()
-  dataStore.filteredInteractions.forEach(interaction => {
+  analysisStore.filteredInteractions.forEach(interaction => {
     if (interaction.typesArray && Array.isArray(interaction.typesArray)) {
       interaction.typesArray.forEach(type => {
         typesSet.add(type)
@@ -172,7 +176,7 @@ const selectInteractionType = (type) => {
 }
 
 const loadDistanceData = async () => {
-  if (!selectedInteractionType.value || !dataStore.currentSystem) {
+  if (!selectedInteractionType.value || !systemsStore.currentSystem) {
     updateChart()
     return
   }
@@ -181,7 +185,7 @@ const loadDistanceData = async () => {
   
   try {
     const response = await api.getDistanceDistributions(
-      dataStore.currentSystem.id,
+      systemsStore.currentSystem.id,
       [selectedInteractionType.value]
     )
     distanceData.value = response.pairs || []
@@ -216,7 +220,7 @@ const updateChart = () => {
 
   // Filter by conservation threshold (from shared store)
   const filteredPairs = distanceData.value.filter(pair => 
-    pair.consistency >= dataStore.currentThreshold
+    pair.consistency >= chartUiStore.currentThreshold
   )
 
   if (filteredPairs.length === 0) {
@@ -305,7 +309,7 @@ const updateChart = () => {
           `<b>Frequency at ~${rounded} Å: ${countAtDistance} (${frequencyPercent}%)</b><br>` +
           `<br>Statistics:<br>` +
           `Total measurements: ${totalMeasurements}<br>` +
-          `Frames with interaction: ${uniqueFrames}/${dataStore.totalFrames}<br>` +
+          `Frames with interaction: ${uniqueFrames}/${systemsStore.totalFrames}<br>` +
           `Mean: ${mean.toFixed(2)} Å<br>` +
           `Median: ${median.toFixed(2)} Å<br>` +
           `Range: ${min.toFixed(2)} - ${max.toFixed(2)} Å<br>` +
@@ -362,7 +366,7 @@ const updateChart = () => {
 
   const layout = {
     title: {
-      text: `${dataStore.currentSystem?.name || 'System'} - Distance Distribution: ${selectedInteractionType.value}`,
+      text: `${systemsStore.currentSystem?.name || 'System'} - Distance Distribution: ${selectedInteractionType.value}`,
       font: {
         size: 20,
         family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -466,7 +470,7 @@ const updateChart = () => {
     modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
     toImageButtonOptions: {
       format: 'png',
-      filename: `violin_${selectedInteractionType.value}_${dataStore.currentSystem?.id}`,
+      filename: `violin_${selectedInteractionType.value}_${systemsStore.currentSystem?.id}`,
       height: layout.height,
       width: 1400,
       scale: 2
@@ -495,12 +499,12 @@ onBeforeUnmount(() => {
 })
 
 watch([
-  () => dataStore.currentChartType,
-  () => dataStore.currentSystem?.id,
-  () => dataStore.currentThreshold,
+  () => chartUiStore.currentChartType,
+  () => systemsStore.currentSystem?.id,
+  () => chartUiStore.currentThreshold,
   () => availableInteractionTypes.value
 ], () => {
-  if (dataStore.currentChartType === 'violinPlot') {
+  if (chartUiStore.currentChartType === 'violinPlot') {
     // Update selected type if current one is no longer available
     if (selectedInteractionType.value && !availableInteractionTypes.value.includes(selectedInteractionType.value)) {
       if (availableInteractionTypes.value.length > 0) {
@@ -511,7 +515,7 @@ watch([
         distanceData.value = null
         updateChart()
       }
-    } else if (selectedInteractionType.value && dataStore.currentSystem?.id) {
+    } else if (selectedInteractionType.value && systemsStore.currentSystem?.id) {
       loadDistanceData()
     } else {
       updateChart()
