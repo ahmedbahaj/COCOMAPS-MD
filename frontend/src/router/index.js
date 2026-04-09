@@ -4,6 +4,7 @@ import Home from '../views/Home.vue'
 import AboutPage from '../views/AboutPage.vue'
 import HelpPage from '../views/HelpPage.vue'
 import ReferencesPage from '../views/ReferencesPage.vue'
+import ExamplesPage from '../views/ExamplesPage.vue'
 import JobsPage from '../views/JobsPage.vue'
 
 const routes = [
@@ -36,6 +37,11 @@ const routes = [
     path: '/references',
     name: 'References',
     component: ReferencesPage
+  },
+  {
+    path: '/examples',
+    name: 'Examples',
+    component: ExamplesPage
   }
 ]
 

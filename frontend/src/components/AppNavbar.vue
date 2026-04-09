@@ -17,6 +17,7 @@
         <router-link to="/jobs" class="nav-link">Jobs</router-link>
         <router-link to="/about" class="nav-link">About</router-link>
         <router-link to="/help" class="nav-link">Help</router-link>
+        <router-link to="/examples" class="nav-link">Examples</router-link>
         <router-link to="/references" class="nav-link">References</router-link>
       </div>
     </div>
