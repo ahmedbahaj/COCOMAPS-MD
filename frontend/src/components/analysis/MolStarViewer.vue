@@ -40,7 +40,7 @@ const props = defineProps({
   /** 'select' = color overlay only; 'ball-and-stick' = also show atom-level detail */
   highlightMode: { type: String, default: 'select' },
   /** Structure opacity: 1 = fully opaque, 0 = invisible. ~0.6 works well for screenshots. */
-  opacity: { type: Number, default: 0.6 }
+  opacity: { type: Number, default: 0.8 }
 })
 
 const containerId = ref(`molstar-${Math.random().toString(36).slice(2, 11)}`)
@@ -89,6 +89,12 @@ async function initViewer() {
       viewportShowControls: true,
       viewportShowSelectionMode: false,
       viewportShowAnimation: false
+    })
+
+    const LIGHT_YELLOW = 0xFCF55F
+    viewer.plugin.canvas3d?.setProps({
+      renderer: { selectColor: LIGHT_YELLOW, highlightColor: LIGHT_YELLOW },
+      marking: { selectEdgeColor: LIGHT_YELLOW, highlightEdgeColor: LIGHT_YELLOW }
     })
 
     const pdbText = await fetch(getPdbFetchUrl()).then(r => {
