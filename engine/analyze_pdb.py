@@ -45,6 +45,7 @@ from .interface_selector import (
 
 # CoCoMaps local package path (sibling of engine/)
 COCOMAPS_DIR = Path(__file__).resolve().parent.parent / 'cocomaps'
+_STUBS_DIR = str(Path(__file__).resolve().parent.parent / 'stubs')
 
 USE_REDUCE = bool(strtobool(os.environ.get("COCOMAPS_USE_REDUCE", "false")))
 INPUT_FILE_NAME = os.environ.get("INPUT_FILE_NAME", "example_input.json")
@@ -492,6 +493,8 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_
         input_json = os.path.abspath(os.path.join(frame_path, INPUT_FILE_NAME))
 
         command = [sys.executable, begin_py, input_json]
+        env = os.environ.copy()
+        env['PYTHONPATH'] = _STUBS_DIR + os.pathsep + env.get('PYTHONPATH', '')
         
         print(f"Processing frame {i}...", end=" ", flush=True)
         
@@ -499,7 +502,7 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_
             subprocess.run(
                 command, check=True,
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                cwd=frame_path,
+                cwd=frame_path, env=env,
             )
             print("✓")
             successful += 1
