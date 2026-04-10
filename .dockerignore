@@ -1,0 +1,35 @@
+# CLI (released independently)
+cli/
+setup.py
+
+# Dependencies / build artifacts
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Data and temp files
+systems/
+systems.zip
+temp/
+documentation/
+
+# Git / editor
+.git/
+.gitignore
+.cursor/
+*.md
+!backend/README.md
+
+# Tests (not needed in production image)
+tests/
+pytest.ini
+.pytest_cache/
+
+# Docker files (avoid nesting)
+Dockerfile.*
+docker-compose.yml
+.dockerignore

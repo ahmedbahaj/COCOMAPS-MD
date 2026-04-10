@@ -1,0 +1,28 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system deps needed by MDAnalysis and naccess
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc g++ gfortran && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements-backend.txt .
+RUN pip install --no-cache-dir -r requirements-backend.txt
+
+# Copy application code (excludes cli/ via .dockerignore)
+COPY backend/ backend/
+COPY engine/ engine/
+COPY cocomaps/ cocomaps/
+COPY deps/ deps/
+COPY run_backend.py .
+
+# Ensure binaries are executable
+RUN chmod +x deps/reduce/reduce deps/hbplus/hbplus deps/naccess/naccess deps/naccess/accall
+
+ENV COCOMAPS_DEPS_DIR=/app/deps
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 5001
+
+CMD ["python", "run_backend.py"]
