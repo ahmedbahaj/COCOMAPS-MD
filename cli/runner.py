@@ -7,7 +7,6 @@ import json
 import time
 import shutil
 import subprocess
-import tempfile
 import uuid
 from pathlib import Path
 
@@ -25,18 +24,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 
-def _resolve_docker_image(use_reduce: bool) -> str:
-    """Pick the correct Docker image based on .env / defaults."""
-    from dotenv import load_dotenv
-    load_dotenv(_PROJECT_ROOT / '.env')
-
-    if use_reduce:
-        return os.environ.get(
-            "COCOMAPS_IMAGE_REDUCE", "andrpet/cocomaps-backend:0.0.19"
-        )
-    return os.environ.get(
-        "COCOMAPS_IMAGE_NO_REDUCE", "sattamaltwaim/cocomaps-backend:no-reduce"
-    )
+COCOMAPS_DIR = _PROJECT_ROOT / 'cocomaps'
 
 
 def run_pipeline(
@@ -200,8 +188,10 @@ def run_pipeline(
 
     for i in range(1, num_frames + 1):
         frame_folder = os.path.join(output_dir, f"frame_{i}")
+        pdb_path = os.path.abspath(os.path.join(frame_folder, f"frame_{i}.pdb"))
         json_data = {
-            "pdb_file": f"/app/data/frame_{i}.pdb",
+            "pdb_file": pdb_path,
+            "REDUCE_BOOL": use_reduce,
             "chains_set_1": [chain_a],
             "chains_set_2": [chain_b],
             "ranges_1": [[0, 100000]],
@@ -216,11 +206,11 @@ def run_pipeline(
     console.print(f"  [green]✓[/green] Created {num_frames} input JSON files")
 
     # ──────────────────────────────────────────────────────────────────────
-    # STEP 3: Run CoCoMaps Docker on each frame
+    # STEP 3: Run CoCoMaps locally on each frame
     # ──────────────────────────────────────────────────────────────────────
     console.print("\n[bold cyan]STEP 3/5[/bold cyan] — Running CoCoMaps analysis …")
 
-    docker_image = _resolve_docker_image(use_reduce)
+    begin_py = str(COCOMAPS_DIR / 'begin.py')
     successful = 0
     failed = 0
 
@@ -238,57 +228,21 @@ def run_pipeline(
             progress.update(task, description=f"Analyzing frame {i}/{num_frames}")
             frame_folder = f"frame_{i}"
             frame_path = os.path.join(output_dir, frame_folder)
-            container_input_path = f"/app/data/{input_file_name}"
+            input_json = os.path.abspath(os.path.join(frame_path, input_file_name))
 
-            abs_frame_path = os.path.abspath(frame_path)
-
-            # Docker Desktop on macOS cannot mount paths with spaces/special chars.
-            # Workaround: copy frame files to a temp dir under /tmp, run Docker there,
-            # then copy results back.
-            needs_tmp = ' ' in abs_frame_path or '!' in abs_frame_path
-            tmp_dir = None
+            command = [sys.executable, begin_py, input_json]
 
             try:
-                if needs_tmp:
-                    tmp_dir = tempfile.mkdtemp(prefix='pdb_cli_')
-                    # Copy all files from frame dir to tmp
-                    for fname in os.listdir(abs_frame_path):
-                        src = os.path.join(abs_frame_path, fname)
-                        dst = os.path.join(tmp_dir, fname)
-                        if os.path.isfile(src):
-                            shutil.copy2(src, dst)
-                    mount_path = tmp_dir
-                else:
-                    mount_path = abs_frame_path
-
-                docker_command = [
-                    'docker', 'run', '--rm',
-                    '--platform', 'linux/amd64',
-                    '-v', f'{mount_path}:/app/data',
-                    docker_image,
-                    'python', '/app/coco2/begin.py', container_input_path,
-                ]
-
                 subprocess.run(
-                    docker_command, check=True,
+                    command, check=True,
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                    cwd=frame_path,
                 )
                 successful += 1
 
-                # Copy results back from tmp to real frame dir
-                if needs_tmp and tmp_dir:
-                    for fname in os.listdir(tmp_dir):
-                        src = os.path.join(tmp_dir, fname)
-                        dst = os.path.join(abs_frame_path, fname)
-                        if os.path.isfile(src) and not os.path.exists(dst):
-                            shutil.copy2(src, dst)
-
             except subprocess.CalledProcessError as e:
                 failed += 1
-                console.print(f"  [red]✗[/red] Frame {i} failed: {str(e.output)[:100]}")
-            finally:
-                if tmp_dir and os.path.exists(tmp_dir):
-                    shutil.rmtree(tmp_dir, ignore_errors=True)
+                console.print(f"  [red]✗[/red] Frame {i} failed: {(e.output or '')[:100]}")
 
             progress.update(task, advance=1)
 

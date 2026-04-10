@@ -9,6 +9,7 @@ Interface selection logic is delegated to interface_selector.py.
 """
 
 import subprocess
+import sys
 import os
 import time
 import argparse
@@ -42,11 +43,9 @@ from .interface_selector import (
     get_selection_summary
 )
 
-# Docker configuration (loaded from .env or defaults)
-DOCKER_IMAGE_REDUCE = os.environ.get("COCOMAPS_IMAGE_REDUCE", "andrpet/cocomaps-backend:0.0.19")
-DOCKER_IMAGE_NO_REDUCE = os.environ.get(
-    "COCOMAPS_IMAGE_NO_REDUCE", "sattamaltwaim/cocomaps-backend:no-reduce"
-)
+# CoCoMaps local package path (sibling of engine/)
+COCOMAPS_DIR = Path(__file__).resolve().parent.parent / 'cocomaps'
+
 USE_REDUCE = bool(strtobool(os.environ.get("COCOMAPS_USE_REDUCE", "false")))
 INPUT_FILE_NAME = os.environ.get("INPUT_FILE_NAME", "example_input.json")
 
@@ -392,8 +391,12 @@ def _write_summary_log(input_pdb, output_dir, log_file, chain_a, chain_b,
         f.write("=" * 80 + "\n")
 
 
-def create_input_jsons(output_dir, frame_count, chains=None, interface_cutoff=5.0):
-    """Create example_input.json files for each frame"""
+def create_input_jsons(output_dir, frame_count, chains=None, interface_cutoff=5.0, use_reduce=False):
+    """Create example_input.json files for each frame.
+
+    ``use_reduce`` is written into the JSON as ``REDUCE_BOOL`` so the
+    local CoCoMaps package enables/disables hydrogen addition accordingly.
+    """
     if chains is None:
         chains = DEFAULT_CHAINS
     
@@ -402,9 +405,11 @@ def create_input_jsons(output_dir, frame_count, chains=None, interface_cutoff=5.
     for i in range(1, frame_count + 1):
         frame_folder = os.path.join(output_dir, f"frame_{i}")
         json_file = os.path.join(frame_folder, INPUT_FILE_NAME)
+        pdb_path = os.path.abspath(os.path.join(frame_folder, f"frame_{i}.pdb"))
         
         json_data = {
-            "pdb_file": f"/app/data/frame_{i}.pdb",
+            "pdb_file": pdb_path,
+            "REDUCE_BOOL": use_reduce,
             "chains_set_1": chains[:1],
             "chains_set_2": chains[1:2] if len(chains) > 1 else chains[:1],
             "ranges_1": [[0, 100000]],
@@ -443,15 +448,22 @@ def create_input_jsons(output_dir, frame_count, chains=None, interface_cutoff=5.
 
 
 def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_callback=None):
-    """Run CoCoMaps Docker analysis on all frames.
-    progress_callback: optional callable(step_label, progress_pct) called per frame."""
+    """Run CoCoMaps analysis locally on all frames.
+
+    Uses the local ``cocomaps/begin.py`` script (extracted from the
+    sattamaltwaim/cocomaps-backend Docker image) instead of Docker.
+    The ``REDUCE_BOOL`` flag in each frame's input JSON controls
+    whether hydrogen addition is performed.
+
+    progress_callback: optional callable(step_label, progress_pct) called per frame.
+    """
     step_label = f"STEP {step_num}: " if step_num else ""
     print(f"\n{'='*80}")
     print(f"{step_label}Running CoCoMaps Analysis ({'WITH' if use_reduce else 'WITHOUT'} reduce)")
     print(f"{'='*80}")
     
-    docker_image = DOCKER_IMAGE_REDUCE if use_reduce else DOCKER_IMAGE_NO_REDUCE
-    print(f"Docker Image: {docker_image}\n")
+    begin_py = str(COCOMAPS_DIR / 'begin.py')
+    print(f"CoCoMaps script: {begin_py}\n")
     
     # Get frame numbers
     frame_numbers = []
@@ -477,28 +489,23 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_
 
         frame_folder = f"frame_{i}"
         frame_path = os.path.join(output_dir, frame_folder)
-        
-        container_input_path = f"/app/data/{INPUT_FILE_NAME}"
-        docker_command = (
-            f'docker run --rm '
-            f'--platform linux/amd64 '
-            f'-v "{os.path.abspath(frame_path)}":/app/data '
-            f'{docker_image} '
-            f'python /app/coco2/begin.py {container_input_path}'
-        )
+        input_json = os.path.abspath(os.path.join(frame_path, INPUT_FILE_NAME))
+
+        command = [sys.executable, begin_py, input_json]
         
         print(f"Processing frame {i}...", end=" ", flush=True)
         
         try:
             subprocess.run(
-                docker_command, shell=True, check=True,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+                command, check=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                cwd=frame_path,
             )
             print("✓")
             successful += 1
         except subprocess.CalledProcessError as e:
             print("✗")
-            print(f"  Error: {e.output[:200]}")
+            print(f"  Error: {(e.output or '')[:200]}")
             failed += 1
     
     elapsed = time.time() - start_time
@@ -562,19 +569,17 @@ def run_pipeline(
         if frame_stats and all(s.get('total_atoms', 0) == 0 for s in frame_stats):
             return 0, f'No interface atoms in any frame. Check chain IDs (e.g. 1ULL uses A and B).'
 
-        create_input_jsons(output_dir, frame_count, [chain_a, chain_b], interface_cutoff=interface_cutoff)
+        create_input_jsons(output_dir, frame_count, [chain_a, chain_b], interface_cutoff=interface_cutoff, use_reduce=use_reduce)
 
         _, successful, failed = run_cocomaps_analysis(
             output_dir, use_reduce=use_reduce, step_num=None, progress_callback=progress_callback
         )
 
         if successful == 0 and failed > 0:
-            docker_image = DOCKER_IMAGE_REDUCE if use_reduce else DOCKER_IMAGE_NO_REDUCE
             return 0, (
-                f'CoCoMaps Docker analysis failed for all {failed} frame(s). '
-                f'Image "{docker_image}" could not run — check that the image exists and '
-                f'Docker Desktop is running. On Apple Silicon Macs ensure the image supports '
-                f'linux/amd64 or arm64.'
+                f'CoCoMaps analysis failed for all {failed} frame(s). '
+                f'Check that the cocomaps/ package and deps/ binaries are present '
+                f'and that the required Python dependencies (biopython, scipy) are installed.'
             )
 
         if failed > 0:
@@ -637,8 +642,7 @@ for CoCoMaps compatibility.
 Environment Variables:
   SELECT_INTERFACE=true/false    - Enable/disable interface selection (default: true)
   COCOMAPS_USE_REDUCE=true/false - Enable/disable reduce (default: false)
-  COCOMAPS_IMAGE_REDUCE          - Docker image for reduce mode
-  COCOMAPS_IMAGE_NO_REDUCE       - Docker image for no-reduce mode
+  COCOMAPS_DEPS_DIR              - Path to binary deps (reduce, hbplus, naccess)
   DEFAULT_INTERFACE_CUTOFF       - Interface/water cutoff in Angstroms (default: 5.0)
         """
     )
@@ -731,7 +735,7 @@ Environment Variables:
             return 1
 
         # STEP 2: Create input JSON files
-        create_input_jsons(output_dir, frame_count, args.chains, interface_cutoff=args.interface_cutoff)
+        create_input_jsons(output_dir, frame_count, args.chains, interface_cutoff=args.interface_cutoff, use_reduce=args.use_reduce)
         
         # STEP 3: Run CoCoMaps
         analysis_time, successful, failed = run_cocomaps_analysis(
