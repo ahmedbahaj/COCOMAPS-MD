@@ -4,7 +4,8 @@ MDAnalysis
 werkzeug==3.0.1
 setuptools
 python-dotenv
-pandas
+pandas==2.2.2
 networkx
 biopython>=1.83
 scipy>=1.14.0
+bidict>=0.23

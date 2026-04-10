@@ -4,11 +4,12 @@ MDAnalysis
 werkzeug==3.0.1
 setuptools
 python-dotenv
-pandas
+pandas==2.2.2
 networkx
 # CoCoMaps local package dependencies
 biopython>=1.83
 scipy>=1.14.0
+bidict>=0.23
 # CLI dependencies
 rich>=13.0
 plotly>=5.0
