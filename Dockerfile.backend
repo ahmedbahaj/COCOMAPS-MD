@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system deps needed by MDAnalysis and naccess
+# Install system deps needed by MDAnalysis, naccess (csh), and compilation
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc g++ gfortran && \
+    apt-get install -y --no-install-recommends gcc g++ gfortran csh && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements-backend.txt .
@@ -15,12 +15,15 @@ COPY backend/ backend/
 COPY engine/ engine/
 COPY cocomaps/ cocomaps/
 COPY deps/ deps/
+COPY stubs/ stubs/
 COPY run_backend.py .
 
-# Ensure binaries are executable
-RUN chmod +x deps/reduce/reduce deps/hbplus/hbplus deps/naccess/naccess deps/naccess/accall
+# Ensure binaries are executable and naccess can find its data files
+RUN chmod +x deps/reduce/reduce deps/hbplus/hbplus deps/naccess/naccess deps/naccess/accall && \
+    ln -sf /app/deps/naccess /app/naccess
 
 ENV COCOMAPS_DEPS_DIR=/app/deps
+ENV PYTHONPATH=/app/stubs
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 5001
