@@ -6,12 +6,5 @@ setuptools
 python-dotenv
 pandas
 networkx
-# CoCoMaps local package dependencies
 biopython>=1.83
 scipy>=1.14.0
-# CLI dependencies
-rich>=13.0
-plotly>=5.0
-kaleido>=0.2
-# Test dependencies
-pytest>=8.0
