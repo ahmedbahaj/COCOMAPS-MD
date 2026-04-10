@@ -72,7 +72,7 @@
               <p class="version">v2.1.1</p>
               <p class="description">Solvent accessible surface area calculation for proteins and nucleic acids.</p>
               <p class="authors">Hubbard S.J. & Thornton J.M.</p>
-              <a href="http://wolf.bms.umist.ac.uk/naccess/" target="_blank" class="link">Learn more ↗</a>
+              <a href="https://www.bioinf.manchester.ac.uk/naccess/nac_intro.html" target="_blank" class="link">Learn more ↗</a>
             </div>
 
             <div class="dependency-card">
