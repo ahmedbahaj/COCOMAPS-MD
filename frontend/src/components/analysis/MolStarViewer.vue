@@ -38,7 +38,9 @@ const props = defineProps({
   /** Residues to highlight: [{ chain, resNum, resName }]. Null to clear. */
   selectedResidues: { type: Array, default: null },
   /** 'select' = color overlay only; 'ball-and-stick' = also show atom-level detail */
-  highlightMode: { type: String, default: 'select' }
+  highlightMode: { type: String, default: 'select' },
+  /** Structure opacity: 1 = fully opaque, 0 = invisible. ~0.6 works well for screenshots. */
+  opacity: { type: Number, default: 0.6 }
 })
 
 const containerId = ref(`molstar-${Math.random().toString(36).slice(2, 11)}`)
@@ -47,14 +49,12 @@ const loadError = ref(null)
 let viewer = null
 let layoutSub = null
 
-function getPdbUrl() {
+function getPdbFetchUrl() {
   if (typeof window === 'undefined') return ''
   const base = import.meta.env.VITE_API_URL
   const path = `/systems/${props.systemId}/frame/${props.frameNum}/pdb`
-  if (base) {
-    return `${base.replace(/\/$/, '')}${path}`
-  }
-  return `${window.location.origin}/api${path}`
+  if (base) return `${base.replace(/\/$/, '')}${path}`
+  return `/api${path}`
 }
 
 async function initViewer() {
@@ -78,7 +78,6 @@ async function initViewer() {
   }
 
   try {
-    const url = getPdbUrl()
     viewer = await window.molstar.Viewer.create(containerId.value, {
       layoutIsExpanded: false,
       layoutShowControls: false,
@@ -91,11 +90,48 @@ async function initViewer() {
       viewportShowSelectionMode: false,
       viewportShowAnimation: false
     })
-    await viewer.loadStructureFromUrl(url, 'pdb', false)
+
+    const pdbText = await fetch(getPdbFetchUrl()).then(r => {
+      if (!r.ok) throw new Error(`Failed to load PDB: ${r.status} ${r.statusText}`)
+      return r.text()
+    })
+
+    const plugin = viewer.plugin
+    const data = await plugin.builders.data.rawData(
+      { data: pdbText },
+      { state: { isGhost: true } }
+    )
+    const trajectory = await plugin.builders.structure.parseTrajectory(data, 'pdb')
+    const model = await plugin.builders.structure.createModel(trajectory)
+    const structure = await plugin.builders.structure.createStructure(model)
+
+    const components = {
+      polymer: await plugin.builders.structure.tryCreateComponentStatic(structure, 'polymer'),
+      ligand: await plugin.builders.structure.tryCreateComponentStatic(structure, 'ligand'),
+      water: await plugin.builders.structure.tryCreateComponentStatic(structure, 'water'),
+    }
+
+    const alpha = props.opacity
+    const reprBuilder = plugin.builders.structure.representation
+    const update = plugin.state.data.build()
+    if (components.polymer) {
+      reprBuilder.buildRepresentation(update, components.polymer,
+        { type: 'cartoon', typeParams: { alpha } }, { tag: 'polymer' })
+    }
+    if (components.ligand) {
+      reprBuilder.buildRepresentation(update, components.ligand,
+        { type: 'ball-and-stick', typeParams: { alpha } }, { tag: 'ligand' })
+    }
+    if (components.water) {
+      reprBuilder.buildRepresentation(update, components.water,
+        { type: 'ball-and-stick', typeParams: { alpha: Math.max(alpha - 0.2, 0.1) } }, { tag: 'water' })
+    }
+    await update.commit()
+
     if (viewer?.handleResize) viewer.handleResize()
 
-    layoutSub = viewer.plugin.layout.events.updated.subscribe(() => {
-      document.body.classList.toggle('molstar-expanded', !!viewer.plugin.layout.state.isExpanded)
+    layoutSub = plugin.layout.events.updated.subscribe(() => {
+      document.body.classList.toggle('molstar-expanded', !!plugin.layout.state.isExpanded)
     })
 
     highlightResidues(props.selectedResidues)
@@ -267,6 +303,14 @@ watch([() => props.selectedResidues, () => props.highlightMode], ([residues]) =>
     highlightResidues(residues)
   }
 }, { immediate: true, deep: true })
+
+watch(() => props.opacity, () => {
+  disposeViewer()
+  if (props.systemId) {
+    loading.value = true
+    nextTick(() => initViewer())
+  }
+})
 </script>
 
 <style scoped>
