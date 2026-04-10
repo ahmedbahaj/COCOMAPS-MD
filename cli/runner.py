@@ -25,6 +25,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 
 COCOMAPS_DIR = _PROJECT_ROOT / 'cocomaps'
+_STUBS_DIR = str(_PROJECT_ROOT / 'stubs')
 
 
 def run_pipeline(
@@ -231,12 +232,14 @@ def run_pipeline(
             input_json = os.path.abspath(os.path.join(frame_path, input_file_name))
 
             command = [sys.executable, begin_py, input_json]
+            env = os.environ.copy()
+            env['PYTHONPATH'] = _STUBS_DIR + os.pathsep + env.get('PYTHONPATH', '')
 
             try:
                 subprocess.run(
                     command, check=True,
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                    cwd=frame_path,
+                    cwd=frame_path, env=env,
                 )
                 successful += 1
 
