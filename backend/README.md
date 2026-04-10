@@ -73,7 +73,9 @@ Async file upload and processing. Saves the PDB to a temp directory, spawns a ba
 
 ## Configuration
 
-Docker image selection (via `.env` or environment variables):
-- `COCOMAPS_IMAGE_REDUCE` — Docker image with hydrogen addition (default: `andrpet/cocomaps-backend:0.0.19`)
-- `COCOMAPS_IMAGE_NO_REDUCE` — Docker image without reduce (default: `sattamaltwaim/cocomaps-backend:no-reduce`)
+CoCoMaps runs as a local Python package (`cocomaps/`) with binary dependencies in `deps/`.
+
+Environment variables (via `.env` or environment):
+- `COCOMAPS_DEPS_DIR` — Path to binary deps directory (default: `<project_root>/deps/`)
+- `COCOMAPS_USE_REDUCE` — Default reduce mode (`true`/`false`, default: `false`)
 - Per-upload override: send `reduce=true` or `reduce=false` in the upload form

@@ -5,18 +5,10 @@ A modern web application for analyzing protein-protein interactions from PDB fil
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.11+
 - Node.js 16+
 - npm or yarn
-- Docker Desktop (required for CoCoMaps analysis)
-
-> **Apple Silicon (M Series) Mac note:** The CoCoMaps Docker images are built for `linux/amd64` only. Docker Desktop on Apple Silicon runs them automatically via Rosetta 2 emulation — no extra setup needed. The `--platform linux/amd64` flag is already included in the pipeline commands.
->
-> **Linux ARM64 note:** Docker Engine on Linux does not include built-in amd64 emulation. You must install QEMU first:
-> ```bash
-> docker run --privileged --rm tonistiigi/binfmt --install amd64
-> ```
-> After that one-time setup, the pipeline will work the same as on amd64 machines (via emulation).
+- Linux x86_64 host (or Docker for deployment) — the bundled `deps/` binaries (reduce, hbplus, naccess) are compiled for linux/amd64
 
 ### Download Systems Data
 
