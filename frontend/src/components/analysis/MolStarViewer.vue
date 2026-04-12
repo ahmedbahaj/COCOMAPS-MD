@@ -227,8 +227,6 @@ async function applyBallAndStick(plugin, residues) {
       const elements = unit.elements
       const model = unit.model
 
-      // Access the atom property accessors from the unit's model
-      const hierAtoms = model.atomicHierarchy?.atoms
       const hierResidues = model.atomicHierarchy?.residues
       const hierChains = model.atomicHierarchy?.chains
       const residueAtomSeg = model.atomicHierarchy?.residueAtomSegments
@@ -268,14 +266,7 @@ async function applyBallAndStick(plugin, residues) {
         } else if (OrderedSet?.ofSortedArray) {
           indices = OrderedSet.ofSortedArray(new Int32Array(matchingIndices))
         } else {
-          // Last resort: try using the Interval/SortedArray from the unit itself
-          // The unit.elements is already an OrderedSet, peek at its constructor
-          try {
-            const proto = Object.getPrototypeOf(elements)?.constructor
-            indices = new Int32Array(matchingIndices)
-          } catch (_) {
-            indices = new Int32Array(matchingIndices)
-          }
+          indices = new Int32Array(matchingIndices)
         }
 
         bundleLoci.push({ unit, indices })
