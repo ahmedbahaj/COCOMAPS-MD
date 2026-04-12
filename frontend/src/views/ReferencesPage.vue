@@ -331,50 +331,6 @@ const copyBibtex = async (key) => {
   margin: 0 0 16px;
 }
 
-.reference-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.doi-link {
-  font-size: 14px;
-  font-weight: 500;
-  color: #0066cc;
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
-.doi-link:hover {
-  color: #004499;
-}
-
-.copy-bib-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: #ffffff;
-  border: 1px solid #e8e8ed;
-  border-radius: 980px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1d1d1f;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s ease;
-}
-
-.copy-bib-btn:hover {
-  background: #f5f5f7;
-  border-color: #d2d2d7;
-}
-
-.copy-bib-btn .copied {
-  color: #34c759;
-}
-
 /* BibTeX Section */
 .bibtex-section {
   background: #1d1d1f;
@@ -557,11 +513,6 @@ const copyBibtex = async (key) => {
 
   .section {
     padding: 28px;
-  }
-
-  .reference-actions {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .dependencies-grid,
