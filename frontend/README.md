@@ -19,7 +19,7 @@ The Vite dev server proxies `/api` requests to `http://localhost:5001` (Flask ba
 | `/` | `LandingPage` | Upload PDB, select chains, configure analysis, track processing |
 | `/analysis/:jobId` | `Home` | Main analysis dashboard with charts and controls |
 | `/jobs` | `JobsPage` | Sortable/searchable list of all jobs (active, completed, failed) |
-| `/about` | `AboutPage` | Interaction type reference (18 types with criteria and colors) |
+| `/about` | `AboutPage` | Short overview of COCOMAPS-MD |
 | `/references` | `ReferencesPage` | Citations (CoCoMaps 2.0), BibTeX, software dependencies |
 
 ## Architecture
