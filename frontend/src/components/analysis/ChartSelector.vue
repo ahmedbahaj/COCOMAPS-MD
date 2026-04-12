@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, onMounted, nextTick } from 'vue'
 import { useChartUiStore } from '../../stores/chartUiStore'
 
 const chartUiStore = useChartUiStore()

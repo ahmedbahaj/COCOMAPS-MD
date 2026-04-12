@@ -200,7 +200,7 @@ import { ref, computed } from 'vue'
 import { useChartUiStore } from '../../stores/chartUiStore'
 import { useSystemsStore } from '../../stores/systemsStore'
 import { useConservationStatistics } from '../../composables/useConservationStatistics'
-import { getInteractionBaseColor, getTextColorForBg, formatResiduePairFromIds } from '../../utils/chartHelpers'
+import { getInteractionBaseColor, getTextColorForBg } from '../../utils/chartHelpers'
 
 const props = defineProps({
   pairThreshold: {

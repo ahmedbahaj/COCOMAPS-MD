@@ -178,7 +178,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted, computed } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import Highcharts from 'highcharts'
 import api from '../../services/api'
 import { useSystemsStore } from '../../stores/systemsStore'
