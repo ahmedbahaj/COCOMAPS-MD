@@ -171,6 +171,7 @@ import AdvancedSettings from '../components/landing/AdvancedSettings.vue'
 import AppFooter from '../components/layout/AppFooter.vue'
 import api from '../services/api'
 import { useChartUiStore } from '../stores/chartUiStore'
+import { addSubmittedJobId } from '../utils/cocomapsmdJobIds.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -433,6 +434,7 @@ const startAnalysis = async () => {
 
     if (result.success) {
       const jobId = result.job_id
+      addSubmittedJobId(jobId)
       activeJobId.value = jobId
       // Put the job ID in the URL so a page refresh restores tracking without
       // blocking new submissions on plain navigation to "/".
@@ -470,6 +472,7 @@ const pollStatus = (jobId) => {
         // Prefer public analysis jobId from backend (canonical); else resolve from systems
         const analysisJobId = status.analysis_job_id
         if (analysisJobId) {
+          addSubmittedJobId(analysisJobId)
           router.push({ name: 'Analysis', params: { jobId: analysisJobId } })
         } else {
           try {
@@ -477,6 +480,7 @@ const pollStatus = (jobId) => {
             const systemId = status.pdb_name || jobId
             const system = systems.find(s => s.id === systemId)
             if (system && system.jobId) {
+              addSubmittedJobId(system.jobId)
               router.push({ name: 'Analysis', params: { jobId: system.jobId } })
             } else {
               router.push({ name: 'Jobs' })

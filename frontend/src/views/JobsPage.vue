@@ -5,7 +5,7 @@
       <div class="header-content">
         <div class="header-text">
           <h1>Your Jobs</h1>
-          <p class="subtitle">Manage and access your trajectory analyses</p>
+          <p class="subtitle">Jobs you submit from this browser are listed here. Anyone with a link can still open an analysis by URL.</p>
         </div>
         <router-link to="/" class="submit-job-btn">
           <svg viewBox="0 0 16 16" fill="currentColor">
@@ -24,7 +24,7 @@
         <p>Loading jobs...</p>
       </div>
 
-      <!-- Empty State (no jobs at all) -->
+      <!-- Empty State (no jobs for this browser / no matching rows) -->
       <div v-else-if="allJobs.length === 0" class="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2">
@@ -35,8 +35,8 @@
             <circle cx="22" cy="14" r="1.5" fill="currentColor"/>
           </svg>
         </div>
-        <h2>No jobs yet</h2>
-        <p>Upload a trajectory file to start analyzing protein-protein interactions.</p>
+        <h2>{{ emptyTitle }}</h2>
+        <p>{{ emptyDescription }}</p>
         <router-link to="/" class="start-btn">Get Started</router-link>
       </div>
 
@@ -204,6 +204,7 @@ import { useRouter } from 'vue-router'
 import { useSystemsStore } from '../stores/systemsStore'
 import api from '../services/api'
 import AppFooter from '../components/layout/AppFooter.vue'
+import { getSubmittedJobIds, jobRowMatchesSubmitted } from '../utils/cocomapsmdJobIds.js'
 
 const router = useRouter()
 const systemsStore = useSystemsStore()
@@ -314,7 +315,9 @@ const loadAllJobs = async () => {
       }
     }
 
-    allJobs.value = Array.from(merged.values())
+    const rows = Array.from(merged.values())
+    const submitted = new Set(getSubmittedJobIds())
+    allJobs.value = rows.filter((job) => jobRowMatchesSubmitted(job, submitted))
   } catch (error) {
     console.error('Failed to load jobs:', error)
     allJobs.value = []
@@ -343,6 +346,18 @@ const startPollingIfNeeded = () => {
 const isActiveJob = (job) => {
   return ['queued', 'splitting', 'analyzing', 'resuming'].includes(job.status)
 }
+
+const submittedJobIdCount = computed(() => getSubmittedJobIds().length)
+
+const emptyTitle = computed(() =>
+  submittedJobIdCount.value === 0 ? 'No jobs yet' : 'No matching jobs'
+)
+
+const emptyDescription = computed(() =>
+  submittedJobIdCount.value === 0
+    ? 'Submit a trajectory from this browser to see it here. Analysis links stay shareable with anyone.'
+    : 'Your saved job IDs did not match any current data on the server. If you cleared browser data or the server was reset, submit again from the home page.'
+)
 
 // Filter by search query
 const filteredJobs = computed(() => {
