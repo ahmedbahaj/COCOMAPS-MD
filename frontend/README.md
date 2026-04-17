@@ -82,6 +82,10 @@ System sidebar, chart selector tabs, dynamic chart container, conservation thres
 5. `filteredInteractions` getter applies conservation threshold + interaction type filters
 6. Charts and panels reactively update via Pinia store
 
+## Job Privacy
+
+Job IDs are stored in each user's browser via `localStorage` (key: `cocomapsmd:submittedJobIds`). The Jobs page only shows jobs whose IDs are present in that list, so each user sees only their own submissions. Analysis URLs remain publicly shareable — anyone with a direct `/analysis/:jobId` link can view the results.
+
 ## Configuration
 
 | Variable | Default | Description |
