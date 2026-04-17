@@ -97,7 +97,7 @@
               >
                 <div class="docs-card-text">
                   <h3 v-if="sub.heading">{{ sub.heading }}</h3>
-                  <p v-for="(para, pi) in sub.paragraphs" :key="pi">{{ para }}</p>
+                  <p v-for="(para, pi) in (sub.paragraphs || [])" :key="pi">{{ para }}</p>
                   <ol v-if="sub.criteria && sub.criteria.length" class="criteria-list">
                     <li v-for="(c, ci) in sub.criteria" :key="ci">{{ c }}</li>
                   </ol>
@@ -196,10 +196,6 @@ function onScroll() {
 }
 
 function onResize() {
-  updateActiveFromScroll()
-}
-
-function setupScrollSpy() {
   updateActiveFromScroll()
 }
 
@@ -348,7 +344,7 @@ const interactionSections = [
     image: IMG + 'interactions-table-proximal.png',
     imageAlt: 'Interactions table with Proximal contacts toggle off by default',
     subsections: [
-      {     
+      {
         paragraphs: [
           'In the following, all the types of atomic interactions identified and visualized by the web server are listed.'
         ]
@@ -1337,7 +1333,7 @@ function switchTab(tabId) {
   sidebarOpen.value = false
   router.replace({ query: { tab: tabId }, hash: '' })
   nextTick(() => {
-    setupScrollSpy()
+    updateActiveFromScroll()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   })
 }
@@ -1357,7 +1353,7 @@ function restoreFromURL() {
     activeTab.value = tabParam
   }
   nextTick(() => {
-    setupScrollSpy()
+    updateActiveFromScroll()
     if (route.hash) {
       const id = route.hash.slice(1)
       const el = document.getElementById(id)
@@ -1386,7 +1382,7 @@ onBeforeUnmount(() => {
 watch(() => route.query.tab, (newTab) => {
   if (newTab && newTab !== activeTab.value && tabs.some(t => t.id === newTab)) {
     activeTab.value = newTab
-    nextTick(() => setupScrollSpy())
+    nextTick(() => updateActiveFromScroll())
   }
 })
 
@@ -1434,7 +1430,6 @@ watch(activeSection, (id) => {
   justify-content: center;
   gap: 8px;
   padding: 0 40px 24px;
-  background: transparent;
   position: sticky;
   top: 57px;
   z-index: 50;
