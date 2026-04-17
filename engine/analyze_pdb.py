@@ -448,7 +448,41 @@ def create_input_jsons(output_dir, frame_count, chains=None, interface_cutoff=5.
     print(f"✓ Created {frame_count} input JSON files")
 
 
-def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_callback=None):
+def _create_hbplus_stub(frame_path, frame_name):
+    """
+    Create a stub .hb2 file so CoCoMaps does not crash when hbplus binaries
+    are unavailable (e.g. Linux ELF on macOS).
+
+    The vendored CoCoMaps ``hb_plus.py`` opens ``<pdb_formatted_stem>.hb2`` in
+    the cwd.  If the file is missing the entire ``process()`` call dies inside a
+    bare ``except: pass`` in ``begin.py``, silently preventing ALL interaction
+    CSVs from being written.
+
+    A stub containing only the hbplus header line causes the parser to return
+    empty hydrogen-bond / water-mediated dicts — all other interaction types
+    still run normally.
+    """
+    # CoCoMaps: pdb_file = frame_N.pdb  →  formatted = frame_N.pdb_formatted.pdb
+    # hb_plus.py line 54: stem = "frame_N.pdb_formatted"  →  "frame_N.pdb_formatted.hb2"
+    # hb_plus.py line 55: path = os.path.join(os.getcwd(), stem + ".hb2")
+    hb2_name = f"{frame_name}.pdb_formatted.hb2"
+    hb2_path = os.path.join(frame_path, hb2_name)
+    if not os.path.exists(hb2_path):
+        hb_plus_header = (
+            "n    s   type  num  typ     dist DA aas  dist angle  dist       angle   num\n"
+        )
+        with open(hb2_path, "w") as f:
+            f.write(hb_plus_header)
+
+
+def run_cocomaps_analysis(
+    output_dir,
+    use_reduce=False,
+    step_num=None,
+    progress_callback=None,
+    chain_a=None,
+    chain_b=None,
+):
     """Run CoCoMaps analysis locally on all frames.
 
     Uses the local ``cocomaps/begin.py`` script (extracted from the
@@ -457,6 +491,9 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_
     whether hydrogen addition is performed.
 
     progress_callback: optional callable(step_label, progress_pct) called per frame.
+    chain_a / chain_b: PDB chain IDs for this job; after each successful frame,
+    ``full.csv`` / ``trial24.csv`` chain columns are rewritten from CoCoMaps
+    placeholders (@ / !) to these IDs (see ``engine.cocomaps_chain_csv``).
     """
     step_label = f"STEP {step_num}: " if step_num else ""
     print(f"\n{'='*80}")
@@ -496,6 +533,7 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_
         env = os.environ.copy()
         env['PYTHONPATH'] = _STUBS_DIR + os.pathsep + env.get('PYTHONPATH', '')
         
+        _create_hbplus_stub(frame_path, frame_folder)
         print(f"Processing frame {i}...", end=" ", flush=True)
         
         try:
@@ -504,6 +542,10 @@ def run_cocomaps_analysis(output_dir, use_reduce=False, step_num=None, progress_
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                 cwd=frame_path, env=env,
             )
+            if chain_a is not None and chain_b is not None:
+                from .cocomaps_chain_csv import remap_frame_distance_outputs
+
+                remap_frame_distance_outputs(Path(frame_path), chain_a, chain_b)
             print("✓")
             successful += 1
         except subprocess.CalledProcessError as e:
@@ -575,7 +617,12 @@ def run_pipeline(
         create_input_jsons(output_dir, frame_count, [chain_a, chain_b], interface_cutoff=interface_cutoff, use_reduce=use_reduce)
 
         _, successful, failed = run_cocomaps_analysis(
-            output_dir, use_reduce=use_reduce, step_num=None, progress_callback=progress_callback
+            output_dir,
+            use_reduce=use_reduce,
+            step_num=None,
+            progress_callback=progress_callback,
+            chain_a=chain_a,
+            chain_b=chain_b,
         )
 
         if successful == 0 and failed > 0:
@@ -742,7 +789,8 @@ Environment Variables:
         
         # STEP 3: Run CoCoMaps
         analysis_time, successful, failed = run_cocomaps_analysis(
-            output_dir, args.use_reduce, step_num=step_num
+            output_dir, args.use_reduce, step_num=step_num,
+            chain_a=chain_a, chain_b=chain_b,
         )
         step_num += 1
 

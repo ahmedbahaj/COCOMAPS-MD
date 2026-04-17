@@ -20,6 +20,72 @@ from typing import Optional, Union
 
 from .job_id import ensure_job_fields
 
+# Must match trend dicts built from summary_table and data.py TRENDS_KEYS order expectations.
+_TREND_FRAME_KEYS = [
+    "H-bonds", "Salt-bridges", "π-π interactions", "Cation-π interactions",
+    "Anion-π interactions", "CH-O/N bonds", "CH-π interactions", "Halogen bonds",
+    "Apolar vdW contacts", "Polar vdW contacts", "Proximal contacts", "Clashes",
+    "Water mediated", "Metal mediated", "S-S bonds", "Amino-π interactions",
+    "Lone pair-π interactions", "O/N/SH-π interactions",
+]
+
+
+def _normalize_csv_row_keys(row: dict) -> dict:
+    """Strip BOM/whitespace from CSV DictReader keys."""
+    out = {}
+    for k, v in row.items():
+        if k is None:
+            continue
+        nk = str(k).strip().lstrip("\ufeff")
+        out[nk] = v
+    return out
+
+
+def _resolve_chain_letter(rk: dict, side: int) -> str:
+    """
+    CoCoMaps distance tables may use placeholders (e.g. @ / !) in Chain 1/2.
+    Prefer Atom 1 org name / Atom 2 org name when those hold real chain letters.
+    """
+    if side == 1:
+        c_raw = rk.get("Chain 1", "")
+        org = rk.get("Atom 1 org name", "")
+    else:
+        c_raw = rk.get("Chain 2", "")
+        org = rk.get("Atom 2 org name", "")
+    c = str(c_raw).strip() if c_raw is not None else ""
+    o = str(org).strip() if org is not None else ""
+    if c in ("@", "!") or (len(c) == 1 and c not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+        if len(o) == 1 and o.isalpha():
+            return o.upper()
+    if len(c) == 1 and c.isalpha():
+        return c.upper()
+    return c
+
+
+def _infer_chain_pattern_from_distance_csv(path: Path) -> Optional[str]:
+    """Return e.g. 'A_B' from first readable row of full.csv / trial24.csv."""
+    try:
+        with open(path, "r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                rk = _normalize_csv_row_keys(row)
+                c1 = _resolve_chain_letter(rk, 1)
+                c2 = _resolve_chain_letter(rk, 2)
+                if c1 and c2 and len(c1) == 1 and len(c2) == 1:
+                    return f"{c1}_{c2}"
+    except OSError:
+        pass
+    return None
+
+
+def _distance_table_fallback_path(frame_folder: Path) -> Optional[Path]:
+    """Intermediate CoCoMaps dumps when final_file.csv is not written yet."""
+    for name in ("full.csv", "trial24.csv"):
+        p = frame_folder / name
+        if p.is_file():
+            return p
+    return None
+
 
 def _extract_first_number(value_str):
     """Extract first numeric value from strings like '2331.8 / 1165.9' or '25.35%'"""
@@ -40,6 +106,11 @@ def _get_chain_pattern(frame_folder: Path) -> str:
             match = pattern.search(f.name)
             if match:
                 return f"{match.group(1)}_{match.group(2)}"
+    fb = _distance_table_fallback_path(frame_folder)
+    if fb:
+        inferred = _infer_chain_pattern_from_distance_csv(fb)
+        if inferred:
+            return inferred
     return "A_B"
 
 
@@ -305,6 +376,109 @@ def _fieldnames_for_mediated_rows(rows: list[dict]) -> list[str]:
     return ["frame"] + ordered
 
 
+def _aggregate_from_distance_table_fallback(
+    path: Path,
+    frame_num: int,
+    interactions_rows: list,
+    atom_pairs_rows: list,
+    trends_rows: list,
+    area_rows: list,
+    verbose: bool,
+) -> None:
+    """
+    Build interaction / atom-pair / trend rows from CoCoMaps intermediate ``full.csv``
+    or ``trial24.csv`` when ``*_final_file.csv`` was not produced.
+
+    Interaction typing is not available in these files; all contacts are recorded as
+    **Proximal contacts** (within-cutoff distance pairs). BSA/trend charts that need
+    NACCESS / summary_table still get zeros unless those files exist.
+    """
+    proximal = "Proximal contacts"
+    seen_pairs = set()
+
+    try:
+        with open(path, "r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                rk = _normalize_csv_row_keys(row)
+                c1 = _resolve_chain_letter(rk, 1)
+                c2 = _resolve_chain_letter(rk, 2)
+                rn1 = str(rk.get("Res. Name 1", "")).strip()
+                rn2 = str(rk.get("Res. Name 2", "")).strip()
+                try:
+                    num1 = int(float(str(rk.get("Res. Number 1", "")).strip()))
+                except (TypeError, ValueError):
+                    continue
+                try:
+                    num2 = int(float(str(rk.get("Res. Number 2", "")).strip()))
+                except (TypeError, ValueError):
+                    continue
+                if not (c1 and c2 and rn1 and rn2):
+                    continue
+
+                pair_key = (rn1, num1, c1, rn2, num2, c2)
+                if pair_key not in seen_pairs:
+                    seen_pairs.add(pair_key)
+                    interactions_rows.append({
+                        "resName1": rn1,
+                        "resNum1": str(num1),
+                        "chain1": c1,
+                        "resName2": rn2,
+                        "resNum2": str(num2),
+                        "chain2": c2,
+                        "frame": frame_num,
+                        "types": proximal,
+                    })
+
+                dist_raw = ""
+                for dk in rk:
+                    if dk and "Distance" in dk and "\u00c5" in dk:
+                        dist_raw = rk.get(dk, "")
+                        break
+                if dist_raw == "":
+                    dist_raw = rk.get("Distance", "") or ""
+                atom_pairs_rows.append({
+                    "resName1": rn1,
+                    "resNum1": str(num1),
+                    "chain1": c1,
+                    "resName2": rn2,
+                    "resNum2": str(num2),
+                    "chain2": c2,
+                    "frame": frame_num,
+                    "interactionType": proximal,
+                    "atom1": str(rk.get("Atom 1", "")).strip() or "-",
+                    "atom2": str(rk.get("Atom 2", "")).strip() or "-",
+                    "distance": str(dist_raw).strip(),
+                    "angle": "",
+                })
+    except OSError as e:
+        if verbose:
+            print(f"  [aggregate] Could not read distance fallback {path}: {e}")
+        return
+
+    if not any(r.get("frame") == frame_num for r in trends_rows):
+        trend_vals = {k: 0 for k in _TREND_FRAME_KEYS}
+        trend_vals["Proximal contacts"] = len(seen_pairs)
+        trends_rows.append({"frame": frame_num, **trend_vals})
+
+    if not any(r.get("frame") == frame_num for r in area_rows):
+        area_rows.append({
+            "frame": frame_num,
+            "totalBSA": 0.0,
+            "polarBSA": 0.0,
+            "nonPolarBSA": 0.0,
+            "totalPercent": 0.0,
+            "polarPercent": 0.0,
+            "nonPolarPercent": 0.0,
+        })
+
+    if verbose:
+        print(
+            f"  [aggregate] Used distance-table fallback {path.name} for frame {frame_num}: "
+            f"{len(seen_pairs)} residue pairs, {proximal} only (full CoCoMaps final_file not found)."
+        )
+
+
 def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> bool:
     """
     Aggregate per-frame CSVs into system-level _interactions.csv, _area.csv,
@@ -342,15 +516,20 @@ def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> boo
             continue
 
         # --- Interactions from final_file.csv ---
+        n_ix_before_frame = len(interactions_rows)
         final_file = _get_final_file(frame_folder, chain_pattern)
         if final_file:
-            with open(final_file, 'r', encoding='utf-8') as f:
+            with open(final_file, 'r', encoding='utf-8-sig', newline='') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    if not all(k in row for k in ['Res. Name 1', 'Res. Number 1', 'Chain 1',
-                                                  'Res. Name 2', 'Res. Number 2', 'Chain 2']):
+                    rk = _normalize_csv_row_keys(row)
+                    c1 = (rk.get('Chain 1') or rk.get('Res. Chain 1') or '').strip()
+                    c2 = (rk.get('Chain 2') or rk.get('Res. Chain 2') or '').strip()
+                    if not all(rk.get(k) for k in ['Res. Name 1', 'Res. Number 1', 'Res. Name 2', 'Res. Number 2']):
                         continue
-                    types_raw = row.get('Type of Interactions', '')
+                    if not (c1 and c2):
+                        continue
+                    types_raw = rk.get('Type of Interactions', '') or ''
                     types_list = []
                     if types_raw:
                         for t in types_raw.split(';'):
@@ -358,12 +537,12 @@ def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> boo
                             if nt and nt not in types_list:
                                 types_list.append(nt)
                     interactions_rows.append({
-                        'resName1': row['Res. Name 1'],
-                        'resNum1': row['Res. Number 1'],
-                        'chain1': row['Chain 1'],
-                        'resName2': row['Res. Name 2'],
-                        'resNum2': row['Res. Number 2'],
-                        'chain2': row['Chain 2'],
+                        'resName1': rk['Res. Name 1'],
+                        'resNum1': rk['Res. Number 1'],
+                        'chain1': c1,
+                        'resName2': rk['Res. Name 2'],
+                        'resNum2': rk['Res. Number 2'],
+                        'chain2': c2,
                         'frame': frame_num,
                         'types': ';'.join(types_list),
                     })
@@ -411,13 +590,7 @@ def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> boo
         # --- Trends from summary_table.csv ---
         summary_file = _get_summary_table_file(frame_folder, chain_pattern)
         if summary_file:
-            trend_vals = {k: 0 for k in [
-                'H-bonds', 'Salt-bridges', 'π-π interactions', 'Cation-π interactions',
-                'Anion-π interactions', 'CH-O/N bonds', 'CH-π interactions', 'Halogen bonds',
-                'Apolar vdW contacts', 'Polar vdW contacts', 'Proximal contacts', 'Clashes',
-                'Water mediated', 'Metal mediated', 'S-S bonds', 'Amino-π interactions',
-                'Lone pair-π interactions', 'O/N/SH-π interactions',
-            ]}
+            trend_vals = {k: 0 for k in _TREND_FRAME_KEYS}
             with open(summary_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
@@ -475,6 +648,40 @@ def aggregate_system(system_path: Union[str, Path], verbose: bool = True) -> boo
         metal_mediated_rows.extend(
             _read_mediated_type_csv(frame_folder, chain_pattern, frame_num, "Metal_Mediated")
         )
+
+        # CoCoMaps sometimes leaves only full.csv / trial24.csv (distance table) when the
+        # pipeline does not write *_final_file.csv. Approximate residue/atom data from that.
+        if len(interactions_rows) == n_ix_before_frame:
+            fb = _distance_table_fallback_path(frame_folder)
+            if fb:
+                _aggregate_from_distance_table_fallback(
+                    fb, frame_num, interactions_rows, atom_pairs_rows,
+                    trends_rows, area_rows, verbose,
+                )
+
+    # Pad area/trends so every frame has a row (zeros if NACCESS/summary missing).
+    frame_nums_ordered = sorted(
+        int(f.name.split('_')[1])
+        for f in frame_folders
+        if f.is_dir() and f.name.startswith('frame_') and '_' in f.name
+    )
+    have_area = {r['frame'] for r in area_rows}
+    have_trend = {r['frame'] for r in trends_rows}
+    for fn in frame_nums_ordered:
+        if fn not in have_area:
+            area_rows.append({
+                'frame': fn,
+                'totalBSA': 0.0,
+                'polarBSA': 0.0,
+                'nonPolarBSA': 0.0,
+                'totalPercent': 0.0,
+                'polarPercent': 0.0,
+                'nonPolarPercent': 0.0,
+            })
+        if fn not in have_trend:
+            trends_rows.append({'frame': fn, **{k: 0 for k in _TREND_FRAME_KEYS}})
+    area_rows.sort(key=lambda r: int(r['frame']))
+    trends_rows.sort(key=lambda r: int(r['frame']))
 
     # Write outputs
     wrote_any = False

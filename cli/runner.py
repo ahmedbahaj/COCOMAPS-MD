@@ -235,12 +235,18 @@ def run_pipeline(
             env = os.environ.copy()
             env['PYTHONPATH'] = _STUBS_DIR + os.pathsep + env.get('PYTHONPATH', '')
 
+            from engine.analyze_pdb import _create_hbplus_stub
+            _create_hbplus_stub(frame_path, frame_folder)
+
             try:
                 subprocess.run(
                     command, check=True,
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                     cwd=frame_path, env=env,
                 )
+                from engine.cocomaps_chain_csv import remap_frame_distance_outputs
+
+                remap_frame_distance_outputs(Path(frame_path), chain_a, chain_b)
                 successful += 1
 
             except subprocess.CalledProcessError as e:
