@@ -249,21 +249,27 @@ const loadAllJobs = async () => {
     // Build a merged list
     const merged = new Map()
 
+    // Index jobs by system_id so we can attach the upload UUID to the
+    // corresponding completed-system row (needed for localStorage matching).
+    const jobBySystemId = new Map()
+    for (const job of jobs) {
+      const sid = job.system_id || job.pdb_name
+      if (sid) jobBySystemId.set(sid, job)
+    }
+
     // Collect the exact system directory stems for all active (in-progress) jobs
     // so we can suppress the prematurely-detected 'ready' filesystem entry.
-    // We use system_id (the actual directory name, e.g. "protein_abc12345") rather
-    // than pdb_name ("protein") because a second submission for the same PDB gets
-    // a suffixed directory — pdb_name alone would miss that entry.
     const activeSystemIds = new Set(
       jobs
         .filter(j => !['completed', 'failed'].includes(j.status))
-        .map(j => j.system_id || j.pdb_name)  // fall back for older job records
+        .map(j => j.system_id || j.pdb_name)
     )
 
     // Add completed systems, skipping any whose directory is still being
     // written by an active job (avoids the duplicate row problem).
     for (const system of systems) {
       if (activeSystemIds.has(system.id)) continue
+      const matchingJob = jobBySystemId.get(system.id)
       merged.set(system.id, {
         id: system.id,
         name: system.name,
@@ -271,7 +277,7 @@ const loadAllJobs = async () => {
         frames: system.frames,
         status: system.status || 'ready',
         jobId: system.jobId || null,
-        job_id: null,
+        job_id: matchingJob ? matchingJob.job_id : null,
         step_label: null,
         progress: 100
       })
@@ -308,10 +314,14 @@ const loadAllJobs = async () => {
             progress: job.progress || 0
           })
         }
-      } else if (job.status === 'completed' && pdbName && merged.has(pdbName)) {
-        // Prefer backend's public analysis_job_id (canonical) on the system row
-        const row = merged.get(pdbName)
-        if (job.analysis_job_id) row.jobId = job.analysis_job_id
+      } else if (job.status === 'completed') {
+        // Attach the upload UUID + public analysis ID to the system row
+        const sid = job.system_id || pdbName
+        if (sid && merged.has(sid)) {
+          const row = merged.get(sid)
+          if (job.analysis_job_id) row.jobId = job.analysis_job_id
+          if (job.job_id) row.job_id = job.job_id
+        }
       }
     }
 
