@@ -17,7 +17,7 @@ The Vite dev server proxies `/api` requests to `http://localhost:5001` (Flask ba
 | Path | View | Description |
 |------|------|-------------|
 | `/` | `LandingPage` | Upload PDB, select chains, configure analysis, track processing |
-| `/analysis/:jobId` | `Home` | Main analysis dashboard with charts and controls |
+| `/analysis/:jobId` | `AnalysisView` | Main analysis dashboard with charts and controls |
 | `/jobs` | `JobsPage` | Sortable/searchable list of all jobs (active, completed, failed) |
 | `/about` | `AboutPage` | Short overview of COCOMAPS-MD |
 | `/references` | `ReferencesPage` | Citations (CoCoMaps 2.0), BibTeX, software dependencies |
@@ -52,7 +52,7 @@ src/
 
 ## Key Components
 
-### Analysis Dashboard (`Home.vue`)
+### Analysis Dashboard (`AnalysisView.vue`)
 System sidebar, chart selector tabs, dynamic chart container, conservation threshold slider, interaction type filters, stats panel, and conservation analysis summary.
 
 ### Charts (6 types, switchable via tabs)
@@ -77,7 +77,7 @@ System sidebar, chart selector tabs, dynamic chart container, conservation thres
 
 1. `LandingPage` uploads PDB via `api.uploadFileWithOptions()`, polls `api.getStatus()` until complete
 2. On completion, redirects to `/analysis/:jobId`
-3. `Home` loads systems, resolves jobId → systemId, calls `systemsStore.setCurrentSystem()`
+3. `AnalysisView` loads systems, resolves jobId → systemId, calls `systemsStore.setCurrentSystem()`
 4. `setCurrentSystem` loads interactions, area, trends, and conserved islands in parallel via `analysisStore`
 5. `filteredInteractions` getter applies conservation threshold + interaction type filters
 6. Charts and panels reactively update via Pinia store

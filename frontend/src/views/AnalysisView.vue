@@ -1,5 +1,5 @@
 <template>
-  <div class="home">
+  <div class="analysis-view">
     <!-- System Sidebar -->
     <SystemSidebar :isOpen="sidebarOpen" @close="$emit('toggle-sidebar')" />
 
@@ -80,7 +80,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.home {
+.analysis-view {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
