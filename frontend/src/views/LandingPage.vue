@@ -26,6 +26,11 @@
     <!-- Main Content -->
     <main class="content">
       <div class="container">
+        <p class="cli-frame-note">
+          The web app analyzes at most 50 frames per job (longer trajectories are subsampled). For full trajectories or other very large PDBs, use the command-line interface, for more help
+          <router-link :to="{ name: 'Help', query: { tab: 'cli' } }" class="cli-frame-note-link">Help (CLI)</router-link>.
+        </p>
+
         <!-- Upload Section -->
         <section class="upload-section" v-if="!uploadedFile">
           <div 
@@ -609,6 +614,24 @@ watch(defaultStepSize, (newStep) => {
 .container {
   max-width: 680px;
   margin: 0 auto;
+}
+
+.cli-frame-note {
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 400;
+  text-align: center;
+  color: #6e6e73;
+  margin: 0 0 28px;
+}
+
+.cli-frame-note-link {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.cli-frame-note-link:hover {
+  text-decoration: underline;
 }
 
 /* Upload Section */
