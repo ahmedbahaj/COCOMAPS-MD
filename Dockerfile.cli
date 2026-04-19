@@ -1,0 +1,34 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps: gcc/gfortran for MDAnalysis/scipy wheels, csh for naccess
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc g++ gfortran csh && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements-cli.txt .
+RUN pip install --no-cache-dir -r requirements-cli.txt
+
+COPY cli/ cli/
+COPY engine/ engine/
+COPY cocomaps/ cocomaps/
+COPY deps/ deps/
+COPY stubs/ stubs/
+COPY setup.py .
+
+# Install the CLI entry point (coco-md)
+RUN pip install --no-cache-dir -e .
+
+# Ensure native binaries are executable
+RUN chmod +x deps/reduce/reduce deps/hbplus/hbplus deps/naccess/naccess deps/naccess/accall && \
+    ln -sf /app/deps/naccess /app/naccess
+
+ENV COCOMAPS_DEPS_DIR=/app/deps
+ENV PYTHONUNBUFFERED=1
+
+# Mount point for PDB files and results
+VOLUME ["/data"]
+WORKDIR /data
+
+ENTRYPOINT ["coco-md"]

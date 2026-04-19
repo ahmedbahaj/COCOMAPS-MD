@@ -8,10 +8,15 @@ setup(
     python_requires='>=3.10',
     install_requires=[
         'MDAnalysis>=2.6',
+        'pandas>=2.2',
+        'networkx',
+        'biopython>=1.83',
+        'scipy>=1.14.0',
+        'bidict>=0.23',
+        'python-dotenv',
         'rich>=13.0',
         'plotly>=5.0',
         'kaleido==0.2.1',
-        'python-dotenv',
     ],
     entry_points={
         'console_scripts': [
@@ -19,5 +24,3 @@ setup(
         ],
     },
 )
-
-# hi

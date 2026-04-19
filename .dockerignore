@@ -1,6 +1,5 @@
-# CLI (released independently)
-cli/
-setup.py
+# CLI and setup.py are needed by Dockerfile.cli;
+# the backend Dockerfile simply does not COPY them.
 
 # Dependencies / build artifacts
 node_modules/

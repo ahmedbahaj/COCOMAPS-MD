@@ -7,7 +7,6 @@ import json
 import time
 import shutil
 import subprocess
-import uuid
 from pathlib import Path
 
 from rich.console import Console
@@ -26,6 +25,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 COCOMAPS_DIR = _PROJECT_ROOT / 'cocomaps'
 _STUBS_DIR = str(_PROJECT_ROOT / 'stubs')
+
 
 
 def run_pipeline(
