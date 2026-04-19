@@ -25,3 +25,11 @@ temp/
 
 # Documentation
 documentation/
+
+# Wiki (managed by ~/.wiki vault)
+.wiki
+
+# Cursor / AI config
+CLAUDE.md
+.cursorrules
+.obsidian/
