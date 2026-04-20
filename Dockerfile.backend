@@ -16,6 +16,7 @@ COPY engine/ engine/
 COPY cocomaps/ cocomaps/
 COPY deps/ deps/
 COPY stubs/ stubs/
+COPY example_systems/ example_systems/
 COPY run_backend.py .
 
 # Ensure binaries are executable and naccess can find its data files
