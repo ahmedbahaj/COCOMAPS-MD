@@ -269,6 +269,7 @@ const loadAllJobs = async () => {
     // written by an active job (avoids the duplicate row problem).
     for (const system of systems) {
       if (activeSystemIds.has(system.id)) continue
+      if (system.isExample) continue
       const matchingJob = jobBySystemId.get(system.id)
       merged.set(system.id, {
         id: system.id,
