@@ -18,6 +18,7 @@ build/
 
 # CLI temp files
 temp/
+tmp/
 
 # Environment
 .env
