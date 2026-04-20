@@ -1,0 +1,67 @@
+,Res. Name 1,Res. Number 1,Chain 1,Res. Name 2,Res. Number 2,Chain 2,Type of Interactions
+40,ARG,252,A,PTR,9,C,; Water mediated contact; Water mediated contact; Water mediated contact; Water mediated contact
+49,ARG,252,A,VAL,10,C,Clash
+98,ASN,256,A,PTR,9,C,; H-bond*; Water mediated contact; Water mediated contact; Water mediated contact
+118,HIS,258,A,PTR,9,C,Proximal contact
+160,ASN,259,A,PTR,9,C,; Water mediated contact
+202,ASN,259,A,ASN,5,C,; Water mediated contact
+253,LEU,260,A,ASN,5,C,Proximal contact
+256,LEU,260,A,PRO,6,C,Proximal contact
+263,GLN,261,A,ASN,5,C,Proximal contact
+300,GLN,261,A,PRO,6,C,Proximal contact
+303,GLY,262,A,ASN,5,C,; Water mediated contact
+333,GLY,262,A,PRO,6,C,Proximal contact
+339,GLY,262,A,GLY,7,C,Proximal contact
+343,GLY,262,A,PHE,8,C,Proximal contact
+389,ARG,263,A,PTR,9,C,Proximal contact
+403,ILE,264,A,VAL,10,C,Proximal contact
+425,GLY,265,A,PTR,9,C,; Water mediated contact; Water mediated contact; Water mediated contact; Water mediated contact
+435,GLH,322,A,PTR,9,C,; Water mediated contact; Water mediated contact
+436,GLH,322,A,VAL,10,C,Proximal contact
+473,TYR,333,A,NME,16,C,Proximal contact
+515,TYR,333,A,ALA,12,C,; CH-π interaction; Apolar vdW contact; Apolar vdW contact
+587,TYR,333,A,PHE,8,C,; H-bond*; Water mediated contact; CH-O/N bond; CH-O/N bond
+590,TYR,333,A,PTR,9,C,Proximal contact
+594,TYR,333,A,VAL,10,C,Proximal contact
+604,TYR,333,A,GLU,11,C,Proximal contact
+643,TYR,333,A,GLY,7,C,Proximal contact
+682,TYR,333,A,PRO,6,C,Proximal contact
+719,GLU,334,A,NME,16,C,Proximal contact
+739,GLU,334,A,MET,15,C,Proximal contact
+761,ARG,337,A,NME,16,C,Proximal contact
+808,ARG,337,A,MET,15,C,; H-bond*
+837,TYR,344,A,ASN,13,C,; Water mediated contact
+840,TYR,344,A,PRO,14,C,; Water mediated contact
+845,TYR,344,A,MET,15,C,Proximal contact
+847,TYR,344,A,NME,16,C,; Water mediated contact
+924,ARG,347,A,GLU,11,C,; Salt-bridge
+962,LYS,351,A,GLU,11,C,; Salt-bridge; CH-O/N bond
+999,HIP,387,A,PTR,9,C,; Salt-bridge; Water mediated contact; Water mediated contact
+1022,GLN,388,A,PTR,9,C,; Water mediated contact; Water mediated contact
+1068,GLN,388,A,VAL,10,C,Proximal contact
+1102,ARG,392,A,GLU,11,C,; Salt-bridge
+1129,LEU,413,A,PTR,9,C,Proximal contact
+1185,GLU,436,A,GLU,2,C,; Water mediated contact; Water mediated contact
+1208,SER,437,A,GLU,2,C,; Water mediated contact; CH-O/N bond
+1224,VAL,438,A,GLU,2,C,Proximal contact
+1288,VAL,438,A,ASN,5,C,; Apolar vdW contact
+1293,VAL,438,A,GLY,7,C,Proximal contact
+1347,VAL,438,A,PTR,9,C,Proximal contact
+1449,CYS,439,A,ACE,1,C,Proximal contact
+1530,CYS,439,A,PHE,8,C,; CH-O/N bond
+1540,CYS,439,A,PTR,9,C,Clash
+1551,THR,440,A,PHE,8,C,Proximal contact
+1567,THR,440,A,PTR,9,C,Proximal contact
+1639,THR,440,A,GLU,11,C,; Water mediated contact
+1660,HIS,441,A,PHE,8,C,Proximal contact
+1676,ARG,442,A,PHE,8,C,Proximal contact
+1726,ARG,442,A,PRO,14,C,Proximal contact
+1776,ARG,442,A,ALA,12,C,; H-bond*; Water mediated contact
+1780,ARG,442,A,ASN,13,C,Proximal contact
+59,ARG,263,A,VAL,10,C,; Water mediated contact
+60,ARG,263,A,PHE,8,C,; Water mediated contact
+61,ARG,273,A,GLU,2,C,; Water mediated contact; Water mediated contact
+62,GLU,334,A,PRO,6,C,; Water mediated contact
+63,SER,437,A,ACE,1,C,; Water mediated contact
+64,CYS,439,A,GLY,7,C,; Water mediated contact
+65,ARG,442,A,GLU,11,C,; Water mediated contact

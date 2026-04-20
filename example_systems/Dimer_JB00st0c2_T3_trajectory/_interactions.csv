@@ -1,0 +1,1311 @@
+resName1,resNum1,chain1,resName2,resNum2,chain2,frame,types
+ARG,252,A,PTR,9,C,1,Water-mediated contacts
+ARG,252,A,VAL,10,C,1,Clashes
+ASN,256,A,PTR,9,C,1,H-bond;Water-mediated contacts
+HIS,258,A,PTR,9,C,1,Proximal contacts
+ASN,259,A,PTR,9,C,1,Water-mediated contacts
+ASN,259,A,ASN,5,C,1,Water-mediated contacts
+LEU,260,A,ASN,5,C,1,Proximal contacts
+LEU,260,A,PRO,6,C,1,Proximal contacts
+GLN,261,A,ASN,5,C,1,Proximal contacts
+GLN,261,A,PRO,6,C,1,Proximal contacts
+GLY,262,A,ASN,5,C,1,Water-mediated contacts
+GLY,262,A,PRO,6,C,1,Proximal contacts
+GLY,262,A,GLY,7,C,1,Proximal contacts
+GLY,262,A,PHE,8,C,1,Proximal contacts
+ARG,263,A,PTR,9,C,1,Proximal contacts
+ILE,264,A,VAL,10,C,1,Proximal contacts
+GLY,265,A,PTR,9,C,1,Water-mediated contacts
+GLH,322,A,PTR,9,C,1,Water-mediated contacts
+GLH,322,A,VAL,10,C,1,Proximal contacts
+TYR,333,A,NME,16,C,1,Proximal contacts
+TYR,333,A,ALA,12,C,1,CH-π interactions;Apolar vdW contacts
+TYR,333,A,PHE,8,C,1,H-bond;Water-mediated contacts;CH-O/N bonds
+TYR,333,A,PTR,9,C,1,Proximal contacts
+TYR,333,A,VAL,10,C,1,Proximal contacts
+TYR,333,A,GLU,11,C,1,Proximal contacts
+TYR,333,A,GLY,7,C,1,Proximal contacts
+TYR,333,A,PRO,6,C,1,Proximal contacts
+GLU,334,A,NME,16,C,1,Proximal contacts
+GLU,334,A,MET,15,C,1,Proximal contacts
+ARG,337,A,NME,16,C,1,Proximal contacts
+ARG,337,A,MET,15,C,1,H-bond
+TYR,344,A,ASN,13,C,1,Water-mediated contacts
+TYR,344,A,PRO,14,C,1,Water-mediated contacts
+TYR,344,A,MET,15,C,1,Proximal contacts
+TYR,344,A,NME,16,C,1,Water-mediated contacts
+ARG,347,A,GLU,11,C,1,Salt-bridge
+LYS,351,A,GLU,11,C,1,Salt-bridge;CH-O/N bonds
+HIP,387,A,PTR,9,C,1,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,1,Water-mediated contacts
+GLN,388,A,VAL,10,C,1,Proximal contacts
+ARG,392,A,GLU,11,C,1,Salt-bridge
+LEU,413,A,PTR,9,C,1,Proximal contacts
+GLU,436,A,GLU,2,C,1,Water-mediated contacts
+SER,437,A,GLU,2,C,1,Water-mediated contacts;CH-O/N bonds
+VAL,438,A,GLU,2,C,1,Proximal contacts
+VAL,438,A,ASN,5,C,1,Apolar vdW contacts
+VAL,438,A,GLY,7,C,1,Proximal contacts
+VAL,438,A,PTR,9,C,1,Proximal contacts
+CYS,439,A,ACE,1,C,1,Proximal contacts
+CYS,439,A,PHE,8,C,1,CH-O/N bonds
+CYS,439,A,PTR,9,C,1,Clashes
+THR,440,A,PHE,8,C,1,Proximal contacts
+THR,440,A,PTR,9,C,1,Proximal contacts
+THR,440,A,GLU,11,C,1,Water-mediated contacts
+HIS,441,A,PHE,8,C,1,Proximal contacts
+ARG,442,A,PHE,8,C,1,Proximal contacts
+ARG,442,A,PRO,14,C,1,Proximal contacts
+ARG,442,A,ALA,12,C,1,H-bond;Water-mediated contacts
+ARG,442,A,ASN,13,C,1,Proximal contacts
+ARG,263,A,VAL,10,C,1,Water-mediated contacts
+ARG,263,A,PHE,8,C,1,Water-mediated contacts
+ARG,273,A,GLU,2,C,1,Water-mediated contacts
+GLU,334,A,PRO,6,C,1,Water-mediated contacts
+SER,437,A,ACE,1,C,1,Water-mediated contacts
+CYS,439,A,GLY,7,C,1,Water-mediated contacts
+ARG,442,A,GLU,11,C,1,Water-mediated contacts
+ARG,252,A,PTR,9,C,2,Salt-bridge;Water-mediated contacts
+ARG,252,A,VAL,10,C,2,Proximal contacts
+HIE,253,A,PTR,9,C,2,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,2,Water-mediated contacts
+ASN,259,A,PTR,9,C,2,Proximal contacts
+ASP,267,A,PTR,9,C,2,Water-mediated contacts
+ARG,273,A,GLU,2,C,2,Salt-bridge;Water-mediated contacts
+SER,302,A,PTR,9,C,2,Water-mediated contacts
+TYR,333,A,ALA,12,C,2,Apolar vdW contacts
+TYR,333,A,VAL,10,C,2,Water-mediated contacts
+TYR,333,A,GLU,11,C,2,Proximal contacts
+ARG,337,A,NME,16,C,2,Proximal contacts
+TYR,344,A,ALA,12,C,2,Proximal contacts
+GLU,348,A,ALA,12,C,2,Water-mediated contacts
+HIP,387,A,PTR,9,C,2,Salt-bridge;Water-mediated contacts
+ARG,392,A,GLU,11,C,2,Salt-bridge
+LEU,413,A,PTR,9,C,2,Proximal contacts
+TYR,432,A,ACE,1,C,2,Water-mediated contacts
+GLU,436,A,ACE,1,C,2,Proximal contacts
+GLU,436,A,GLU,2,C,2,Proximal contacts
+SER,437,A,GLU,2,C,2,CH-O/N bonds
+SER,437,A,ACE,1,C,2,Water-mediated contacts
+VAL,438,A,GLU,2,C,2,Proximal contacts
+VAL,438,A,GLY,7,C,2,Proximal contacts
+VAL,438,A,ASN,5,C,2,Proximal contacts
+VAL,438,A,PHE,8,C,2,Proximal contacts
+VAL,438,A,PTR,9,C,2,Proximal contacts
+CYS,439,A,GLY,7,C,2,Water-mediated contacts
+CYS,439,A,PHE,8,C,2,CH-O/N bonds
+CYS,439,A,PTR,9,C,2,Clashes
+THR,440,A,PHE,8,C,2,Proximal contacts
+THR,440,A,PTR,9,C,2,Water-mediated contacts
+THR,440,A,GLU,11,C,2,Proximal contacts
+HIS,441,A,GLU,11,C,2,Proximal contacts
+HIS,441,A,PHE,8,C,2,CH-O/N bonds
+ARG,442,A,PHE,8,C,2,Proximal contacts
+ARG,442,A,GLU,11,C,2,Proximal contacts
+ARG,442,A,ALA,12,C,2,H-bond;CH-O/N bonds
+ARG,442,A,ASN,13,C,2,Water-mediated contacts
+ARG,442,A,PRO,14,C,2,Proximal contacts
+ARG,252,A,GLU,11,C,2,Water-mediated contacts
+GLN,388,A,PTR,9,C,2,Water-mediated contacts
+ASN,256,A,PTR,9,C,2,Water-mediated contacts
+ASN,259,A,PHE,8,C,2,Water-mediated contacts
+ASN,259,A,VAL,10,C,2,Water-mediated contacts
+ARG,337,A,ASN,13,C,2,Water-mediated contacts
+ARG,337,A,PRO,14,C,2,Water-mediated contacts
+ARG,347,A,VAL,10,C,2,Water-mediated contacts
+ARG,347,A,GLU,11,C,2,Water-mediated contacts
+ARG,347,A,ALA,12,C,2,Water-mediated contacts
+CYS,439,A,ASN,5,C,2,Water-mediated contacts
+ARG,252,A,GLU,11,C,3,Water-mediated contacts
+ARG,252,A,PTR,9,C,3,Water-mediated contacts
+HIE,253,A,PTR,9,C,3,H-bond;Water-mediated contacts
+GLU,255,A,ARG,4,C,3,Salt-bridge
+ASN,256,A,PTR,9,C,3,Water-mediated contacts
+ASN,259,A,PTR,9,C,3,Proximal contacts
+ASN,259,A,ASN,5,C,3,Water-mediated contacts
+LEU,260,A,ARG,4,C,3,Proximal contacts
+ARG,273,A,GLU,2,C,3,Water-mediated contacts
+ARG,273,A,ARG,4,C,3,Proximal contacts
+SER,302,A,PTR,9,C,3,Water-mediated contacts
+TYR,333,A,ALA,12,C,3,CH-π interactions;Apolar vdW contacts
+TYR,333,A,VAL,10,C,3,CH-O/N bonds
+TYR,333,A,GLU,11,C,3,Proximal contacts
+GLU,334,A,ASN,13,C,3,Water-mediated contacts
+ARG,337,A,MET,15,C,3,Proximal contacts
+ARG,337,A,ASN,13,C,3,Proximal contacts
+TYR,344,A,ASN,13,C,3,Water-mediated contacts
+TYR,344,A,PRO,14,C,3,Proximal contacts
+TYR,344,A,MET,15,C,3,Proximal contacts
+TYR,344,A,ALA,12,C,3,Proximal contacts
+ARG,347,A,ALA,12,C,3,Water-mediated contacts
+ARG,347,A,VAL,10,C,3,Water-mediated contacts
+GLU,348,A,ALA,12,C,3,Water-mediated contacts
+CYS,386,A,PTR,9,C,3,Proximal contacts
+HIP,387,A,PTR,9,C,3,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,3,Water-mediated contacts
+GLN,388,A,GLU,11,C,3,Water-mediated contacts
+ARG,392,A,GLU,11,C,3,Salt-bridge
+LEU,413,A,PTR,9,C,3,Proximal contacts
+GLU,436,A,GLU,2,C,3,Water-mediated contacts;Apolar vdW contacts
+SER,437,A,ACE,1,C,3,Proximal contacts
+SER,437,A,GLU,2,C,3,Proximal contacts
+VAL,438,A,GLY,7,C,3,Proximal contacts
+VAL,438,A,GLU,2,C,3,Water-mediated contacts;CH-O/N bonds;Apolar vdW contacts
+VAL,438,A,ASN,5,C,3,Apolar vdW contacts
+VAL,438,A,PHE,8,C,3,Proximal contacts
+VAL,438,A,PTR,9,C,3,Proximal contacts
+CYS,439,A,GLY,7,C,3,Proximal contacts
+CYS,439,A,PHE,8,C,3,CH-O/N bonds
+CYS,439,A,PTR,9,C,3,Proximal contacts
+THR,440,A,PHE,8,C,3,Proximal contacts
+THR,440,A,PTR,9,C,3,Proximal contacts
+THR,440,A,GLU,11,C,3,Proximal contacts
+HIS,441,A,PHE,8,C,3,Clashes
+ARG,442,A,PHE,8,C,3,Proximal contacts
+ARG,442,A,PRO,14,C,3,Proximal contacts
+ARG,442,A,ALA,12,C,3,H-bond
+ARG,442,A,ASN,13,C,3,Proximal contacts
+GLY,254,A,PTR,9,C,3,Water-mediated contacts
+GLU,334,A,PRO,14,C,3,Water-mediated contacts
+ARG,347,A,GLU,11,C,3,Water-mediated contacts
+GLU,348,A,GLU,11,C,3,Water-mediated contacts
+GLN,388,A,GLU,11,C,4,Water-mediated contacts
+ARG,252,A,VAL,10,C,4,Proximal contacts
+HIE,253,A,PTR,9,C,4,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,4,Water-mediated contacts
+GLU,255,A,GLU,2,C,4,Proximal contacts
+GLU,255,A,ARG,4,C,4,Salt-bridge
+ASN,256,A,PTR,9,C,4,Water-mediated contacts
+ASN,259,A,ARG,4,C,4,Proximal contacts
+ASN,259,A,ASN,5,C,4,H-bond
+ASN,259,A,PRO,6,C,4,CH-O/N bonds
+GLY,262,A,PRO,6,C,4,Proximal contacts
+ARG,273,A,GLU,2,C,4,Salt-bridge
+ARG,273,A,ARG,4,C,4,Proximal contacts
+SER,302,A,PTR,9,C,4,Water-mediated contacts
+TYR,333,A,GLU,11,C,4,Proximal contacts
+TYR,333,A,ALA,12,C,4,Apolar vdW contacts
+TYR,333,A,ASN,13,C,4,Proximal contacts
+ARG,337,A,MET,15,C,4,Proximal contacts
+ARG,337,A,NME,16,C,4,Proximal contacts
+ARG,337,A,ASN,13,C,4,H-bond
+ARG,337,A,PRO,14,C,4,H-bond
+TYR,344,A,ASN,13,C,4,Water-mediated contacts
+TYR,344,A,PRO,14,C,4,Proximal contacts
+TYR,344,A,MET,15,C,4,Proximal contacts
+TYR,344,A,ALA,12,C,4,Proximal contacts
+ARG,347,A,ALA,12,C,4,Proximal contacts
+GLU,348,A,ALA,12,C,4,Water-mediated contacts
+LYS,351,A,GLU,11,C,4,Proximal contacts
+CYS,386,A,PTR,9,C,4,Proximal contacts
+HIP,387,A,PTR,9,C,4,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,4,Water-mediated contacts
+GLN,388,A,VAL,10,C,4,Proximal contacts
+ARG,392,A,GLU,11,C,4,Salt-bridge
+PRO,407,A,GLU,11,C,4,Water-mediated contacts
+LEU,413,A,PTR,9,C,4,Proximal contacts
+GLU,436,A,GLU,2,C,4,Water-mediated contacts;Apolar vdW contacts
+SER,437,A,ACE,1,C,4,Clashes
+SER,437,A,GLU,2,C,4,H-bond
+VAL,438,A,GLU,2,C,4,Proximal contacts
+VAL,438,A,ARG,4,C,4,Proximal contacts
+VAL,438,A,ASN,5,C,4,Apolar vdW contacts
+VAL,438,A,PTR,9,C,4,Proximal contacts
+VAL,438,A,ACE,1,C,4,Proximal contacts
+CYS,439,A,GLU,2,C,4,Water-mediated contacts
+CYS,439,A,ASN,5,C,4,Proximal contacts
+CYS,439,A,ACE,1,C,4,Proximal contacts
+CYS,439,A,GLY,7,C,4,Proximal contacts
+CYS,439,A,PHE,8,C,4,CH-O/N bonds
+CYS,439,A,PTR,9,C,4,Clashes
+THR,440,A,PHE,8,C,4,Proximal contacts
+THR,440,A,PTR,9,C,4,Water-mediated contacts
+THR,440,A,GLU,11,C,4,Water-mediated contacts;CH-O/N bonds
+HIS,441,A,GLU,11,C,4,Proximal contacts
+HIS,441,A,PHE,8,C,4,CH-O/N bonds
+ARG,442,A,PHE,8,C,4,Proximal contacts
+ARG,442,A,GLU,11,C,4,Proximal contacts
+ARG,442,A,ALA,12,C,4,H-bond;CH-O/N bonds
+ARG,442,A,ASN,13,C,4,Water-mediated contacts
+ARG,442,A,PRO,14,C,4,Proximal contacts
+ARG,442,A,MET,15,C,4,Water-mediated contacts
+ARG,252,A,GLU,11,C,4,Water-mediated contacts
+TYR,333,A,VAL,10,C,4,Water-mediated contacts
+ARG,252,A,PTR,9,C,5,Water-mediated contacts
+ARG,252,A,VAL,10,C,5,Proximal contacts
+HIE,253,A,PTR,9,C,5,H-bond;Water-mediated contacts
+GLU,255,A,GLU,2,C,5,Water-mediated contacts
+GLU,255,A,ARG,4,C,5,Salt-bridge;Water-mediated contacts
+ASN,256,A,PTR,9,C,5,Water-mediated contacts
+ASN,259,A,PTR,9,C,5,Proximal contacts
+ASN,259,A,ASN,5,C,5,H-bond
+ASN,259,A,PRO,6,C,5,CH-O/N bonds
+LEU,260,A,ARG,4,C,5,Water-mediated contacts;Apolar vdW contacts
+LEU,260,A,PRO,6,C,5,CH-O/N bonds
+GLN,261,A,PRO,6,C,5,Proximal contacts
+GLY,262,A,PRO,6,C,5,Proximal contacts
+ARG,273,A,GLU,2,C,5,Proximal contacts
+ARG,273,A,ARG,4,C,5,Proximal contacts
+LEU,300,A,PTR,9,C,5,Proximal contacts
+SER,302,A,PTR,9,C,5,Water-mediated contacts
+TYR,333,A,VAL,10,C,5,H-bond;Water-mediated contacts
+TYR,333,A,GLU,11,C,5,Water-mediated contacts
+TYR,333,A,ALA,12,C,5,Apolar vdW contacts
+TYR,333,A,ASN,13,C,5,Proximal contacts
+GLU,334,A,ASN,13,C,5,Water-mediated contacts
+ARG,337,A,MET,15,C,5,Proximal contacts
+ARG,337,A,ASN,13,C,5,Proximal contacts
+TYR,344,A,ALA,12,C,5,Proximal contacts
+TYR,344,A,ASN,13,C,5,Water-mediated contacts
+TYR,344,A,PRO,14,C,5,Proximal contacts
+TYR,344,A,MET,15,C,5,Proximal contacts
+ARG,347,A,GLU,11,C,5,Water-mediated contacts
+GLU,348,A,ALA,12,C,5,Water-mediated contacts
+LYS,351,A,GLU,11,C,5,Salt-bridge;Water-mediated contacts
+HIP,387,A,PTR,9,C,5,Salt-bridge
+GLN,388,A,PTR,9,C,5,Water-mediated contacts
+ARG,392,A,GLU,11,C,5,Salt-bridge;Water-mediated contacts
+LEU,413,A,PTR,9,C,5,Proximal contacts
+GLU,436,A,GLU,2,C,5,Proximal contacts
+SER,437,A,GLU,2,C,5,CH-O/N bonds
+VAL,438,A,GLU,2,C,5,Proximal contacts
+VAL,438,A,ARG,4,C,5,Proximal contacts
+VAL,438,A,ASN,5,C,5,Proximal contacts
+VAL,438,A,PTR,9,C,5,Proximal contacts
+CYS,439,A,GLY,7,C,5,Proximal contacts
+CYS,439,A,PHE,8,C,5,Proximal contacts
+CYS,439,A,PTR,9,C,5,Clashes
+THR,440,A,PHE,8,C,5,Proximal contacts
+THR,440,A,PTR,9,C,5,Water-mediated contacts
+THR,440,A,GLU,11,C,5,CH-O/N bonds
+HIS,441,A,GLU,11,C,5,Proximal contacts
+HIS,441,A,PHE,8,C,5,Proximal contacts
+ARG,442,A,PHE,8,C,5,Proximal contacts
+ARG,442,A,GLU,11,C,5,Water-mediated contacts;Apolar vdW contacts
+ARG,442,A,ALA,12,C,5,H-bond
+ARG,442,A,ASN,13,C,5,Proximal contacts
+ARG,442,A,PRO,14,C,5,Proximal contacts
+SER,445,A,PRO,14,C,5,Proximal contacts
+ASN,259,A,ARG,4,C,5,Water-mediated contacts
+ARG,347,A,VAL,10,C,5,Water-mediated contacts
+GLN,388,A,GLU,11,C,5,Water-mediated contacts
+CYS,439,A,GLU,2,C,5,Water-mediated contacts
+ARG,252,A,PTR,9,C,6,Water-mediated contacts
+ARG,252,A,VAL,10,C,6,Proximal contacts
+HIE,253,A,PTR,9,C,6,H-bond;Water-mediated contacts
+GLU,255,A,GLU,2,C,6,Water-mediated contacts
+GLU,255,A,ARG,4,C,6,Salt-bridge;Water-mediated contacts
+ASN,256,A,PTR,9,C,6,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,6,Proximal contacts
+ASN,259,A,ASN,5,C,6,H-bond
+LEU,260,A,ARG,4,C,6,Proximal contacts
+LEU,260,A,ASN,5,C,6,Proximal contacts
+ARG,273,A,GLU,2,C,6,Proximal contacts
+ARG,273,A,ARG,4,C,6,Proximal contacts
+SER,302,A,PTR,9,C,6,Water-mediated contacts
+TYR,333,A,VAL,10,C,6,H-bond;Water-mediated contacts;CH-O/N bonds
+TYR,333,A,GLU,11,C,6,Proximal contacts
+TYR,333,A,ALA,12,C,6,CH-π interactions;Apolar vdW contacts
+ARG,337,A,MET,15,C,6,Water-mediated contacts
+TYR,344,A,ALA,12,C,6,Proximal contacts
+ARG,347,A,GLU,11,C,6,Water-mediated contacts
+CYS,386,A,PTR,9,C,6,Proximal contacts
+HIP,387,A,PTR,9,C,6,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,6,Water-mediated contacts
+ARG,392,A,GLU,11,C,6,Salt-bridge
+LEU,413,A,PTR,9,C,6,Proximal contacts
+GLU,436,A,GLU,2,C,6,Water-mediated contacts;Apolar vdW contacts
+SER,437,A,GLU,2,C,6,Proximal contacts
+VAL,438,A,GLY,7,C,6,Proximal contacts
+VAL,438,A,GLU,2,C,6,Proximal contacts
+VAL,438,A,ARG,4,C,6,Proximal contacts
+VAL,438,A,ASN,5,C,6,Proximal contacts
+VAL,438,A,PTR,9,C,6,Proximal contacts
+CYS,439,A,GLY,7,C,6,Proximal contacts
+CYS,439,A,PHE,8,C,6,CH-O/N bonds
+CYS,439,A,PTR,9,C,6,Clashes
+THR,440,A,PHE,8,C,6,Proximal contacts
+THR,440,A,PTR,9,C,6,Water-mediated contacts
+THR,440,A,GLU,11,C,6,CH-O/N bonds
+HIS,441,A,GLU,11,C,6,Proximal contacts
+HIS,441,A,PHE,8,C,6,CH-O/N bonds
+HIS,441,A,ALA,12,C,6,Water-mediated contacts
+ARG,442,A,GLU,11,C,6,Proximal contacts
+ARG,442,A,ALA,12,C,6,H-bond
+ARG,442,A,ASN,13,C,6,Proximal contacts
+ARG,442,A,PRO,14,C,6,Proximal contacts
+ARG,252,A,GLU,11,C,6,Water-mediated contacts
+ASN,259,A,ARG,4,C,6,Water-mediated contacts
+ASN,259,A,GLY,7,C,6,Water-mediated contacts
+ASN,259,A,PHE,8,C,6,Water-mediated contacts
+GLY,262,A,VAL,10,C,6,Water-mediated contacts
+TYR,344,A,MET,15,C,6,Water-mediated contacts
+LYS,351,A,GLU,11,C,6,Water-mediated contacts
+ARG,252,A,PTR,9,C,7,Water-mediated contacts
+HIE,253,A,PTR,9,C,7,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,7,Water-mediated contacts
+GLU,255,A,GLU,2,C,7,Water-mediated contacts
+GLU,255,A,ARG,4,C,7,Salt-bridge;Water-mediated contacts
+ASN,256,A,PTR,9,C,7,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,7,Proximal contacts
+ASN,259,A,ASN,5,C,7,H-bond;Water-mediated contacts;CH-O/N bonds
+ASN,259,A,PRO,6,C,7,Proximal contacts
+LEU,260,A,ARG,4,C,7,Apolar vdW contacts
+LEU,260,A,ASN,5,C,7,Proximal contacts
+LEU,260,A,PRO,6,C,7,CH-O/N bonds
+ARG,263,A,VAL,10,C,7,Proximal contacts
+ILE,264,A,VAL,10,C,7,Proximal contacts
+GLY,265,A,VAL,10,C,7,Proximal contacts
+ARG,273,A,GLU,2,C,7,Proximal contacts
+ARG,273,A,ARG,4,C,7,Clashes
+TYR,333,A,VAL,10,C,7,H-bond;Water-mediated contacts;CH-O/N bonds
+TYR,333,A,GLU,11,C,7,Proximal contacts
+TYR,333,A,ALA,12,C,7,CH-π interactions;Apolar vdW contacts
+ARG,337,A,MET,15,C,7,Proximal contacts
+TYR,344,A,ASN,13,C,7,Proximal contacts
+TYR,344,A,PRO,14,C,7,Proximal contacts
+TYR,344,A,MET,15,C,7,H-bond
+ARG,347,A,ALA,12,C,7,Proximal contacts
+ARG,347,A,GLU,11,C,7,Salt-bridge
+GLU,348,A,GLU,11,C,7,Proximal contacts
+LYS,351,A,GLU,11,C,7,Salt-bridge
+CYS,386,A,PTR,9,C,7,Proximal contacts
+HIP,387,A,PTR,9,C,7,Salt-bridge
+GLN,388,A,PTR,9,C,7,Water-mediated contacts
+LEU,413,A,PTR,9,C,7,Proximal contacts
+GLU,436,A,GLU,2,C,7,Water-mediated contacts
+SER,437,A,GLU,2,C,7,Proximal contacts
+VAL,438,A,GLU,2,C,7,Proximal contacts
+VAL,438,A,ARG,4,C,7,Proximal contacts
+VAL,438,A,ASN,5,C,7,Proximal contacts
+VAL,438,A,PTR,9,C,7,Proximal contacts
+CYS,439,A,GLY,7,C,7,Proximal contacts
+CYS,439,A,PHE,8,C,7,Proximal contacts
+CYS,439,A,PTR,9,C,7,Clashes
+THR,440,A,PHE,8,C,7,Proximal contacts
+THR,440,A,PTR,9,C,7,Water-mediated contacts
+THR,440,A,GLU,11,C,7,Proximal contacts
+HIS,441,A,PHE,8,C,7,CH-O/N bonds
+ARG,442,A,PHE,8,C,7,Apolar vdW contacts
+ARG,442,A,PRO,14,C,7,Proximal contacts
+ARG,442,A,ALA,12,C,7,H-bond
+ARG,442,A,ASN,13,C,7,Proximal contacts
+ARG,442,A,GLU,11,C,7,Salt-bridge
+SER,302,A,PTR,9,C,7,Water-mediated contacts
+ASN,259,A,ARG,4,C,7,Water-mediated contacts
+ASN,259,A,PHE,8,C,7,Water-mediated contacts
+ASN,259,A,VAL,10,C,7,Water-mediated contacts
+GLU,334,A,MET,15,C,7,Water-mediated contacts
+ARG,392,A,GLU,11,C,7,Water-mediated contacts
+ARG,252,A,PTR,9,C,8,Salt-bridge;Water-mediated contacts
+HIE,253,A,PTR,9,C,8,H-bond;Water-mediated contacts
+GLU,255,A,GLU,2,C,8,Water-mediated contacts
+GLU,255,A,ARG,4,C,8,Salt-bridge;Water-mediated contacts
+ASN,256,A,PTR,9,C,8,Water-mediated contacts
+ASN,259,A,PTR,9,C,8,Proximal contacts
+ASN,259,A,ARG,4,C,8,Water-mediated contacts
+ASN,259,A,ASN,5,C,8,H-bond
+ASN,259,A,PRO,6,C,8,CH-O/N bonds
+LEU,260,A,ASN,5,C,8,Proximal contacts
+LEU,260,A,ARG,4,C,8,Water-mediated contacts
+LEU,260,A,PRO,6,C,8,CH-O/N bonds
+GLN,261,A,PRO,6,C,8,Proximal contacts
+GLY,262,A,ASN,5,C,8,Proximal contacts
+GLY,262,A,PRO,6,C,8,Water-mediated contacts
+ARG,273,A,GLU,2,C,8,Proximal contacts
+ARG,273,A,ARG,4,C,8,Clashes
+SER,302,A,PTR,9,C,8,Water-mediated contacts
+TYR,333,A,ASN,13,C,8,Water-mediated contacts
+TYR,333,A,ALA,12,C,8,CH-π interactions;Apolar vdW contacts
+TYR,333,A,VAL,10,C,8,Proximal contacts
+TYR,333,A,GLU,11,C,8,Proximal contacts
+GLU,334,A,ASN,13,C,8,Water-mediated contacts
+ARG,337,A,PRO,14,C,8,Water-mediated contacts;CH-O/N bonds
+ARG,337,A,MET,15,C,8,Proximal contacts
+ARG,337,A,NME,16,C,8,Proximal contacts
+TYR,344,A,ASN,13,C,8,H-bond
+TYR,344,A,PRO,14,C,8,Proximal contacts
+TYR,344,A,MET,15,C,8,Proximal contacts
+TYR,344,A,ALA,12,C,8,Apolar vdW contacts
+ALA,345,A,MET,15,C,8,Proximal contacts
+ARG,347,A,ALA,12,C,8,Proximal contacts
+ARG,347,A,GLU,11,C,8,Salt-bridge
+GLU,348,A,MET,15,C,8,Proximal contacts
+GLU,348,A,GLU,11,C,8,Proximal contacts
+GLU,348,A,ALA,12,C,8,Proximal contacts
+LYS,351,A,GLU,11,C,8,Salt-bridge;Water-mediated contacts
+HIP,387,A,PTR,9,C,8,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,8,Water-mediated contacts
+ARG,392,A,GLU,11,C,8,Water-mediated contacts
+LEU,413,A,PTR,9,C,8,Proximal contacts
+GLU,436,A,GLU,2,C,8,Water-mediated contacts;Apolar vdW contacts
+SER,437,A,GLU,2,C,8,Proximal contacts
+VAL,438,A,GLU,2,C,8,CH-O/N bonds
+VAL,438,A,ASN,5,C,8,Apolar vdW contacts
+VAL,438,A,PTR,9,C,8,Proximal contacts
+CYS,439,A,GLY,7,C,8,Water-mediated contacts
+CYS,439,A,PHE,8,C,8,Clashes
+CYS,439,A,ASN,5,C,8,Water-mediated contacts
+CYS,439,A,PTR,9,C,8,Proximal contacts
+THR,440,A,PTR,9,C,8,Water-mediated contacts
+THR,440,A,PHE,8,C,8,Proximal contacts
+THR,440,A,GLU,11,C,8,Proximal contacts
+HIS,441,A,PHE,8,C,8,CH-O/N bonds
+ARG,442,A,PHE,8,C,8,CH-π interactions;Apolar vdW contacts
+ARG,442,A,PRO,14,C,8,Proximal contacts
+ARG,442,A,ALA,12,C,8,H-bond
+ARG,442,A,ASN,13,C,8,Proximal contacts
+ARG,442,A,GLU,11,C,8,Salt-bridge
+SER,445,A,MET,15,C,8,Water-mediated contacts
+CYS,439,A,GLU,2,C,8,Water-mediated contacts
+ARG,252,A,PTR,9,C,9,Salt-bridge;Water-mediated contacts
+HIE,253,A,PTR,9,C,9,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,9,Water-mediated contacts
+GLU,255,A,GLU,2,C,9,Water-mediated contacts
+GLU,255,A,ARG,4,C,9,Salt-bridge;Water-mediated contacts
+ASN,256,A,PTR,9,C,9,Water-mediated contacts
+HIS,258,A,VAL,10,C,9,Proximal contacts
+HIS,258,A,PTR,9,C,9,Proximal contacts
+ASN,259,A,ARG,4,C,9,Water-mediated contacts
+ASN,259,A,ASN,5,C,9,Clashes
+ASN,259,A,PRO,6,C,9,Proximal contacts
+LEU,260,A,ARG,4,C,9,Apolar vdW contacts
+LEU,260,A,ASN,5,C,9,Proximal contacts
+LEU,260,A,PRO,6,C,9,CH-O/N bonds
+GLN,261,A,PRO,6,C,9,Proximal contacts
+GLY,262,A,PRO,6,C,9,Proximal contacts
+GLY,262,A,VAL,10,C,9,CH-O/N bonds
+ARG,263,A,VAL,10,C,9,CH-O/N bonds
+ILE,264,A,VAL,10,C,9,Proximal contacts
+GLY,266,A,PTR,9,C,9,Water-mediated contacts
+ARG,273,A,GLU,2,C,9,Proximal contacts
+ARG,273,A,ARG,4,C,9,Proximal contacts
+TYR,333,A,VAL,10,C,9,CH-O/N bonds
+TYR,333,A,GLU,11,C,9,Proximal contacts
+TYR,333,A,ALA,12,C,9,CH-π interactions;Apolar vdW contacts
+TYR,344,A,ASN,13,C,9,Water-mediated contacts
+TYR,344,A,ALA,12,C,9,Proximal contacts
+TYR,344,A,MET,15,C,9,Proximal contacts
+ALA,345,A,MET,15,C,9,Proximal contacts
+ARG,347,A,GLU,11,C,9,Salt-bridge
+ARG,347,A,ALA,12,C,9,Proximal contacts
+GLU,348,A,MET,15,C,9,Proximal contacts
+GLU,348,A,GLU,11,C,9,Proximal contacts
+LYS,351,A,GLU,11,C,9,Salt-bridge;Water-mediated contacts
+CYS,386,A,PTR,9,C,9,Water-mediated contacts
+HIP,387,A,PTR,9,C,9,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,9,Water-mediated contacts
+LEU,413,A,PTR,9,C,9,Proximal contacts
+GLU,436,A,GLU,2,C,9,Water-mediated contacts;Apolar vdW contacts
+SER,437,A,GLU,2,C,9,CH-O/N bonds
+VAL,438,A,GLU,2,C,9,Proximal contacts
+VAL,438,A,ARG,4,C,9,Proximal contacts
+VAL,438,A,ASN,5,C,9,Apolar vdW contacts
+VAL,438,A,PTR,9,C,9,Proximal contacts
+CYS,439,A,GLU,2,C,9,Water-mediated contacts
+CYS,439,A,PHE,8,C,9,CH-O/N bonds
+CYS,439,A,GLY,7,C,9,Proximal contacts
+CYS,439,A,PTR,9,C,9,Clashes
+THR,440,A,PHE,8,C,9,Proximal contacts
+THR,440,A,PTR,9,C,9,Proximal contacts
+THR,440,A,GLU,11,C,9,Proximal contacts
+HIS,441,A,PHE,8,C,9,CH-O/N bonds
+ARG,442,A,PHE,8,C,9,CH-π interactions
+ARG,442,A,ASN,13,C,9,Proximal contacts
+ARG,442,A,PRO,14,C,9,Proximal contacts
+ARG,442,A,ALA,12,C,9,H-bond
+ARG,442,A,GLU,11,C,9,Salt-bridge
+SER,302,A,PTR,9,C,9,Water-mediated contacts
+TYR,344,A,PRO,14,C,9,Water-mediated contacts
+ARG,252,A,PTR,9,C,10,Water-mediated contacts
+HIE,253,A,PTR,9,C,10,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,10,Water-mediated contacts
+GLU,255,A,GLU,2,C,10,Water-mediated contacts
+GLU,255,A,ARG,4,C,10,Salt-bridge;Water-mediated contacts
+ASN,256,A,PTR,9,C,10,H-bond;Water-mediated contacts
+ASN,259,A,ASN,5,C,10,Water-mediated contacts
+LEU,260,A,ASN,5,C,10,Proximal contacts
+GLY,262,A,VAL,10,C,10,Water-mediated contacts
+ARG,263,A,VAL,10,C,10,Proximal contacts
+ILE,264,A,VAL,10,C,10,Proximal contacts
+ARG,273,A,GLU,2,C,10,Proximal contacts
+ARG,273,A,ARG,4,C,10,Water-mediated contacts
+TYR,333,A,ALA,12,C,10,CH-π interactions;Apolar vdW contacts
+TYR,333,A,VAL,10,C,10,CH-O/N bonds
+TYR,333,A,GLU,11,C,10,Proximal contacts
+GLU,334,A,ASN,13,C,10,H-bond;Water-mediated contacts
+ARG,337,A,ALA,12,C,10,Proximal contacts
+ARG,337,A,ASN,13,C,10,Proximal contacts
+ARG,337,A,PRO,14,C,10,Water-mediated contacts
+TYR,344,A,ASN,13,C,10,H-bond;CH-O/N bonds
+TYR,344,A,PRO,14,C,10,Water-mediated contacts
+TYR,344,A,MET,15,C,10,Proximal contacts
+TYR,344,A,ALA,12,C,10,Apolar vdW contacts
+ALA,345,A,MET,15,C,10,Proximal contacts
+ARG,347,A,GLU,11,C,10,Salt-bridge
+ARG,347,A,ALA,12,C,10,Proximal contacts
+GLU,348,A,GLU,11,C,10,Proximal contacts
+GLU,348,A,ALA,12,C,10,Proximal contacts
+GLU,348,A,MET,15,C,10,Proximal contacts
+LYS,351,A,GLU,11,C,10,Salt-bridge
+TYR,362,A,GLU,11,C,10,Proximal contacts
+HIP,387,A,PTR,9,C,10,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,10,Water-mediated contacts
+ARG,392,A,GLU,11,C,10,Salt-bridge;Water-mediated contacts
+LEU,413,A,PTR,9,C,10,Proximal contacts
+GLU,436,A,GLU,2,C,10,Water-mediated contacts
+SER,437,A,GLU,2,C,10,Proximal contacts
+VAL,438,A,GLU,2,C,10,Water-mediated contacts
+VAL,438,A,GLY,3,C,10,Proximal contacts
+THR,440,A,PTR,9,C,10,Proximal contacts
+HIS,441,A,PHE,8,C,10,Proximal contacts
+ARG,442,A,PHE,8,C,10,Proximal contacts
+ARG,442,A,ALA,12,C,10,H-bond
+ARG,442,A,PRO,14,C,10,Proximal contacts
+ARG,442,A,MET,15,C,10,Proximal contacts
+ARG,442,A,GLU,11,C,10,Salt-bridge;Apolar vdW contacts
+ARG,442,A,ASN,13,C,10,Proximal contacts
+GLU,443,A,PRO,14,C,10,Proximal contacts
+ARG,444,A,PRO,14,C,10,Proximal contacts
+SER,445,A,PRO,14,C,10,Proximal contacts
+SER,445,A,MET,15,C,10,H-bond
+SER,302,A,PTR,9,C,10,Water-mediated contacts
+ASN,259,A,ARG,4,C,10,Water-mediated contacts
+GLY,262,A,PHE,8,C,10,Water-mediated contacts
+CYS,439,A,PTR,9,C,10,Water-mediated contacts
+ARG,444,A,MET,15,C,10,Water-mediated contacts
+ARG,252,A,PTR,9,C,11,Water-mediated contacts
+HIE,253,A,PTR,9,C,11,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,11,Water-mediated contacts
+GLU,255,A,GLU,2,C,11,Water-mediated contacts
+GLU,255,A,ARG,4,C,11,Salt-bridge;Water-mediated contacts
+ASN,256,A,PTR,9,C,11,H-bond;Water-mediated contacts
+ASN,259,A,ARG,4,C,11,Water-mediated contacts
+ASN,259,A,ASN,5,C,11,H-bond;Water-mediated contacts;CH-O/N bonds
+ASN,259,A,PRO,6,C,11,CH-O/N bonds
+LEU,260,A,ARG,4,C,11,Apolar vdW contacts
+LEU,260,A,ASN,5,C,11,Proximal contacts
+LEU,260,A,PRO,6,C,11,CH-O/N bonds
+GLN,261,A,PRO,6,C,11,Proximal contacts
+GLY,262,A,PRO,6,C,11,Proximal contacts
+ILE,264,A,VAL,10,C,11,Proximal contacts
+ILE,264,A,GLU,11,C,11,Proximal contacts
+SER,268,A,PTR,9,C,11,Water-mediated contacts
+ARG,273,A,GLU,2,C,11,Proximal contacts
+ARG,273,A,ARG,4,C,11,Proximal contacts
+LEU,300,A,PTR,9,C,11,Proximal contacts
+SER,302,A,PTR,9,C,11,Water-mediated contacts
+GLH,322,A,VAL,10,C,11,Proximal contacts
+TYR,333,A,VAL,10,C,11,Proximal contacts
+TYR,333,A,GLU,11,C,11,Proximal contacts
+TYR,333,A,ALA,12,C,11,CH-π interactions;Apolar vdW contacts
+TYR,333,A,ASN,13,C,11,Water-mediated contacts
+ARG,337,A,ASN,13,C,11,Proximal contacts
+TYR,344,A,ASN,13,C,11,H-bond
+TYR,344,A,PRO,14,C,11,Water-mediated contacts
+TYR,344,A,MET,15,C,11,Proximal contacts
+TYR,344,A,ALA,12,C,11,Apolar vdW contacts
+ALA,345,A,MET,15,C,11,Proximal contacts
+ARG,347,A,ALA,12,C,11,Proximal contacts
+ARG,347,A,VAL,10,C,11,Proximal contacts
+ARG,347,A,GLU,11,C,11,Salt-bridge
+GLU,348,A,MET,15,C,11,Proximal contacts
+GLU,348,A,ASN,13,C,11,Proximal contacts
+GLU,348,A,PRO,14,C,11,Proximal contacts
+GLU,348,A,GLU,11,C,11,Proximal contacts
+GLU,348,A,ALA,12,C,11,Proximal contacts
+LYS,351,A,GLU,11,C,11,Salt-bridge
+CYS,386,A,PTR,9,C,11,Water-mediated contacts
+HIP,387,A,PTR,9,C,11,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,11,Water-mediated contacts
+GLN,388,A,VAL,10,C,11,Proximal contacts
+ARG,392,A,GLU,11,C,11,Water-mediated contacts
+PRO,407,A,GLU,11,C,11,Water-mediated contacts
+GLU,436,A,GLU,2,C,11,Water-mediated contacts
+SER,437,A,GLU,2,C,11,Proximal contacts
+VAL,438,A,GLU,2,C,11,Proximal contacts
+VAL,438,A,GLY,3,C,11,Proximal contacts
+ARG,442,A,PRO,14,C,11,Proximal contacts
+ARG,442,A,MET,15,C,11,Proximal contacts
+ARG,442,A,GLU,11,C,11,Salt-bridge;Apolar vdW contacts
+ARG,442,A,ALA,12,C,11,Proximal contacts
+ARG,442,A,ASN,13,C,11,Proximal contacts
+GLU,443,A,PRO,14,C,11,CH-O/N bonds
+ARG,444,A,PRO,14,C,11,Proximal contacts
+ARG,444,A,MET,15,C,11,Water-mediated contacts
+SER,445,A,ASN,13,C,11,Proximal contacts
+SER,445,A,PRO,14,C,11,Proximal contacts
+SER,445,A,MET,15,C,11,H-bond;CH-O/N bonds
+SER,445,A,NME,16,C,11,Proximal contacts
+GLU,255,A,ASN,5,C,11,Water-mediated contacts
+GLY,262,A,PHE,8,C,11,Water-mediated contacts
+GLY,262,A,VAL,10,C,11,Water-mediated contacts
+GLU,334,A,ASN,13,C,11,Water-mediated contacts
+ARG,337,A,PRO,14,C,11,Water-mediated contacts
+TYR,362,A,GLU,11,C,11,Water-mediated contacts
+ARG,392,A,VAL,10,C,11,Water-mediated contacts
+ARG,392,A,PTR,9,C,11,Water-mediated contacts
+ARG,252,A,PTR,9,C,12,Salt-bridge;Water-mediated contacts
+HIE,253,A,PTR,9,C,12,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,12,Water-mediated contacts
+GLU,255,A,ARG,4,C,12,Salt-bridge;Water-mediated contacts
+ASN,256,A,PTR,9,C,12,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,12,Water-mediated contacts
+ASN,259,A,VAL,10,C,12,Water-mediated contacts
+ASN,259,A,ASN,5,C,12,Water-mediated contacts
+LEU,260,A,PRO,6,C,12,Proximal contacts
+LEU,260,A,ARG,4,C,12,Apolar vdW contacts
+LEU,260,A,ASN,5,C,12,Water-mediated contacts;CH-O/N bonds
+GLY,262,A,VAL,10,C,12,Proximal contacts
+ARG,263,A,VAL,10,C,12,Proximal contacts
+ILE,264,A,VAL,10,C,12,Apolar vdW contacts
+ARG,273,A,GLU,2,C,12,Proximal contacts
+ARG,273,A,ARG,4,C,12,Proximal contacts
+SER,302,A,PTR,9,C,12,Water-mediated contacts
+TYR,333,A,ALA,12,C,12,Apolar vdW contacts
+TYR,333,A,VAL,10,C,12,Water-mediated contacts;CH-O/N bonds
+TYR,333,A,GLU,11,C,12,Water-mediated contacts
+ARG,337,A,ALA,12,C,12,Proximal contacts
+ARG,337,A,ASN,13,C,12,Water-mediated contacts
+TYR,344,A,ASN,13,C,12,H-bond
+TYR,344,A,PRO,14,C,12,Proximal contacts
+TYR,344,A,MET,15,C,12,Proximal contacts
+TYR,344,A,ALA,12,C,12,Apolar vdW contacts
+ALA,345,A,MET,15,C,12,Proximal contacts
+ARG,347,A,ALA,12,C,12,Proximal contacts
+ARG,347,A,GLU,11,C,12,Salt-bridge
+GLU,348,A,MET,15,C,12,Proximal contacts
+GLU,348,A,ASN,13,C,12,Proximal contacts
+GLU,348,A,PRO,14,C,12,Proximal contacts
+GLU,348,A,GLU,11,C,12,Proximal contacts
+GLN,349,A,MET,15,C,12,Proximal contacts
+LYS,351,A,GLU,11,C,12,Water-mediated contacts
+CYS,386,A,PTR,9,C,12,Proximal contacts
+HIP,387,A,PTR,9,C,12,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,12,Water-mediated contacts
+GLU,436,A,GLU,2,C,12,CH-O/N bonds;Apolar vdW contacts
+SER,437,A,GLU,2,C,12,Proximal contacts
+VAL,438,A,GLU,2,C,12,Water-mediated contacts
+VAL,438,A,ARG,4,C,12,Proximal contacts
+VAL,438,A,ASN,5,C,12,Proximal contacts
+CYS,439,A,PHE,8,C,12,Proximal contacts
+HIS,441,A,PHE,8,C,12,Proximal contacts
+ARG,442,A,PHE,8,C,12,CH-π interactions;Apolar vdW contacts
+ARG,442,A,ALA,12,C,12,Proximal contacts
+ARG,442,A,PRO,14,C,12,Proximal contacts
+ARG,442,A,MET,15,C,12,Proximal contacts
+ARG,442,A,GLU,11,C,12,Salt-bridge
+ARG,442,A,ASN,13,C,12,Proximal contacts
+GLU,443,A,PRO,14,C,12,CH-O/N bonds;Apolar vdW contacts
+ARG,444,A,PRO,14,C,12,Proximal contacts
+SER,445,A,ASN,13,C,12,Proximal contacts
+SER,445,A,PRO,14,C,12,Proximal contacts
+SER,445,A,MET,15,C,12,H-bond
+GLU,255,A,ASN,5,C,12,Water-mediated contacts
+GLY,265,A,PTR,9,C,12,Water-mediated contacts
+ARG,337,A,PRO,14,C,12,Water-mediated contacts
+ARG,392,A,GLU,11,C,12,Water-mediated contacts
+ARG,252,A,PTR,9,C,13,Salt-bridge
+HIE,253,A,PTR,9,C,13,H-bond
+GLY,254,A,PTR,9,C,13,Water-mediated contacts
+GLU,255,A,ASN,5,C,13,H-bond;Water-mediated contacts
+ASN,256,A,PTR,9,C,13,H-bond;Water-mediated contacts
+ASN,259,A,ASN,5,C,13,Proximal contacts
+ASN,259,A,PTR,9,C,13,Water-mediated contacts
+ASN,259,A,VAL,10,C,13,Water-mediated contacts
+LEU,260,A,ASN,5,C,13,Apolar vdW contacts
+LEU,260,A,PRO,6,C,13,Proximal contacts
+GLY,262,A,VAL,10,C,13,Proximal contacts
+ARG,263,A,VAL,10,C,13,Proximal contacts
+ILE,264,A,VAL,10,C,13,Proximal contacts
+ARG,273,A,GLY,3,C,13,Water-mediated contacts
+TYR,333,A,ALA,12,C,13,Apolar vdW contacts
+TYR,333,A,VAL,10,C,13,Water-mediated contacts;CH-O/N bonds
+TYR,333,A,GLU,11,C,13,Clashes
+ARG,337,A,ASN,13,C,13,Proximal contacts
+TYR,344,A,MET,15,C,13,CH-O/N bonds
+TYR,344,A,ASN,13,C,13,H-bond
+TYR,344,A,ALA,12,C,13,Apolar vdW contacts
+ALA,345,A,MET,15,C,13,Proximal contacts
+ARG,347,A,GLU,11,C,13,Salt-bridge
+ARG,347,A,ALA,12,C,13,Proximal contacts
+GLU,348,A,MET,15,C,13,Proximal contacts
+GLU,348,A,GLU,11,C,13,Proximal contacts
+LYS,351,A,GLU,11,C,13,Salt-bridge
+HIP,387,A,PTR,9,C,13,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,13,Water-mediated contacts
+ARG,392,A,GLU,11,C,13,Water-mediated contacts
+LEU,413,A,PTR,9,C,13,Proximal contacts
+GLU,436,A,GLY,3,C,13,Water-mediated contacts;CH-O/N bonds
+VAL,438,A,GLY,3,C,13,Proximal contacts
+VAL,438,A,ARG,4,C,13,Proximal contacts
+VAL,438,A,ASN,5,C,13,Water-mediated contacts
+CYS,439,A,ACE,1,C,13,Water-mediated contacts
+CYS,439,A,PTR,9,C,13,Proximal contacts
+THR,440,A,PTR,9,C,13,Proximal contacts
+HIS,441,A,PHE,8,C,13,CH-O/N bonds
+ARG,442,A,PHE,8,C,13,CH-π interactions;Apolar vdW contacts
+ARG,442,A,ALA,12,C,13,H-bond
+ARG,442,A,PRO,14,C,13,Apolar vdW contacts
+ARG,442,A,GLU,11,C,13,Salt-bridge
+ARG,442,A,ASN,13,C,13,Proximal contacts
+ARG,442,A,MET,15,C,13,Proximal contacts
+GLU,443,A,PRO,14,C,13,Proximal contacts
+SER,445,A,ASN,13,C,13,Proximal contacts
+SER,445,A,PRO,14,C,13,Proximal contacts
+SER,445,A,MET,15,C,13,H-bond
+SER,445,A,NME,16,C,13,Proximal contacts
+ASN,259,A,PHE,8,C,13,Water-mediated contacts
+CYS,439,A,ASN,5,C,13,Water-mediated contacts
+CYS,439,A,ARG,4,C,13,Water-mediated contacts
+HIS,441,A,PTR,9,C,13,Water-mediated contacts
+ARG,252,A,PTR,9,C,14,Salt-bridge
+HIE,253,A,PTR,9,C,14,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,14,Water-mediated contacts
+ASN,256,A,PTR,9,C,14,Water-mediated contacts
+ASN,259,A,PTR,9,C,14,Water-mediated contacts
+LEU,260,A,PRO,6,C,14,CH-O/N bonds;Apolar vdW contacts
+GLN,261,A,ACE,1,C,14,Proximal contacts
+ARG,263,A,VAL,10,C,14,Proximal contacts
+ILE,264,A,VAL,10,C,14,Proximal contacts
+LEU,300,A,PTR,9,C,14,Proximal contacts
+THR,332,A,ARG,4,C,14,Water-mediated contacts
+TYR,333,A,GLU,11,C,14,Clashes
+TYR,333,A,ALA,12,C,14,Proximal contacts
+TYR,333,A,VAL,10,C,14,Proximal contacts
+GLU,334,A,ARG,4,C,14,Proximal contacts
+GLU,334,A,ASN,13,C,14,Water-mediated contacts
+GLU,335,A,ARG,4,C,14,Salt-bridge;Water-mediated contacts
+ARG,337,A,MET,15,C,14,Water-mediated contacts
+ARG,337,A,ASN,13,C,14,Proximal contacts
+TYR,344,A,MET,15,C,14,Proximal contacts
+TYR,344,A,ALA,12,C,14,Apolar vdW contacts
+TYR,344,A,ASN,13,C,14,H-bond;Water-mediated contacts
+ALA,345,A,MET,15,C,14,Proximal contacts
+ARG,347,A,GLU,11,C,14,Salt-bridge
+ARG,347,A,ALA,12,C,14,Proximal contacts
+ARG,347,A,VAL,10,C,14,Proximal contacts
+GLU,348,A,MET,15,C,14,Proximal contacts
+GLU,348,A,GLU,11,C,14,Proximal contacts
+GLU,348,A,ALA,12,C,14,Proximal contacts
+LYS,351,A,GLU,11,C,14,Salt-bridge
+TYR,362,A,VAL,10,C,14,Water-mediated contacts
+TYR,362,A,GLU,11,C,14,Water-mediated contacts
+HIP,387,A,PTR,9,C,14,Salt-bridge
+GLN,388,A,PTR,9,C,14,Water-mediated contacts
+GLN,388,A,VAL,10,C,14,Proximal contacts
+LEU,413,A,PTR,9,C,14,Proximal contacts
+CYS,439,A,PHE,8,C,14,Proximal contacts
+THR,440,A,PTR,9,C,14,Proximal contacts
+THR,440,A,PHE,8,C,14,Proximal contacts
+HIS,441,A,PHE,8,C,14,Proximal contacts
+ARG,442,A,PHE,8,C,14,CH-π interactions;Apolar vdW contacts
+ARG,442,A,ASN,13,C,14,Proximal contacts
+ARG,442,A,PRO,14,C,14,Proximal contacts
+ARG,442,A,ALA,12,C,14,H-bond
+ARG,442,A,MET,15,C,14,Proximal contacts
+ARG,442,A,GLU,11,C,14,Salt-bridge
+GLU,443,A,PRO,14,C,14,Proximal contacts
+ARG,444,A,NME,16,C,14,Proximal contacts
+SER,445,A,MET,15,C,14,Water-mediated contacts
+SER,445,A,NME,16,C,14,Water-mediated contacts
+SER,302,A,PTR,9,C,14,Water-mediated contacts
+ARG,337,A,PRO,14,C,14,Water-mediated contacts
+ARG,392,A,GLU,11,C,14,Water-mediated contacts
+CYS,439,A,PTR,9,C,14,Water-mediated contacts
+GLU,443,A,MET,15,C,14,Water-mediated contacts
+GLU,443,A,NME,16,C,14,Water-mediated contacts
+ARG,252,A,PTR,9,C,15,Salt-bridge
+HIE,253,A,PTR,9,C,15,H-bond
+GLY,254,A,PTR,9,C,15,Water-mediated contacts
+ASN,256,A,PTR,9,C,15,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,15,Water-mediated contacts
+ASN,259,A,PRO,6,C,15,Proximal contacts
+LEU,260,A,ASN,5,C,15,Water-mediated contacts
+LEU,260,A,PRO,6,C,15,CH-O/N bonds
+GLN,261,A,PRO,6,C,15,Proximal contacts
+GLY,262,A,PRO,6,C,15,Proximal contacts
+GLY,262,A,VAL,10,C,15,Proximal contacts
+ARG,263,A,VAL,10,C,15,Proximal contacts
+ILE,264,A,VAL,10,C,15,Proximal contacts
+GLY,265,A,VAL,10,C,15,Proximal contacts
+LEU,300,A,PTR,9,C,15,Proximal contacts
+TYR,333,A,ALA,12,C,15,Proximal contacts
+TYR,333,A,VAL,10,C,15,Water-mediated contacts
+TYR,333,A,GLU,11,C,15,Proximal contacts
+GLU,334,A,ACE,1,C,15,Proximal contacts
+GLU,334,A,GLU,2,C,15,Apolar vdW contacts
+GLU,334,A,ARG,4,C,15,Salt-bridge
+GLU,334,A,ASN,13,C,15,Water-mediated contacts
+GLU,335,A,ACE,1,C,15,Proximal contacts
+ARG,337,A,GLU,2,C,15,Water-mediated contacts
+ARG,337,A,ARG,4,C,15,Proximal contacts
+ASP,338,A,ACE,1,C,15,Water-mediated contacts
+TYR,344,A,MET,15,C,15,CH-O/N bonds;CH-π interactions
+TYR,344,A,ALA,12,C,15,Apolar vdW contacts
+TYR,344,A,ASN,13,C,15,Water-mediated contacts
+ARG,347,A,ALA,12,C,15,Proximal contacts
+ARG,347,A,VAL,10,C,15,Proximal contacts
+ARG,347,A,GLU,11,C,15,Salt-bridge
+GLU,348,A,MET,15,C,15,CH-O/N bonds
+GLU,348,A,GLU,11,C,15,Proximal contacts
+LYS,351,A,GLU,11,C,15,Salt-bridge;Water-mediated contacts
+CYS,386,A,PTR,9,C,15,Water-mediated contacts
+HIP,387,A,PTR,9,C,15,Salt-bridge
+GLN,388,A,PTR,9,C,15,Water-mediated contacts
+LEU,413,A,PTR,9,C,15,Proximal contacts
+VAL,438,A,PTR,9,C,15,Proximal contacts
+CYS,439,A,GLY,7,C,15,Water-mediated contacts
+CYS,439,A,PHE,8,C,15,CH-O/N bonds
+CYS,439,A,PTR,9,C,15,Clashes
+THR,440,A,PHE,8,C,15,Proximal contacts
+THR,440,A,PTR,9,C,15,Proximal contacts
+THR,440,A,GLU,11,C,15,Proximal contacts
+HIS,441,A,PHE,8,C,15,Proximal contacts
+ARG,442,A,PHE,8,C,15,Apolar vdW contacts
+ARG,442,A,ASN,13,C,15,Proximal contacts
+ARG,442,A,PRO,14,C,15,Proximal contacts
+ARG,442,A,ALA,12,C,15,H-bond
+ARG,442,A,GLU,11,C,15,Salt-bridge;Apolar vdW contacts
+ARG,442,A,MET,15,C,15,Proximal contacts
+GLU,443,A,PRO,14,C,15,Proximal contacts
+SER,302,A,PTR,9,C,15,Water-mediated contacts
+ARG,392,A,GLU,11,C,15,Water-mediated contacts
+GLU,443,A,MET,15,C,15,Water-mediated contacts
+HIS,441,A,PTR,9,C,16,Water-mediated contacts
+HIE,253,A,PTR,9,C,16,H-bond;Water-mediated contacts
+GLY,254,A,PTR,9,C,16,Water-mediated contacts
+ASN,256,A,PTR,9,C,16,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,16,Water-mediated contacts
+LEU,260,A,ASN,5,C,16,Water-mediated contacts;Apolar vdW contacts
+LEU,260,A,PRO,6,C,16,Clashes
+GLN,261,A,PRO,6,C,16,Proximal contacts
+GLY,262,A,PRO,6,C,16,Proximal contacts
+GLY,262,A,VAL,10,C,16,Proximal contacts
+ARG,263,A,VAL,10,C,16,Proximal contacts
+ILE,264,A,VAL,10,C,16,Apolar vdW contacts
+TYR,333,A,VAL,10,C,16,Water-mediated contacts;CH-O/N bonds
+TYR,333,A,GLU,11,C,16,Proximal contacts
+TYR,333,A,ALA,12,C,16,Apolar vdW contacts
+GLU,334,A,ARG,4,C,16,Salt-bridge;Water-mediated contacts
+GLU,334,A,ASN,13,C,16,Water-mediated contacts
+GLU,334,A,GLU,2,C,16,CH-O/N bonds
+ARG,337,A,GLU,2,C,16,Salt-bridge;Water-mediated contacts
+ARG,337,A,ARG,4,C,16,Proximal contacts
+ASP,338,A,ACE,1,C,16,Proximal contacts
+TYR,344,A,MET,15,C,16,CH-O/N bonds
+TYR,344,A,ALA,12,C,16,Apolar vdW contacts
+TYR,344,A,ASN,13,C,16,Water-mediated contacts
+ALA,345,A,MET,15,C,16,Proximal contacts
+ARG,347,A,GLU,11,C,16,Salt-bridge
+ARG,347,A,ALA,12,C,16,Proximal contacts
+GLU,348,A,MET,15,C,16,Proximal contacts
+GLU,348,A,ASN,13,C,16,Proximal contacts
+GLU,348,A,PRO,14,C,16,Proximal contacts
+GLU,348,A,GLU,11,C,16,Proximal contacts
+GLU,348,A,ALA,12,C,16,CH-O/N bonds
+LYS,351,A,GLU,11,C,16,Salt-bridge
+LYS,351,A,ALA,12,C,16,Proximal contacts
+CYS,386,A,PTR,9,C,16,Proximal contacts
+HIP,387,A,PTR,9,C,16,Salt-bridge;Water-mediated contacts
+LEU,413,A,PTR,9,C,16,Proximal contacts
+CYS,439,A,PTR,9,C,16,Water-mediated contacts
+THR,440,A,PTR,9,C,16,Water-mediated contacts
+HIS,441,A,PHE,8,C,16,CH-O/N bonds
+ARG,442,A,PHE,8,C,16,Apolar vdW contacts
+ARG,442,A,GLU,11,C,16,Salt-bridge;Apolar vdW contacts
+ARG,442,A,ALA,12,C,16,H-bond
+ARG,442,A,ASN,13,C,16,Proximal contacts
+ARG,442,A,PRO,14,C,16,Proximal contacts
+GLU,443,A,PRO,14,C,16,Proximal contacts
+SER,445,A,ASN,13,C,16,Proximal contacts
+SER,445,A,PRO,14,C,16,Proximal contacts
+SER,445,A,MET,15,C,16,H-bond
+SER,302,A,PTR,9,C,16,Water-mediated contacts
+ASN,259,A,VAL,10,C,16,Water-mediated contacts
+ARG,252,A,PTR,9,C,17,Salt-bridge
+HIE,253,A,PTR,9,C,17,Water-mediated contacts
+GLY,254,A,PTR,9,C,17,Proximal contacts
+ASN,256,A,PTR,9,C,17,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,17,Water-mediated contacts
+ASN,259,A,VAL,10,C,17,Proximal contacts
+LEU,260,A,GLY,7,C,17,Proximal contacts
+LEU,260,A,PHE,8,C,17,Water-mediated contacts
+LEU,260,A,PTR,9,C,17,Proximal contacts
+LEU,260,A,PRO,6,C,17,CH-O/N bonds
+GLN,261,A,PRO,6,C,17,Water-mediated contacts
+GLN,261,A,ASN,5,C,17,Proximal contacts
+GLY,262,A,VAL,10,C,17,Proximal contacts
+ARG,263,A,VAL,10,C,17,Proximal contacts
+ILE,264,A,VAL,10,C,17,Proximal contacts
+THR,332,A,PRO,6,C,17,Proximal contacts
+TYR,333,A,GLU,11,C,17,CH-O/N bonds;CH-π interactions
+TYR,333,A,ALA,12,C,17,Apolar vdW contacts
+TYR,333,A,VAL,10,C,17,Water-mediated contacts
+GLU,334,A,PRO,6,C,17,Proximal contacts
+GLU,334,A,ARG,4,C,17,Salt-bridge;Water-mediated contacts
+GLU,334,A,ASN,5,C,17,Water-mediated contacts
+GLU,334,A,GLY,7,C,17,Water-mediated contacts
+GLU,334,A,ASN,13,C,17,Water-mediated contacts
+ARG,337,A,ALA,12,C,17,Proximal contacts
+ARG,337,A,ASN,13,C,17,Water-mediated contacts
+ARG,337,A,ARG,4,C,17,Proximal contacts
+ASP,338,A,ARG,4,C,17,Salt-bridge;Water-mediated contacts
+TYR,344,A,ASN,13,C,17,H-bond;CH-O/N bonds
+TYR,344,A,PRO,14,C,17,Proximal contacts
+TYR,344,A,MET,15,C,17,Proximal contacts
+TYR,344,A,ALA,12,C,17,Apolar vdW contacts
+ALA,345,A,MET,15,C,17,Proximal contacts
+ARG,347,A,ALA,12,C,17,Proximal contacts
+ARG,347,A,VAL,10,C,17,Water-mediated contacts
+ARG,347,A,GLU,11,C,17,Salt-bridge
+GLU,348,A,MET,15,C,17,Proximal contacts
+GLU,348,A,PRO,14,C,17,Proximal contacts
+GLU,348,A,GLU,11,C,17,Proximal contacts
+GLN,349,A,MET,15,C,17,Proximal contacts
+LYS,351,A,GLU,11,C,17,Salt-bridge;Water-mediated contacts
+HIP,387,A,PTR,9,C,17,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,17,Water-mediated contacts
+LEU,413,A,PTR,9,C,17,Proximal contacts
+VAL,438,A,PTR,9,C,17,Proximal contacts
+CYS,439,A,PTR,9,C,17,Water-mediated contacts
+THR,440,A,PTR,9,C,17,Proximal contacts
+HIS,441,A,PHE,8,C,17,Proximal contacts
+ARG,442,A,PHE,8,C,17,Apolar vdW contacts
+ARG,442,A,ALA,12,C,17,H-bond
+ARG,442,A,PRO,14,C,17,Proximal contacts
+ARG,442,A,GLU,11,C,17,Salt-bridge
+ARG,442,A,ASN,13,C,17,Proximal contacts
+GLU,443,A,PRO,14,C,17,Proximal contacts
+ARG,444,A,PRO,14,C,17,Proximal contacts
+SER,445,A,PRO,14,C,17,Clashes
+SER,445,A,MET,15,C,17,H-bond
+SER,302,A,PTR,9,C,17,Water-mediated contacts
+LEU,260,A,VAL,10,C,17,Water-mediated contacts
+ARG,392,A,GLU,11,C,17,Water-mediated contacts
+HIS,441,A,PTR,9,C,17,Water-mediated contacts
+ARG,252,A,PTR,9,C,18,Salt-bridge
+HIS,441,A,PTR,9,C,18,Water-mediated contacts
+GLY,254,A,PTR,9,C,18,Water-mediated contacts
+GLU,255,A,PTR,9,C,18,Proximal contacts
+ASN,256,A,PTR,9,C,18,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,18,Water-mediated contacts
+ASN,259,A,VAL,10,C,18,Water-mediated contacts
+LEU,260,A,GLY,7,C,18,Proximal contacts
+LEU,260,A,PHE,8,C,18,Water-mediated contacts
+LEU,260,A,PTR,9,C,18,Proximal contacts
+LEU,260,A,PRO,6,C,18,Proximal contacts
+GLN,261,A,PRO,6,C,18,Proximal contacts
+GLY,262,A,VAL,10,C,18,Water-mediated contacts
+ARG,263,A,VAL,10,C,18,Proximal contacts
+ILE,264,A,VAL,10,C,18,Proximal contacts
+GLY,265,A,VAL,10,C,18,Proximal contacts
+TYR,333,A,GLU,11,C,18,CH-π interactions
+TYR,333,A,ALA,12,C,18,Apolar vdW contacts
+TYR,333,A,VAL,10,C,18,Apolar vdW contacts
+GLU,334,A,PRO,6,C,18,Proximal contacts
+GLU,334,A,ARG,4,C,18,Proximal contacts
+GLU,334,A,ASN,5,C,18,Water-mediated contacts;CH-O/N bonds
+GLU,334,A,ASN,13,C,18,H-bond;Water-mediated contacts
+GLU,334,A,GLY,3,C,18,Water-mediated contacts
+GLU,335,A,ARG,4,C,18,Salt-bridge
+ARG,337,A,ASN,13,C,18,Water-mediated contacts
+ASP,338,A,ARG,4,C,18,Water-mediated contacts
+TYR,344,A,ASN,13,C,18,H-bond;Water-mediated contacts
+TYR,344,A,PRO,14,C,18,Water-mediated contacts
+TYR,344,A,MET,15,C,18,Proximal contacts
+TYR,344,A,ALA,12,C,18,Apolar vdW contacts
+ALA,345,A,MET,15,C,18,Proximal contacts
+ARG,347,A,GLU,11,C,18,Salt-bridge
+ARG,347,A,ALA,12,C,18,Proximal contacts
+GLU,348,A,MET,15,C,18,Proximal contacts
+GLU,348,A,ASN,13,C,18,Proximal contacts
+GLU,348,A,PRO,14,C,18,Proximal contacts
+GLU,348,A,GLU,11,C,18,Proximal contacts
+GLU,348,A,ALA,12,C,18,Proximal contacts
+LYS,351,A,GLU,11,C,18,Salt-bridge
+TYR,362,A,GLU,11,C,18,Water-mediated contacts
+CYS,386,A,PTR,9,C,18,Proximal contacts
+HIP,387,A,PTR,9,C,18,Salt-bridge;Water-mediated contacts
+LEU,413,A,PTR,9,C,18,Proximal contacts
+VAL,438,A,PTR,9,C,18,Proximal contacts
+CYS,439,A,PTR,9,C,18,Water-mediated contacts
+THR,440,A,PTR,9,C,18,Water-mediated contacts
+HIS,441,A,PHE,8,C,18,CH-O/N bonds
+ARG,442,A,PHE,8,C,18,CH-π interactions;Apolar vdW contacts
+ARG,442,A,GLU,11,C,18,Salt-bridge
+ARG,442,A,ALA,12,C,18,H-bond
+ARG,442,A,PRO,14,C,18,Proximal contacts
+ARG,442,A,MET,15,C,18,Proximal contacts
+ARG,442,A,ASN,13,C,18,Proximal contacts
+GLU,443,A,PRO,14,C,18,Proximal contacts
+SER,445,A,PRO,14,C,18,Proximal contacts
+SER,445,A,MET,15,C,18,H-bond
+SER,302,A,PTR,9,C,18,Water-mediated contacts
+THR,332,A,ARG,4,C,18,Water-mediated contacts
+ARG,252,A,PTR,9,C,19,Salt-bridge
+HIE,253,A,PTR,9,C,19,Water-mediated contacts
+GLY,254,A,PTR,9,C,19,Proximal contacts
+ASN,256,A,PTR,9,C,19,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,19,Water-mediated contacts
+ASN,259,A,VAL,10,C,19,Proximal contacts
+LEU,260,A,GLY,7,C,19,Proximal contacts
+LEU,260,A,PTR,9,C,19,Proximal contacts
+LEU,260,A,PRO,6,C,19,Proximal contacts
+LEU,260,A,PHE,8,C,19,Water-mediated contacts
+LEU,260,A,VAL,10,C,19,Water-mediated contacts
+GLN,261,A,PRO,6,C,19,Water-mediated contacts
+GLN,261,A,ASN,5,C,19,Proximal contacts
+GLY,262,A,PRO,6,C,19,Proximal contacts
+GLY,262,A,VAL,10,C,19,Proximal contacts
+ARG,263,A,VAL,10,C,19,Proximal contacts
+ILE,264,A,VAL,10,C,19,Proximal contacts
+THR,332,A,PRO,6,C,19,Proximal contacts
+THR,332,A,GLY,3,C,19,Proximal contacts
+THR,332,A,ARG,4,C,19,H-bond;CH-O/N bonds
+THR,332,A,ASN,5,C,19,Proximal contacts
+TYR,333,A,GLU,11,C,19,CH-π interactions
+TYR,333,A,ALA,12,C,19,Apolar vdW contacts
+TYR,333,A,VAL,10,C,19,Apolar vdW contacts
+GLU,334,A,PRO,6,C,19,Proximal contacts
+GLU,334,A,ARG,4,C,19,Proximal contacts
+GLU,334,A,ASN,5,C,19,Proximal contacts
+GLU,334,A,GLY,7,C,19,Water-mediated contacts
+GLU,334,A,ASN,13,C,19,H-bond;Water-mediated contacts
+GLU,334,A,GLY,3,C,19,Proximal contacts
+GLU,335,A,GLY,3,C,19,CH-O/N bonds
+GLU,335,A,ARG,4,C,19,CH-O/N bonds
+ARG,337,A,ASN,13,C,19,Water-mediated contacts
+ASP,338,A,GLY,3,C,19,Proximal contacts
+ASP,338,A,ARG,4,C,19,Salt-bridge;Water-mediated contacts
+ASP,338,A,GLU,2,C,19,Water-mediated contacts
+TYR,344,A,ASN,13,C,19,H-bond;CH-O/N bonds
+TYR,344,A,PRO,14,C,19,Proximal contacts
+TYR,344,A,MET,15,C,19,Proximal contacts
+TYR,344,A,ALA,12,C,19,Apolar vdW contacts
+ALA,345,A,MET,15,C,19,Proximal contacts
+ARG,347,A,GLU,11,C,19,Salt-bridge
+ARG,347,A,ALA,12,C,19,Proximal contacts
+ARG,347,A,VAL,10,C,19,Proximal contacts
+GLU,348,A,MET,15,C,19,Proximal contacts
+GLU,348,A,ASN,13,C,19,Proximal contacts
+GLU,348,A,PRO,14,C,19,Proximal contacts
+GLU,348,A,GLU,11,C,19,Proximal contacts
+GLU,348,A,ALA,12,C,19,Proximal contacts
+GLN,349,A,MET,15,C,19,H-bond;Water-mediated contacts
+LYS,351,A,GLU,11,C,19,Salt-bridge;Water-mediated contacts
+HIP,387,A,PTR,9,C,19,Salt-bridge
+GLN,388,A,PTR,9,C,19,Water-mediated contacts
+ARG,392,A,GLU,11,C,19,Water-mediated contacts
+LEU,413,A,PTR,9,C,19,Proximal contacts
+VAL,438,A,PTR,9,C,19,Proximal contacts
+CYS,439,A,PTR,9,C,19,Water-mediated contacts
+THR,440,A,PTR,9,C,19,Water-mediated contacts
+HIS,441,A,PHE,8,C,19,Proximal contacts
+ARG,442,A,PHE,8,C,19,CH-π interactions;Apolar vdW contacts
+ARG,442,A,ALA,12,C,19,H-bond
+ARG,442,A,ASN,13,C,19,Proximal contacts
+ARG,442,A,PRO,14,C,19,Proximal contacts
+ARG,442,A,GLU,11,C,19,Salt-bridge;Apolar vdW contacts
+GLU,443,A,PRO,14,C,19,Proximal contacts
+ARG,444,A,PRO,14,C,19,Proximal contacts
+SER,445,A,ASN,13,C,19,Proximal contacts
+SER,445,A,PRO,14,C,19,Proximal contacts
+SER,445,A,MET,15,C,19,H-bond
+SER,302,A,PTR,9,C,19,Water-mediated contacts
+TYR,333,A,ASN,13,C,19,Water-mediated contacts
+HIS,441,A,PTR,9,C,19,Water-mediated contacts
+ARG,252,A,PTR,9,C,20,Salt-bridge
+HIE,253,A,PTR,9,C,20,Water-mediated contacts
+GLY,254,A,PTR,9,C,20,Proximal contacts
+ASN,256,A,PTR,9,C,20,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,20,Water-mediated contacts
+ASN,259,A,VAL,10,C,20,Proximal contacts
+LEU,260,A,GLY,7,C,20,Proximal contacts
+LEU,260,A,PHE,8,C,20,Water-mediated contacts
+LEU,260,A,PTR,9,C,20,Proximal contacts
+LEU,260,A,PRO,6,C,20,CH-O/N bonds
+GLN,261,A,PRO,6,C,20,Water-mediated contacts
+GLY,262,A,PRO,6,C,20,Proximal contacts
+GLY,262,A,VAL,10,C,20,Water-mediated contacts
+ARG,263,A,VAL,10,C,20,Proximal contacts
+ILE,264,A,VAL,10,C,20,Proximal contacts
+GLY,265,A,VAL,10,C,20,Proximal contacts
+THR,332,A,PRO,6,C,20,Proximal contacts
+THR,332,A,ARG,4,C,20,H-bond;CH-O/N bonds
+THR,332,A,ASN,5,C,20,Proximal contacts
+TYR,333,A,GLU,11,C,20,Water-mediated contacts;CH-O/N bonds;CH-π interactions
+TYR,333,A,ALA,12,C,20,Proximal contacts
+TYR,333,A,VAL,10,C,20,Water-mediated contacts;Apolar vdW contacts
+GLU,334,A,ASN,5,C,20,Proximal contacts
+GLU,334,A,PRO,6,C,20,Proximal contacts
+GLU,334,A,ARG,4,C,20,Proximal contacts
+GLU,334,A,ASN,13,C,20,H-bond;Water-mediated contacts
+GLU,334,A,GLY,3,C,20,Proximal contacts
+GLU,335,A,GLY,3,C,20,Proximal contacts
+GLU,335,A,ARG,4,C,20,Salt-bridge;Apolar vdW contacts
+ARG,337,A,ASN,13,C,20,Proximal contacts
+ASP,338,A,GLY,3,C,20,CH-O/N bonds
+TYR,344,A,ASN,13,C,20,H-bond;CH-O/N bonds
+TYR,344,A,PRO,14,C,20,Proximal contacts
+TYR,344,A,MET,15,C,20,Proximal contacts
+TYR,344,A,ALA,12,C,20,Apolar vdW contacts
+ALA,345,A,MET,15,C,20,Proximal contacts
+ARG,347,A,GLU,11,C,20,Salt-bridge;Water-mediated contacts
+ARG,347,A,ALA,12,C,20,Proximal contacts
+GLU,348,A,MET,15,C,20,Proximal contacts
+GLU,348,A,PRO,14,C,20,Proximal contacts
+GLU,348,A,GLU,11,C,20,Proximal contacts
+GLU,348,A,ASN,13,C,20,Proximal contacts
+LYS,351,A,GLU,11,C,20,Salt-bridge;Water-mediated contacts
+HIP,387,A,PTR,9,C,20,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,20,Water-mediated contacts
+ARG,392,A,GLU,11,C,20,Water-mediated contacts
+LEU,413,A,PTR,9,C,20,Proximal contacts
+VAL,438,A,PTR,9,C,20,Proximal contacts
+CYS,439,A,PTR,9,C,20,Water-mediated contacts
+THR,440,A,PTR,9,C,20,Water-mediated contacts
+HIS,441,A,PHE,8,C,20,Proximal contacts
+ARG,442,A,PHE,8,C,20,Apolar vdW contacts
+ARG,442,A,GLU,11,C,20,Salt-bridge;Apolar vdW contacts
+ARG,442,A,ALA,12,C,20,H-bond
+ARG,442,A,ASN,13,C,20,Proximal contacts
+ARG,442,A,PRO,14,C,20,Proximal contacts
+ARG,442,A,MET,15,C,20,Proximal contacts
+SER,445,A,ASN,13,C,20,Proximal contacts
+SER,445,A,PRO,14,C,20,Proximal contacts
+SER,445,A,MET,15,C,20,H-bond
+SER,302,A,PTR,9,C,20,Water-mediated contacts
+LEU,260,A,VAL,10,C,20,Water-mediated contacts
+GLY,262,A,PHE,8,C,20,Water-mediated contacts
+ARG,263,A,ARG,4,C,20,Water-mediated contacts
+ARG,347,A,VAL,10,C,20,Water-mediated contacts
+TYR,333,A,ASN,13,C,20,Water-mediated contacts
+ARG,252,A,PTR,9,C,21,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,21,Water-mediated contacts
+ASN,256,A,PTR,9,C,21,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,21,Water-mediated contacts
+ASN,259,A,VAL,10,C,21,Proximal contacts
+LEU,260,A,PTR,9,C,21,Proximal contacts
+LEU,260,A,GLY,7,C,21,Proximal contacts
+LEU,260,A,PHE,8,C,21,Proximal contacts
+LEU,260,A,PRO,6,C,21,CH-O/N bonds
+GLY,262,A,PRO,6,C,21,Proximal contacts
+ILE,264,A,VAL,10,C,21,Proximal contacts
+THR,332,A,PRO,6,C,21,Proximal contacts
+THR,332,A,ARG,4,C,21,Water-mediated contacts
+TYR,333,A,PRO,6,C,21,Proximal contacts
+TYR,333,A,ALA,12,C,21,Proximal contacts
+TYR,333,A,VAL,10,C,21,Water-mediated contacts;CH-O/N bonds;Apolar vdW contacts
+TYR,333,A,GLU,11,C,21,Proximal contacts
+GLU,334,A,ASN,5,C,21,Water-mediated contacts
+GLU,334,A,PRO,6,C,21,Proximal contacts
+GLU,334,A,GLU,2,C,21,Proximal contacts
+GLU,334,A,ARG,4,C,21,Proximal contacts
+GLU,334,A,ASN,13,C,21,Water-mediated contacts
+GLU,334,A,GLY,3,C,21,Water-mediated contacts
+GLU,335,A,GLY,3,C,21,Proximal contacts
+GLU,335,A,ARG,4,C,21,Water-mediated contacts
+ARG,337,A,ASN,13,C,21,Water-mediated contacts
+ASP,338,A,GLY,3,C,21,Water-mediated contacts
+TYR,344,A,MET,15,C,21,Clashes
+TYR,344,A,ASN,13,C,21,H-bond;CH-O/N bonds
+TYR,344,A,PRO,14,C,21,Proximal contacts
+TYR,344,A,ALA,12,C,21,Apolar vdW contacts
+ALA,345,A,MET,15,C,21,Proximal contacts
+ARG,347,A,GLU,11,C,21,Salt-bridge
+ARG,347,A,ALA,12,C,21,Proximal contacts
+GLU,348,A,MET,15,C,21,Proximal contacts
+GLU,348,A,GLU,11,C,21,Water-mediated contacts
+GLU,348,A,ALA,12,C,21,Proximal contacts
+GLU,348,A,ASN,13,C,21,Proximal contacts
+LYS,351,A,GLU,11,C,21,Salt-bridge;Water-mediated contacts
+HIP,387,A,PTR,9,C,21,Salt-bridge;Water-mediated contacts
+ARG,392,A,GLU,11,C,21,Water-mediated contacts
+PRO,407,A,GLU,11,C,21,Proximal contacts
+LEU,413,A,PTR,9,C,21,Proximal contacts
+VAL,438,A,PTR,9,C,21,Proximal contacts
+CYS,439,A,PTR,9,C,21,Water-mediated contacts
+THR,440,A,PTR,9,C,21,Water-mediated contacts
+HIS,441,A,PHE,8,C,21,Proximal contacts
+ARG,442,A,GLU,11,C,21,Salt-bridge;Water-mediated contacts;Apolar vdW contacts
+ARG,442,A,PHE,8,C,21,Apolar vdW contacts
+ARG,442,A,ALA,12,C,21,H-bond
+ARG,442,A,PRO,14,C,21,Proximal contacts
+ARG,442,A,ASN,13,C,21,Proximal contacts
+GLU,443,A,PRO,14,C,21,Proximal contacts
+ARG,444,A,PRO,14,C,21,Proximal contacts
+SER,445,A,ASN,13,C,21,Proximal contacts
+SER,445,A,PRO,14,C,21,Proximal contacts
+SER,445,A,MET,15,C,21,H-bond
+LEU,260,A,VAL,10,C,21,Water-mediated contacts
+TYR,333,A,ASN,13,C,21,Water-mediated contacts
+TYR,362,A,GLU,11,C,21,Water-mediated contacts
+ARG,252,A,PTR,9,C,22,Salt-bridge
+HIE,253,A,PTR,9,C,22,Water-mediated contacts
+GLY,254,A,PTR,9,C,22,Proximal contacts
+ASN,256,A,PTR,9,C,22,H-bond;Water-mediated contacts
+ASN,259,A,PTR,9,C,22,Water-mediated contacts
+ASN,259,A,VAL,10,C,22,Proximal contacts
+LEU,260,A,PTR,9,C,22,Proximal contacts
+LEU,260,A,GLY,7,C,22,Proximal contacts
+LEU,260,A,PHE,8,C,22,Water-mediated contacts
+LEU,260,A,PRO,6,C,22,CH-O/N bonds
+GLN,261,A,ARG,4,C,22,Proximal contacts
+GLN,261,A,PRO,6,C,22,CH-O/N bonds
+GLN,261,A,ASN,5,C,22,Clashes
+ARG,263,A,ARG,4,C,22,Clashes
+ILE,264,A,VAL,10,C,22,Proximal contacts
+THR,332,A,PRO,6,C,22,Proximal contacts
+THR,332,A,ARG,4,C,22,H-bond
+TYR,333,A,PRO,6,C,22,Proximal contacts
+TYR,333,A,GLU,11,C,22,CH-π interactions
+TYR,333,A,ALA,12,C,22,Proximal contacts
+TYR,333,A,VAL,10,C,22,Apolar vdW contacts
+GLU,334,A,ARG,4,C,22,Proximal contacts
+GLU,334,A,PRO,6,C,22,Proximal contacts
+GLU,334,A,GLU,2,C,22,Proximal contacts
+GLU,334,A,GLY,3,C,22,Proximal contacts
+GLU,334,A,ASN,5,C,22,Water-mediated contacts
+GLU,334,A,GLY,7,C,22,Proximal contacts
+GLU,334,A,ASN,13,C,22,Water-mediated contacts
+GLU,335,A,GLY,3,C,22,Proximal contacts
+GLU,335,A,ARG,4,C,22,Salt-bridge
+ARG,337,A,PRO,14,C,22,Water-mediated contacts
+ARG,337,A,ASN,13,C,22,Water-mediated contacts
+ASP,338,A,GLY,3,C,22,Water-mediated contacts
+ASP,338,A,GLU,2,C,22,Water-mediated contacts
+TYR,344,A,ASN,13,C,22,H-bond;CH-O/N bonds
+TYR,344,A,PRO,14,C,22,Water-mediated contacts
+TYR,344,A,MET,15,C,22,Proximal contacts
+TYR,344,A,ALA,12,C,22,Apolar vdW contacts
+ALA,345,A,MET,15,C,22,Proximal contacts
+ARG,347,A,GLU,11,C,22,Salt-bridge
+ARG,347,A,ALA,12,C,22,Proximal contacts
+GLU,348,A,MET,15,C,22,Proximal contacts
+GLU,348,A,ASN,13,C,22,Proximal contacts
+GLU,348,A,PRO,14,C,22,Proximal contacts
+GLU,348,A,GLU,11,C,22,Proximal contacts
+GLU,348,A,ALA,12,C,22,Proximal contacts
+GLN,349,A,MET,15,C,22,Proximal contacts
+LYS,351,A,GLU,11,C,22,Salt-bridge
+HIP,387,A,PTR,9,C,22,Salt-bridge;Water-mediated contacts
+GLN,388,A,PTR,9,C,22,Water-mediated contacts
+LEU,413,A,PTR,9,C,22,Proximal contacts
+VAL,438,A,PTR,9,C,22,Proximal contacts
+CYS,439,A,PTR,9,C,22,Water-mediated contacts
+THR,440,A,PTR,9,C,22,Water-mediated contacts
+HIS,441,A,PHE,8,C,22,CH-O/N bonds
+ARG,442,A,PHE,8,C,22,Apolar vdW contacts
+ARG,442,A,ALA,12,C,22,H-bond
+ARG,442,A,PRO,14,C,22,Proximal contacts
+ARG,442,A,GLU,11,C,22,Salt-bridge
+ARG,442,A,ASN,13,C,22,Proximal contacts
+GLU,443,A,PRO,14,C,22,Proximal contacts
+ARG,444,A,PRO,14,C,22,Proximal contacts
+SER,445,A,ASN,13,C,22,Proximal contacts
+SER,445,A,PRO,14,C,22,Proximal contacts
+SER,445,A,MET,15,C,22,H-bond
+TYR,333,A,ASN,13,C,22,Water-mediated contacts
+TYR,362,A,GLU,11,C,22,Water-mediated contacts
+HIS,441,A,PTR,9,C,22,Water-mediated contacts

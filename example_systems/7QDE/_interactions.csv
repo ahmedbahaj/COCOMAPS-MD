@@ -1,0 +1,592 @@
+resName1,resNum1,chain1,resName2,resNum2,chain2,frame,types
+A,103,A,ARG,130,B,1,Proximal contacts
+U,104,A,ARG,130,B,1,Salt-bridge;CH-O/N bonds
+U,104,A,PHE,160,B,1,Proximal contacts
+U,104,A,PHE,128,B,1,CH-O/N bonds
+U,104,A,VAL,191,B,1,Proximal contacts
+U,104,A,GLU,189,B,1,Proximal contacts
+C,105,A,MET,114,B,1,Proximal contacts
+C,105,A,PHE,160,B,1,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,1,π-π interactions
+C,105,A,LYS,194,B,1,CH-O/N bonds;Cation-π interactions;CH-π interactions
+C,105,A,PHE,162,B,1,CH-O/N bonds
+C,105,A,SER,193,B,1,CH-O/N bonds
+C,105,A,VAL,191,B,1,Proximal contacts
+C,105,A,TYR,192,B,1,Proximal contacts
+C,106,A,PHE,160,B,1,CH-O/N bonds
+C,106,A,MET,114,B,1,CH-O/N bonds
+C,106,A,LEU,157,B,1,CH-O/N bonds
+C,106,A,LYS,155,B,1,CH-O/N bonds
+C,106,A,PHE,162,B,1,CH-O/N bonds;π-π interactions
+C,106,A,ARG,126,B,1,Proximal contacts
+C,106,A,SER,193,B,1,Clashes
+C,106,A,LYS,194,B,1,Apolar vdW contacts
+C,106,A,LEU,195,B,1,Proximal contacts
+A,107,A,ARG,199,B,1,Proximal contacts
+A,107,A,PRO,278,B,1,Proximal contacts
+A,107,A,ILE,279,B,1,Proximal contacts
+A,107,A,GLU,153,B,1,Proximal contacts
+A,107,A,LYS,155,B,1,CH-O/N bonds
+A,107,A,LEU,195,B,1,Clashes
+A,107,A,LYS,194,B,1,Proximal contacts
+A,107,A,PRO,196,B,1,CH-O/N bonds
+A,107,A,ALA,197,B,1,Proximal contacts
+A,107,A,ARG,126,B,1,Clashes
+G,108,A,ARG,199,B,1,Salt-bridge
+G,108,A,PRO,278,B,1,CH-O/N bonds
+G,108,A,ILE,279,B,1,CH-O/N bonds
+G,108,A,SER,282,B,1,Proximal contacts
+G,108,A,ARG,201,B,1,Proximal contacts
+G,108,A,GLU,244,B,1,Proximal contacts
+G,108,A,THR,228,B,1,Proximal contacts
+G,108,A,PHE,229,B,1,CH-O/N bonds;π-π interactions;lp-π interactions
+U,109,A,LYS,155,B,1,Clashes
+U,109,A,SER,282,B,1,Proximal contacts
+U,109,A,ILE,156,B,1,Proximal contacts
+U,109,A,LEU,157,B,1,Proximal contacts
+U,109,A,ASN,158,B,1,Proximal contacts
+G,110,A,TRP,213,B,1,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,1,CH-O/N bonds
+G,110,A,THR,228,B,1,Proximal contacts
+G,110,A,PHE,229,B,1,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,1,Clashes
+G,110,A,SER,231,B,1,Proximal contacts
+G,111,A,GLN,214,B,1,CH-O/N bonds;CH-π interactions
+G,111,A,TRP,213,B,1,Clashes
+G,111,A,LYS,217,B,1,CH-O/N bonds
+G,111,A,ASP,218,B,1,Clashes
+A,112,A,GLN,214,B,1,CH-O/N bonds;CH-π interactions
+A,112,A,ASP,215,B,1,Clashes
+A,112,A,ASP,218,B,1,Proximal contacts
+A,112,A,CYS,211,B,1,Proximal contacts
+A,112,A,SER,212,B,1,CH-O/N bonds
+A,113,A,SER,212,B,1,Proximal contacts
+A,113,A,TRP,213,B,1,Clashes
+A,113,A,GLN,214,B,1,Proximal contacts
+A,103,A,ARG,130,B,2,Proximal contacts
+A,103,A,PRO,187,B,2,Proximal contacts
+A,103,A,GLN,186,B,2,CH-O/N bonds
+A,103,A,PRO,131,B,2,Proximal contacts
+A,103,A,PHE,132,B,2,Proximal contacts
+U,104,A,GLY,159,B,2,Proximal contacts
+U,104,A,PHE,160,B,2,Proximal contacts
+U,104,A,PHE,128,B,2,Proximal contacts
+U,104,A,ARG,130,B,2,CH-O/N bonds;Cation-π interactions
+U,104,A,GLU,189,B,2,Proximal contacts
+C,105,A,PHE,160,B,2,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,2,π-π interactions
+C,105,A,LYS,194,B,2,CH-O/N bonds;Cation-π interactions;CH-π interactions
+C,105,A,PHE,162,B,2,CH-O/N bonds
+C,105,A,SER,193,B,2,CH-O/N bonds
+C,105,A,GLU,119,B,2,Proximal contacts
+C,105,A,VAL,191,B,2,Proximal contacts
+C,105,A,TYR,192,B,2,Proximal contacts
+C,106,A,PHE,160,B,2,Proximal contacts
+C,106,A,LEU,157,B,2,CH-O/N bonds
+C,106,A,LYS,155,B,2,CH-O/N bonds
+C,106,A,PHE,162,B,2,CH-O/N bonds;π-π interactions
+C,106,A,ARG,126,B,2,Proximal contacts
+C,106,A,SER,193,B,2,Proximal contacts
+C,106,A,LYS,194,B,2,Proximal contacts
+A,107,A,LYS,155,B,2,CH-O/N bonds
+A,107,A,LYS,194,B,2,Proximal contacts
+A,107,A,LEU,195,B,2,Clashes
+A,107,A,PRO,196,B,2,CH-O/N bonds
+A,107,A,ALA,197,B,2,Proximal contacts
+A,107,A,ARG,126,B,2,Clashes
+G,108,A,ARG,199,B,2,Salt-bridge
+G,108,A,ILE,279,B,2,CH-π interactions
+G,108,A,PHE,229,B,2,CH-O/N bonds;π-π interactions
+G,108,A,GLU,244,B,2,CH-O/N bonds
+G,108,A,TYR,200,B,2,Proximal contacts
+G,108,A,THR,228,B,2,CH-O/N bonds
+U,109,A,ARG,201,B,2,Proximal contacts
+U,109,A,SER,231,B,2,Clashes
+U,109,A,ASN,233,B,2,Proximal contacts
+U,109,A,SER,230,B,2,Proximal contacts
+U,109,A,PHE,229,B,2,π-π interactions
+G,110,A,GLN,214,B,2,Proximal contacts
+G,110,A,TRP,213,B,2,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,2,Proximal contacts
+G,110,A,THR,228,B,2,Proximal contacts
+G,110,A,PHE,229,B,2,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,2,Clashes
+G,110,A,SER,231,B,2,Proximal contacts
+G,111,A,GLN,214,B,2,CH-O/N bonds;CH-π interactions
+G,111,A,TRP,213,B,2,CH-O/N bonds
+G,111,A,LYS,217,B,2,CH-O/N bonds
+G,111,A,ASP,218,B,2,Clashes
+A,112,A,GLN,214,B,2,CH-π interactions
+A,112,A,ASP,218,B,2,Proximal contacts
+A,112,A,ASP,215,B,2,CH-O/N bonds
+A,112,A,GLY,210,B,2,Proximal contacts
+A,112,A,CYS,211,B,2,Proximal contacts
+A,112,A,SER,212,B,2,CH-O/N bonds
+A,103,A,GLY,159,B,3,Proximal contacts
+A,103,A,PRO,131,B,3,CH-π interactions
+A,103,A,PHE,132,B,3,Proximal contacts
+A,103,A,GLN,186,B,3,Clashes
+A,103,A,PRO,187,B,3,Proximal contacts
+A,103,A,ARG,130,B,3,Clashes
+U,104,A,PHE,160,B,3,Proximal contacts
+U,104,A,PHE,128,B,3,CH-O/N bonds
+U,104,A,ARG,130,B,3,CH-π interactions
+C,105,A,PHE,160,B,3,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,3,π-π interactions
+C,105,A,PHE,162,B,3,CH-O/N bonds
+C,105,A,ARG,117,B,3,Proximal contacts
+C,105,A,LYS,194,B,3,CH-O/N bonds;CH-π interactions
+C,105,A,SER,193,B,3,Proximal contacts
+C,105,A,VAL,191,B,3,Proximal contacts
+C,105,A,TYR,192,B,3,Proximal contacts
+C,106,A,PHE,160,B,3,CH-O/N bonds
+C,106,A,ARG,117,B,3,Salt-bridge
+C,106,A,LEU,157,B,3,CH-O/N bonds
+C,106,A,ARG,126,B,3,Clashes
+C,106,A,LYS,155,B,3,CH-O/N bonds
+C,106,A,PHE,162,B,3,CH-O/N bonds;π-π interactions
+C,106,A,SER,193,B,3,Proximal contacts
+C,106,A,LYS,194,B,3,Proximal contacts
+A,107,A,LYS,155,B,3,Salt-bridge;CH-O/N bonds
+A,107,A,ARG,117,B,3,Proximal contacts
+A,107,A,LEU,195,B,3,Clashes
+A,107,A,LYS,194,B,3,Proximal contacts
+A,107,A,PRO,196,B,3,CH-O/N bonds
+A,107,A,ALA,197,B,3,Proximal contacts
+A,107,A,ARG,126,B,3,Clashes
+G,108,A,ARG,199,B,3,Salt-bridge
+G,108,A,ILE,279,B,3,CH-O/N bonds
+G,108,A,ARG,280,B,3,Proximal contacts
+G,108,A,PHE,229,B,3,CH-O/N bonds;π-π interactions
+G,108,A,GLU,244,B,3,CH-O/N bonds
+G,108,A,THR,228,B,3,Proximal contacts
+U,109,A,ARG,280,B,3,Salt-bridge
+U,109,A,SER,231,B,3,Proximal contacts
+U,109,A,PHE,229,B,3,Apolar vdW contacts
+G,110,A,TRP,213,B,3,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,3,Proximal contacts
+G,110,A,THR,228,B,3,Proximal contacts
+G,110,A,PHE,229,B,3,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,3,Clashes
+G,110,A,SER,231,B,3,Proximal contacts
+G,111,A,GLN,214,B,3,CH-O/N bonds;CH-π interactions
+G,111,A,TRP,213,B,3,CH-O/N bonds
+G,111,A,LYS,217,B,3,CH-O/N bonds
+G,111,A,ASP,215,B,3,Proximal contacts
+A,112,A,GLN,214,B,3,CH-O/N bonds;CH-π interactions
+A,112,A,ASP,215,B,3,Clashes
+A,112,A,GLY,210,B,3,Proximal contacts
+A,112,A,CYS,211,B,3,Proximal contacts
+A,112,A,SER,212,B,3,CH-O/N bonds
+A,103,A,GLY,159,B,4,Proximal contacts
+A,103,A,ARG,130,B,4,Proximal contacts
+A,103,A,PRO,131,B,4,CH-O/N bonds
+A,103,A,PHE,132,B,4,Proximal contacts
+A,103,A,GLN,186,B,4,Proximal contacts
+A,103,A,PRO,187,B,4,Proximal contacts
+U,104,A,GLY,159,B,4,Proximal contacts
+U,104,A,PHE,160,B,4,Proximal contacts
+U,104,A,PHE,128,B,4,CH-O/N bonds
+U,104,A,ARG,130,B,4,Cation-π interactions
+U,104,A,GLU,189,B,4,Proximal contacts
+C,105,A,PHE,160,B,4,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,4,π-π interactions
+C,105,A,LYS,194,B,4,CH-O/N bonds;Cation-π interactions;CH-π interactions
+C,105,A,PHE,162,B,4,CH-O/N bonds
+C,105,A,SER,193,B,4,CH-O/N bonds
+C,105,A,GLN,118,B,4,Proximal contacts
+C,105,A,VAL,191,B,4,Proximal contacts
+C,105,A,TYR,192,B,4,Clashes
+C,106,A,PHE,160,B,4,CH-O/N bonds
+C,106,A,LEU,157,B,4,CH-O/N bonds
+C,106,A,LYS,155,B,4,CH-O/N bonds
+C,106,A,PHE,162,B,4,CH-O/N bonds;π-π interactions
+C,106,A,ARG,126,B,4,Proximal contacts
+C,106,A,SER,193,B,4,Proximal contacts
+C,106,A,LYS,194,B,4,Proximal contacts
+C,106,A,LEU,195,B,4,Proximal contacts
+A,107,A,LYS,155,B,4,CH-O/N bonds
+A,107,A,LEU,195,B,4,Clashes
+A,107,A,LYS,194,B,4,Proximal contacts
+A,107,A,PRO,196,B,4,CH-O/N bonds
+A,107,A,ALA,197,B,4,Proximal contacts
+A,107,A,ARG,126,B,4,Clashes
+G,108,A,GLU,153,B,4,Proximal contacts
+G,108,A,LYS,155,B,4,Salt-bridge
+G,108,A,ILE,279,B,4,CH-O/N bonds
+G,108,A,GLU,244,B,4,CH-O/N bonds
+G,108,A,PHE,229,B,4,π-π interactions
+G,108,A,THR,228,B,4,Proximal contacts
+U,109,A,ILE,279,B,4,Proximal contacts
+U,109,A,ARG,281,B,4,Salt-bridge;CH-O/N bonds
+U,109,A,SER,231,B,4,Clashes
+U,109,A,PHE,229,B,4,Apolar vdW contacts
+G,110,A,TRP,213,B,4,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,4,CH-O/N bonds
+G,110,A,THR,228,B,4,Proximal contacts
+G,110,A,PHE,229,B,4,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,4,Clashes
+G,110,A,SER,231,B,4,Proximal contacts
+G,111,A,GLN,214,B,4,CH-O/N bonds;CH-π interactions
+G,111,A,TRP,213,B,4,CH-O/N bonds
+G,111,A,LYS,217,B,4,CH-O/N bonds
+G,111,A,ASP,215,B,4,Proximal contacts
+G,111,A,ASP,218,B,4,Clashes
+A,112,A,TRP,213,B,4,Proximal contacts
+A,112,A,GLN,214,B,4,CH-π interactions
+A,112,A,ASP,215,B,4,Clashes
+A,112,A,GLY,210,B,4,Proximal contacts
+A,112,A,CYS,211,B,4,Proximal contacts
+A,112,A,SER,212,B,4,CH-O/N bonds
+A,113,A,TRP,213,B,4,CH-O/N bonds;π-π interactions
+A,113,A,GLN,214,B,4,Proximal contacts
+A,113,A,SER,231,B,4,Proximal contacts
+A,113,A,VAL,232,B,4,Proximal contacts
+A,113,A,SER,212,B,4,Proximal contacts
+A,103,A,PRO,131,B,5,CH-O/N bonds
+A,103,A,ARG,130,B,5,CH-O/N bonds
+A,103,A,GLY,159,B,5,Proximal contacts
+A,103,A,PHE,132,B,5,Proximal contacts
+A,103,A,PRO,133,B,5,Clashes
+A,103,A,LEU,134,B,5,Proximal contacts
+U,104,A,PHE,160,B,5,Proximal contacts
+U,104,A,PHE,128,B,5,CH-O/N bonds
+U,104,A,ARG,130,B,5,Proximal contacts
+U,104,A,GLU,189,B,5,Proximal contacts
+C,105,A,PHE,160,B,5,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,5,π-π interactions
+C,105,A,LYS,194,B,5,CH-O/N bonds;CH-π interactions
+C,105,A,PHE,162,B,5,CH-O/N bonds
+C,105,A,SER,193,B,5,CH-O/N bonds
+C,105,A,VAL,191,B,5,Proximal contacts
+C,105,A,TYR,192,B,5,Clashes
+C,106,A,PHE,160,B,5,Proximal contacts
+C,106,A,LEU,157,B,5,CH-O/N bonds
+C,106,A,ARG,126,B,5,Clashes
+C,106,A,LYS,155,B,5,CH-O/N bonds
+C,106,A,PHE,162,B,5,π-π interactions
+C,106,A,SER,193,B,5,Proximal contacts
+C,106,A,LYS,194,B,5,Proximal contacts
+C,106,A,LEU,195,B,5,Proximal contacts
+A,107,A,LYS,155,B,5,CH-O/N bonds
+A,107,A,LEU,195,B,5,Clashes
+A,107,A,LYS,194,B,5,Proximal contacts
+A,107,A,PRO,196,B,5,CH-O/N bonds
+A,107,A,ALA,197,B,5,Proximal contacts
+A,107,A,ARG,126,B,5,CH-O/N bonds
+G,108,A,ILE,279,B,5,CH-O/N bonds
+G,108,A,ARG,280,B,5,Clashes
+G,108,A,ARG,201,B,5,Proximal contacts
+G,108,A,GLU,244,B,5,CH-O/N bonds
+G,108,A,THR,228,B,5,Proximal contacts
+G,108,A,PHE,229,B,5,π-π interactions;lp-π interactions
+U,109,A,ARG,280,B,5,Salt-bridge
+U,109,A,SER,231,B,5,Proximal contacts
+U,109,A,VAL,232,B,5,Proximal contacts
+G,110,A,GLN,214,B,5,Proximal contacts
+G,110,A,TRP,213,B,5,CH-O/N bonds;π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,5,Proximal contacts
+G,110,A,THR,228,B,5,Proximal contacts
+G,110,A,PHE,229,B,5,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,5,Clashes
+G,110,A,SER,231,B,5,Proximal contacts
+G,111,A,TRP,213,B,5,CH-O/N bonds
+G,111,A,LYS,217,B,5,CH-O/N bonds
+G,111,A,GLN,214,B,5,CH-O/N bonds;CH-π interactions
+G,111,A,ASP,218,B,5,Clashes
+A,112,A,GLN,214,B,5,CH-π interactions
+A,112,A,ASP,215,B,5,CH-O/N bonds
+A,112,A,ASP,218,B,5,Proximal contacts
+A,112,A,GLY,210,B,5,CH-O/N bonds
+A,112,A,CYS,211,B,5,Proximal contacts
+A,112,A,SER,212,B,5,CH-O/N bonds
+A,113,A,GLY,210,B,5,Proximal contacts
+A,113,A,CYS,211,B,5,Clashes
+A,113,A,SER,212,B,5,Proximal contacts
+A,113,A,PHE,237,B,5,Proximal contacts
+A,103,A,PRO,133,B,6,Proximal contacts
+A,103,A,PHE,132,B,6,Proximal contacts
+A,103,A,ARG,130,B,6,CH-O/N bonds
+A,103,A,GLY,159,B,6,Proximal contacts
+A,103,A,PRO,187,B,6,Proximal contacts
+A,103,A,PRO,131,B,6,CH-O/N bonds
+U,104,A,GLY,159,B,6,Proximal contacts
+U,104,A,PHE,160,B,6,Proximal contacts
+U,104,A,PHE,128,B,6,CH-O/N bonds
+U,104,A,ARG,130,B,6,Clashes
+U,104,A,GLU,189,B,6,Proximal contacts
+C,105,A,PHE,160,B,6,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,6,π-π interactions
+C,105,A,LYS,194,B,6,CH-O/N bonds;CH-π interactions
+C,105,A,PHE,162,B,6,CH-O/N bonds
+C,105,A,SER,193,B,6,CH-O/N bonds
+C,105,A,VAL,191,B,6,Proximal contacts
+C,105,A,TYR,192,B,6,Clashes
+C,106,A,PHE,160,B,6,CH-O/N bonds
+C,106,A,LEU,157,B,6,CH-O/N bonds
+C,106,A,ARG,126,B,6,Clashes
+C,106,A,LYS,155,B,6,CH-O/N bonds
+C,106,A,PHE,162,B,6,CH-O/N bonds;π-π interactions
+C,106,A,SER,193,B,6,Clashes
+C,106,A,LYS,194,B,6,Proximal contacts
+C,106,A,LEU,195,B,6,Proximal contacts
+A,107,A,ARG,280,B,6,Proximal contacts
+A,107,A,GLU,153,B,6,Proximal contacts
+A,107,A,LYS,155,B,6,CH-O/N bonds
+A,107,A,LEU,195,B,6,Clashes
+A,107,A,LYS,194,B,6,Proximal contacts
+A,107,A,PRO,196,B,6,CH-O/N bonds
+A,107,A,ALA,197,B,6,Proximal contacts
+A,107,A,ARG,126,B,6,Clashes
+G,108,A,LYS,155,B,6,Salt-bridge
+G,108,A,ARG,280,B,6,Salt-bridge;CH-O/N bonds
+G,108,A,ILE,279,B,6,Proximal contacts
+G,108,A,ARG,199,B,6,Clashes
+G,108,A,PHE,229,B,6,π-π interactions;lp-π interactions
+G,108,A,GLU,244,B,6,Proximal contacts
+G,108,A,THR,228,B,6,Proximal contacts
+U,109,A,PHE,229,B,6,Proximal contacts
+G,110,A,TRP,213,B,6,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,6,CH-O/N bonds
+G,110,A,THR,228,B,6,Proximal contacts
+G,110,A,PHE,229,B,6,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,6,Clashes
+G,110,A,SER,231,B,6,Proximal contacts
+G,111,A,TRP,213,B,6,CH-O/N bonds
+G,111,A,LYS,217,B,6,Proximal contacts
+G,111,A,ASP,218,B,6,Proximal contacts
+G,111,A,ASP,215,B,6,Proximal contacts
+G,111,A,GLN,214,B,6,CH-O/N bonds;CH-π interactions
+A,112,A,GLN,214,B,6,CH-π interactions
+A,112,A,ASP,215,B,6,Clashes
+A,112,A,GLY,210,B,6,Proximal contacts
+A,112,A,CYS,211,B,6,Proximal contacts
+A,112,A,SER,212,B,6,CH-O/N bonds
+A,103,A,PRO,133,B,7,Proximal contacts
+A,103,A,PHE,132,B,7,Proximal contacts
+A,103,A,ARG,130,B,7,CH-O/N bonds
+A,103,A,GLY,159,B,7,Proximal contacts
+A,103,A,PRO,187,B,7,Proximal contacts
+A,103,A,PRO,131,B,7,CH-O/N bonds
+U,104,A,GLY,159,B,7,Proximal contacts
+U,104,A,PHE,160,B,7,Proximal contacts
+U,104,A,PHE,128,B,7,CH-O/N bonds
+U,104,A,ARG,130,B,7,Cation-π interactions
+C,105,A,PHE,160,B,7,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,7,π-π interactions
+C,105,A,PHE,162,B,7,CH-O/N bonds
+C,105,A,LYS,194,B,7,CH-O/N bonds;CH-π interactions
+C,105,A,SER,193,B,7,Proximal contacts
+C,105,A,VAL,191,B,7,Proximal contacts
+C,105,A,TYR,192,B,7,Proximal contacts
+C,106,A,PHE,160,B,7,CH-O/N bonds
+C,106,A,LEU,157,B,7,CH-O/N bonds
+C,106,A,ARG,126,B,7,Clashes
+C,106,A,LYS,155,B,7,CH-O/N bonds
+C,106,A,PHE,162,B,7,CH-O/N bonds;π-π interactions
+C,106,A,SER,193,B,7,Proximal contacts
+C,106,A,LYS,194,B,7,Proximal contacts
+A,107,A,LYS,155,B,7,CH-O/N bonds
+A,107,A,ARG,117,B,7,Proximal contacts
+A,107,A,LEU,195,B,7,Clashes
+A,107,A,LYS,194,B,7,Proximal contacts
+A,107,A,PRO,196,B,7,CH-O/N bonds
+A,107,A,ALA,197,B,7,Proximal contacts
+A,107,A,ARG,126,B,7,Clashes
+G,108,A,LYS,155,B,7,Proximal contacts
+G,108,A,ILE,279,B,7,CH-O/N bonds
+G,108,A,ARG,281,B,7,Proximal contacts
+G,108,A,ARG,280,B,7,Clashes
+G,108,A,PHE,229,B,7,CH-O/N bonds;π-π interactions;lp-π interactions
+G,108,A,GLU,244,B,7,Proximal contacts
+G,108,A,THR,228,B,7,Proximal contacts
+U,109,A,ARG,281,B,7,Salt-bridge;CH-O/N bonds
+U,109,A,LYS,155,B,7,Salt-bridge
+U,109,A,SER,282,B,7,CH-O/N bonds
+U,109,A,SER,231,B,7,Proximal contacts
+U,109,A,ARG,280,B,7,Clashes
+U,109,A,PHE,229,B,7,Apolar vdW contacts
+G,110,A,TRP,213,B,7,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,7,Proximal contacts
+G,110,A,THR,228,B,7,Proximal contacts
+G,110,A,PHE,229,B,7,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,7,Clashes
+G,110,A,SER,231,B,7,Proximal contacts
+G,111,A,GLN,214,B,7,CH-O/N bonds;CH-π interactions
+G,111,A,TRP,213,B,7,Clashes
+G,111,A,LYS,217,B,7,CH-O/N bonds
+G,111,A,ASP,218,B,7,Clashes
+A,112,A,GLN,214,B,7,CH-O/N bonds;CH-π interactions
+A,112,A,ASP,215,B,7,Clashes
+A,112,A,ASP,218,B,7,Proximal contacts
+A,112,A,GLY,210,B,7,Proximal contacts
+A,112,A,CYS,211,B,7,Proximal contacts
+A,112,A,SER,212,B,7,CH-O/N bonds
+U,104,A,GLY,159,B,8,Proximal contacts
+U,104,A,PHE,160,B,8,Proximal contacts
+U,104,A,PHE,128,B,8,Proximal contacts
+U,104,A,ARG,130,B,8,CH-O/N bonds;Cation-π interactions
+U,104,A,PRO,131,B,8,Proximal contacts
+C,105,A,PHE,160,B,8,CH-π interactions
+C,105,A,PHE,128,B,8,π-π interactions
+C,105,A,PHE,162,B,8,CH-O/N bonds
+C,105,A,LYS,194,B,8,CH-O/N bonds;Cation-π interactions;CH-π interactions
+C,105,A,SER,193,B,8,CH-O/N bonds
+C,105,A,VAL,191,B,8,Proximal contacts
+C,105,A,TYR,192,B,8,Proximal contacts
+C,106,A,PHE,160,B,8,CH-O/N bonds
+C,106,A,LEU,157,B,8,CH-O/N bonds
+C,106,A,ARG,126,B,8,Proximal contacts
+C,106,A,LYS,155,B,8,CH-O/N bonds
+C,106,A,PHE,162,B,8,CH-O/N bonds;π-π interactions
+C,106,A,SER,193,B,8,Clashes
+C,106,A,LYS,194,B,8,Clashes
+C,106,A,LEU,195,B,8,Proximal contacts
+A,107,A,LEU,157,B,8,Proximal contacts
+A,107,A,LYS,155,B,8,CH-O/N bonds
+A,107,A,ARG,280,B,8,Proximal contacts
+A,107,A,LEU,195,B,8,Clashes
+A,107,A,LYS,194,B,8,Proximal contacts
+A,107,A,PRO,196,B,8,CH-O/N bonds
+A,107,A,ALA,197,B,8,Proximal contacts
+A,107,A,ARG,126,B,8,Clashes
+G,108,A,ARG,199,B,8,Salt-bridge
+G,108,A,ARG,280,B,8,Salt-bridge
+G,108,A,ILE,279,B,8,CH-O/N bonds
+G,108,A,ARG,281,B,8,Proximal contacts
+G,108,A,PHE,229,B,8,π-π interactions
+G,108,A,GLU,244,B,8,CH-O/N bonds
+G,108,A,THR,228,B,8,Clashes
+U,109,A,ARG,281,B,8,Salt-bridge
+U,109,A,ARG,280,B,8,Proximal contacts
+G,110,A,TRP,213,B,8,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,8,CH-O/N bonds
+G,110,A,THR,228,B,8,Proximal contacts
+G,110,A,PHE,229,B,8,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,8,Clashes
+G,110,A,SER,231,B,8,Proximal contacts
+G,111,A,GLN,214,B,8,CH-O/N bonds;CH-π interactions
+G,111,A,TRP,213,B,8,CH-O/N bonds
+G,111,A,LYS,217,B,8,CH-O/N bonds
+G,111,A,ASP,218,B,8,Clashes
+A,112,A,GLN,214,B,8,CH-π interactions
+A,112,A,ASP,215,B,8,Clashes
+A,112,A,ASP,218,B,8,Proximal contacts
+A,112,A,CYS,211,B,8,Proximal contacts
+A,112,A,SER,212,B,8,CH-O/N bonds
+A,113,A,GLY,210,B,8,CH-O/N bonds
+A,113,A,CYS,211,B,8,Proximal contacts
+A,113,A,SER,212,B,8,Proximal contacts
+A,113,A,ASP,215,B,8,Clashes
+A,113,A,ARG,264,B,8,Proximal contacts
+A,103,A,GLN,186,B,9,Proximal contacts
+U,104,A,PHE,160,B,9,CH-O/N bonds
+U,104,A,PHE,128,B,9,Proximal contacts
+U,104,A,ARG,130,B,9,CH-π interactions;Apolar vdW contacts
+U,104,A,GLY,159,B,9,Clashes
+U,104,A,PRO,131,B,9,Proximal contacts
+C,105,A,PHE,160,B,9,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,9,π-π interactions
+C,105,A,PHE,162,B,9,CH-O/N bonds
+C,105,A,LYS,194,B,9,CH-O/N bonds;CH-π interactions
+C,105,A,SER,193,B,9,Proximal contacts
+C,105,A,VAL,191,B,9,Proximal contacts
+C,105,A,TYR,192,B,9,Clashes
+C,106,A,PHE,160,B,9,CH-O/N bonds
+C,106,A,LEU,157,B,9,CH-O/N bonds
+C,106,A,ARG,126,B,9,Proximal contacts
+C,106,A,LYS,155,B,9,Proximal contacts
+C,106,A,PHE,162,B,9,CH-O/N bonds;π-π interactions
+C,106,A,SER,193,B,9,Proximal contacts
+C,106,A,LYS,194,B,9,Clashes
+C,106,A,LEU,195,B,9,Proximal contacts
+A,107,A,ILE,279,B,9,Proximal contacts
+A,107,A,LYS,155,B,9,Salt-bridge;CH-O/N bonds
+A,107,A,ARG,126,B,9,Clashes
+A,107,A,LYS,194,B,9,Clashes
+A,107,A,LEU,195,B,9,Clashes
+A,107,A,SER,193,B,9,Proximal contacts
+A,107,A,PRO,196,B,9,CH-O/N bonds
+A,107,A,ALA,197,B,9,Proximal contacts
+G,108,A,ARG,126,B,9,Salt-bridge
+G,108,A,GLU,153,B,9,Proximal contacts
+G,108,A,LYS,155,B,9,Salt-bridge
+G,108,A,ARG,281,B,9,Salt-bridge
+G,108,A,ILE,279,B,9,CH-O/N bonds
+G,108,A,ARG,201,B,9,Proximal contacts
+G,108,A,GLU,244,B,9,CH-O/N bonds
+G,108,A,PHE,229,B,9,π-π interactions
+G,108,A,THR,228,B,9,Proximal contacts
+U,109,A,ARG,281,B,9,Salt-bridge
+U,109,A,ASN,158,B,9,Proximal contacts
+U,109,A,LYS,155,B,9,Salt-bridge
+U,109,A,LEU,157,B,9,CH-π interactions
+U,109,A,ILE,156,B,9,Proximal contacts
+U,109,A,GLN,137,B,9,Proximal contacts
+G,110,A,TRP,213,B,9,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,9,Proximal contacts
+G,110,A,THR,228,B,9,Proximal contacts
+G,110,A,PHE,229,B,9,CH-O/N bonds;π-π interactions
+G,110,A,SER,230,B,9,Clashes
+G,110,A,SER,231,B,9,Proximal contacts
+G,111,A,TRP,213,B,9,CH-O/N bonds
+G,111,A,LYS,217,B,9,CH-O/N bonds
+G,111,A,ASP,215,B,9,Proximal contacts
+G,111,A,ASP,218,B,9,Clashes
+G,111,A,GLN,214,B,9,CH-O/N bonds
+A,112,A,GLN,214,B,9,CH-π interactions
+A,112,A,ASP,218,B,9,Proximal contacts
+A,112,A,ASP,215,B,9,CH-O/N bonds
+A,112,A,GLY,210,B,9,CH-O/N bonds
+A,112,A,CYS,211,B,9,Proximal contacts
+A,112,A,SER,212,B,9,CH-O/N bonds
+U,104,A,GLY,159,B,10,Proximal contacts
+U,104,A,PHE,160,B,10,CH-O/N bonds
+U,104,A,PHE,128,B,10,Proximal contacts
+U,104,A,ARG,130,B,10,CH-O/N bonds;Cation-π interactions;CH-π interactions
+U,104,A,PRO,131,B,10,Proximal contacts
+C,105,A,PHE,160,B,10,lp-π interactions;CH-π interactions
+C,105,A,PHE,128,B,10,π-π interactions
+C,105,A,PHE,162,B,10,CH-O/N bonds
+C,105,A,LYS,194,B,10,CH-O/N bonds;CH-π interactions
+C,105,A,SER,193,B,10,CH-O/N bonds
+C,105,A,VAL,191,B,10,Proximal contacts
+C,105,A,TYR,192,B,10,Clashes
+C,106,A,PHE,160,B,10,CH-O/N bonds
+C,106,A,LEU,157,B,10,CH-O/N bonds
+C,106,A,PHE,162,B,10,CH-O/N bonds;π-π interactions
+C,106,A,ARG,126,B,10,Proximal contacts
+C,106,A,LYS,155,B,10,CH-O/N bonds
+C,106,A,SER,193,B,10,Proximal contacts
+C,106,A,LYS,194,B,10,Clashes
+C,106,A,LEU,195,B,10,Proximal contacts
+A,107,A,LYS,155,B,10,CH-O/N bonds
+A,107,A,LEU,195,B,10,Clashes
+A,107,A,LYS,194,B,10,Proximal contacts
+A,107,A,PRO,196,B,10,CH-O/N bonds
+A,107,A,ALA,197,B,10,Proximal contacts
+A,107,A,ARG,126,B,10,Clashes
+G,108,A,ARG,199,B,10,Salt-bridge
+G,108,A,ILE,279,B,10,CH-O/N bonds
+G,108,A,PHE,229,B,10,π-π interactions;lp-π interactions
+G,108,A,GLU,244,B,10,Proximal contacts
+G,108,A,THR,228,B,10,Proximal contacts
+U,109,A,PHE,229,B,10,CH-O/N bonds
+U,109,A,SER,231,B,10,Proximal contacts
+G,110,A,TRP,213,B,10,π-π interactions;lp-π interactions
+G,110,A,LYS,217,B,10,CH-O/N bonds
+G,110,A,THR,228,B,10,Proximal contacts
+G,110,A,PHE,229,B,10,CH-O/N bonds
+G,110,A,SER,230,B,10,Clashes
+G,110,A,SER,231,B,10,Proximal contacts
+G,111,A,GLN,214,B,10,CH-O/N bonds;CH-π interactions
+G,111,A,TRP,213,B,10,CH-O/N bonds
+G,111,A,LYS,217,B,10,CH-O/N bonds
+G,111,A,ARG,221,B,10,Proximal contacts
+G,111,A,ASP,215,B,10,Proximal contacts
+G,111,A,ASP,218,B,10,Clashes
+A,112,A,GLN,214,B,10,CH-O/N bonds;CH-π interactions
+A,112,A,ASP,215,B,10,Clashes
+A,112,A,ASP,218,B,10,Proximal contacts
+A,112,A,GLY,210,B,10,Proximal contacts
+A,112,A,SER,212,B,10,Clashes

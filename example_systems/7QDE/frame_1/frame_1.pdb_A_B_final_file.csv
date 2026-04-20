@@ -1,0 +1,65 @@
+,Res. Name 1,Res. Number 1,Chain 1,Res. Name 2,Res. Number 2,Chain 2,Type of Interactions
+5,A,103,A,ARG,130,B,Proximal contact
+38,U,104,A,ARG,130,B,; Salt-bridge; CH-O/N bond
+66,U,104,A,PHE,160,B,Proximal contact
+89,U,104,A,PHE,128,B,; CH-O/N bond; CH-O/N bond
+166,U,104,A,VAL,191,B,Proximal contact
+206,U,104,A,GLU,189,B,Proximal contact
+353,C,105,A,MET,114,B,Proximal contact
+377,C,105,A,PHE,160,B,; lp-π interaction; CH-π interaction
+410,C,105,A,PHE,128,B,; π-π interaction
+482,C,105,A,LYS,194,B,; CH-O/N bond; CH-O/N bond; Cation-π interaction; CH-π interaction
+590,C,105,A,PHE,162,B,; CH-O/N bond; CH-O/N bond
+597,C,105,A,SER,193,B,; CH-O/N bond
+697,C,105,A,VAL,191,B,Proximal contact
+703,C,105,A,TYR,192,B,Proximal contact
+963,C,106,A,PHE,160,B,; CH-O/N bond
+968,C,106,A,MET,114,B,; CH-O/N bond
+1017,C,106,A,LEU,157,B,; CH-O/N bond
+1153,C,106,A,LYS,155,B,; CH-O/N bond
+1166,C,106,A,PHE,162,B,; CH-O/N bond; π-π interaction
+1179,C,106,A,ARG,126,B,Proximal contact
+1255,C,106,A,SER,193,B,Clash
+1261,C,106,A,LYS,194,B,; Apolar vdW contact
+1274,C,106,A,LEU,195,B,Proximal contact
+1564,A,107,A,ARG,199,B,Proximal contact
+1568,A,107,A,PRO,278,B,Proximal contact
+1573,A,107,A,ILE,279,B,Proximal contact
+1596,A,107,A,GLU,153,B,Proximal contact
+1599,A,107,A,LYS,155,B,; CH-O/N bond; CH-O/N bond
+1661,A,107,A,LEU,195,B,Clash
+1683,A,107,A,LYS,194,B,Proximal contact
+1693,A,107,A,PRO,196,B,; CH-O/N bond
+1702,A,107,A,ALA,197,B,Proximal contact
+1736,A,107,A,ARG,126,B,Clash
+1935,G,108,A,ARG,199,B,; Salt-bridge
+1957,G,108,A,PRO,278,B,; CH-O/N bond
+1963,G,108,A,ILE,279,B,; CH-O/N bond
+2035,G,108,A,SER,282,B,Proximal contact
+2082,G,108,A,ARG,201,B,Proximal contact
+2135,G,108,A,GLU,244,B,Proximal contact
+2183,G,108,A,THR,228,B,Proximal contact
+2232,G,108,A,PHE,229,B,; CH-O/N bond; π-π interaction; lp-π interaction
+2372,U,109,A,LYS,155,B,Clash
+2410,U,109,A,SER,282,B,Proximal contact
+2433,U,109,A,ILE,156,B,Proximal contact
+2437,U,109,A,LEU,157,B,Proximal contact
+2460,U,109,A,ASN,158,B,Proximal contact
+2569,G,110,A,TRP,213,B,; π-π interaction; lp-π interaction
+2651,G,110,A,LYS,217,B,; CH-O/N bond
+2661,G,110,A,THR,228,B,Proximal contact
+2705,G,110,A,PHE,229,B,; CH-O/N bond; π-π interaction
+2715,G,110,A,SER,230,B,Clash
+2771,G,110,A,SER,231,B,Proximal contact
+2978,G,111,A,GLN,214,B,; CH-O/N bond; CH-O/N bond; CH-π interaction
+3023,G,111,A,TRP,213,B,Clash
+3092,G,111,A,LYS,217,B,; CH-O/N bond; CH-O/N bond
+3157,G,111,A,ASP,218,B,Clash
+3304,A,112,A,GLN,214,B,; CH-O/N bond; CH-π interaction
+3404,A,112,A,ASP,215,B,Clash
+3408,A,112,A,ASP,218,B,Proximal contact
+3434,A,112,A,CYS,211,B,Proximal contact
+3438,A,112,A,SER,212,B,; CH-O/N bond
+3599,A,113,A,SER,212,B,Proximal contact
+3604,A,113,A,TRP,213,B,Clash
+3638,A,113,A,GLN,214,B,Proximal contact

@@ -1,0 +1,750 @@
+{
+  "islands": [
+    {
+      "id": 1,
+      "size": 20,
+      "chains": [
+        "A",
+        "B"
+      ],
+      "residues": [
+        {
+          "chain": "A",
+          "resNum": 103,
+          "resName": "A",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 130,
+              "resName": "ARG"
+            }
+          ]
+        },
+        {
+          "chain": "A",
+          "resNum": 104,
+          "resName": "U",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 128,
+              "resName": "PHE"
+            },
+            {
+              "chain": "B",
+              "resNum": 130,
+              "resName": "ARG"
+            },
+            {
+              "chain": "B",
+              "resNum": 159,
+              "resName": "GLY"
+            },
+            {
+              "chain": "B",
+              "resNum": 160,
+              "resName": "PHE"
+            }
+          ]
+        },
+        {
+          "chain": "A",
+          "resNum": 105,
+          "resName": "C",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 128,
+              "resName": "PHE"
+            },
+            {
+              "chain": "B",
+              "resNum": 160,
+              "resName": "PHE"
+            },
+            {
+              "chain": "B",
+              "resNum": 162,
+              "resName": "PHE"
+            },
+            {
+              "chain": "B",
+              "resNum": 191,
+              "resName": "VAL"
+            },
+            {
+              "chain": "B",
+              "resNum": 192,
+              "resName": "TYR"
+            },
+            {
+              "chain": "B",
+              "resNum": 193,
+              "resName": "SER"
+            },
+            {
+              "chain": "B",
+              "resNum": 194,
+              "resName": "LYS"
+            }
+          ]
+        },
+        {
+          "chain": "A",
+          "resNum": 106,
+          "resName": "C",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 126,
+              "resName": "ARG"
+            },
+            {
+              "chain": "B",
+              "resNum": 155,
+              "resName": "LYS"
+            },
+            {
+              "chain": "B",
+              "resNum": 157,
+              "resName": "LEU"
+            },
+            {
+              "chain": "B",
+              "resNum": 160,
+              "resName": "PHE"
+            },
+            {
+              "chain": "B",
+              "resNum": 162,
+              "resName": "PHE"
+            },
+            {
+              "chain": "B",
+              "resNum": 193,
+              "resName": "SER"
+            },
+            {
+              "chain": "B",
+              "resNum": 194,
+              "resName": "LYS"
+            },
+            {
+              "chain": "B",
+              "resNum": 195,
+              "resName": "LEU"
+            }
+          ]
+        },
+        {
+          "chain": "A",
+          "resNum": 107,
+          "resName": "A",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 126,
+              "resName": "ARG"
+            },
+            {
+              "chain": "B",
+              "resNum": 155,
+              "resName": "LYS"
+            },
+            {
+              "chain": "B",
+              "resNum": 194,
+              "resName": "LYS"
+            },
+            {
+              "chain": "B",
+              "resNum": 195,
+              "resName": "LEU"
+            },
+            {
+              "chain": "B",
+              "resNum": 196,
+              "resName": "PRO"
+            },
+            {
+              "chain": "B",
+              "resNum": 197,
+              "resName": "ALA"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 126,
+          "resName": "ARG",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 106,
+              "resName": "C"
+            },
+            {
+              "chain": "A",
+              "resNum": 107,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 128,
+          "resName": "PHE",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 104,
+              "resName": "U"
+            },
+            {
+              "chain": "A",
+              "resNum": 105,
+              "resName": "C"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 130,
+          "resName": "ARG",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 103,
+              "resName": "A"
+            },
+            {
+              "chain": "A",
+              "resNum": 104,
+              "resName": "U"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 155,
+          "resName": "LYS",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 106,
+              "resName": "C"
+            },
+            {
+              "chain": "A",
+              "resNum": 107,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 157,
+          "resName": "LEU",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 106,
+              "resName": "C"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 159,
+          "resName": "GLY",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 104,
+              "resName": "U"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 160,
+          "resName": "PHE",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 104,
+              "resName": "U"
+            },
+            {
+              "chain": "A",
+              "resNum": 105,
+              "resName": "C"
+            },
+            {
+              "chain": "A",
+              "resNum": 106,
+              "resName": "C"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 162,
+          "resName": "PHE",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 105,
+              "resName": "C"
+            },
+            {
+              "chain": "A",
+              "resNum": 106,
+              "resName": "C"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 191,
+          "resName": "VAL",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 105,
+              "resName": "C"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 192,
+          "resName": "TYR",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 105,
+              "resName": "C"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 193,
+          "resName": "SER",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 105,
+              "resName": "C"
+            },
+            {
+              "chain": "A",
+              "resNum": 106,
+              "resName": "C"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 194,
+          "resName": "LYS",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 105,
+              "resName": "C"
+            },
+            {
+              "chain": "A",
+              "resNum": 106,
+              "resName": "C"
+            },
+            {
+              "chain": "A",
+              "resNum": 107,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 195,
+          "resName": "LEU",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 106,
+              "resName": "C"
+            },
+            {
+              "chain": "A",
+              "resNum": 107,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 196,
+          "resName": "PRO",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 107,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 197,
+          "resName": "ALA",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 107,
+              "resName": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "size": 18,
+      "chains": [
+        "A",
+        "B"
+      ],
+      "residues": [
+        {
+          "chain": "A",
+          "resNum": 108,
+          "resName": "G",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 228,
+              "resName": "THR"
+            },
+            {
+              "chain": "B",
+              "resNum": 229,
+              "resName": "PHE"
+            },
+            {
+              "chain": "B",
+              "resNum": 244,
+              "resName": "GLU"
+            },
+            {
+              "chain": "B",
+              "resNum": 279,
+              "resName": "ILE"
+            }
+          ]
+        },
+        {
+          "chain": "A",
+          "resNum": 110,
+          "resName": "G",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 213,
+              "resName": "TRP"
+            },
+            {
+              "chain": "B",
+              "resNum": 217,
+              "resName": "LYS"
+            },
+            {
+              "chain": "B",
+              "resNum": 228,
+              "resName": "THR"
+            },
+            {
+              "chain": "B",
+              "resNum": 229,
+              "resName": "PHE"
+            },
+            {
+              "chain": "B",
+              "resNum": 230,
+              "resName": "SER"
+            },
+            {
+              "chain": "B",
+              "resNum": 231,
+              "resName": "SER"
+            }
+          ]
+        },
+        {
+          "chain": "A",
+          "resNum": 111,
+          "resName": "G",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 213,
+              "resName": "TRP"
+            },
+            {
+              "chain": "B",
+              "resNum": 214,
+              "resName": "GLN"
+            },
+            {
+              "chain": "B",
+              "resNum": 217,
+              "resName": "LYS"
+            },
+            {
+              "chain": "B",
+              "resNum": 218,
+              "resName": "ASP"
+            }
+          ]
+        },
+        {
+          "chain": "A",
+          "resNum": 112,
+          "resName": "A",
+          "connectedTo": [
+            {
+              "chain": "B",
+              "resNum": 210,
+              "resName": "GLY"
+            },
+            {
+              "chain": "B",
+              "resNum": 211,
+              "resName": "CYS"
+            },
+            {
+              "chain": "B",
+              "resNum": 212,
+              "resName": "SER"
+            },
+            {
+              "chain": "B",
+              "resNum": 214,
+              "resName": "GLN"
+            },
+            {
+              "chain": "B",
+              "resNum": 215,
+              "resName": "ASP"
+            },
+            {
+              "chain": "B",
+              "resNum": 218,
+              "resName": "ASP"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 210,
+          "resName": "GLY",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 112,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 211,
+          "resName": "CYS",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 112,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 212,
+          "resName": "SER",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 112,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 213,
+          "resName": "TRP",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 110,
+              "resName": "G"
+            },
+            {
+              "chain": "A",
+              "resNum": 111,
+              "resName": "G"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 214,
+          "resName": "GLN",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 111,
+              "resName": "G"
+            },
+            {
+              "chain": "A",
+              "resNum": 112,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 215,
+          "resName": "ASP",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 112,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 217,
+          "resName": "LYS",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 110,
+              "resName": "G"
+            },
+            {
+              "chain": "A",
+              "resNum": 111,
+              "resName": "G"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 218,
+          "resName": "ASP",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 111,
+              "resName": "G"
+            },
+            {
+              "chain": "A",
+              "resNum": 112,
+              "resName": "A"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 228,
+          "resName": "THR",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 108,
+              "resName": "G"
+            },
+            {
+              "chain": "A",
+              "resNum": 110,
+              "resName": "G"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 229,
+          "resName": "PHE",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 108,
+              "resName": "G"
+            },
+            {
+              "chain": "A",
+              "resNum": 110,
+              "resName": "G"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 230,
+          "resName": "SER",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 110,
+              "resName": "G"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 231,
+          "resName": "SER",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 110,
+              "resName": "G"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 244,
+          "resName": "GLU",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 108,
+              "resName": "G"
+            }
+          ]
+        },
+        {
+          "chain": "B",
+          "resNum": 279,
+          "resName": "ILE",
+          "connectedTo": [
+            {
+              "chain": "A",
+              "resNum": 108,
+              "resName": "G"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
