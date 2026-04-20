@@ -88,10 +88,11 @@ def _export_highcharts_png(
             cmd += ['--callback', cb_path, '--allowCodeExecution', '1']
 
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60,
+            cmd, capture_output=True, text=True, timeout=180,
         )
         if result.returncode != 0:
-            console.print(f"  [red]Export error:[/red] {result.stderr[:200]}")
+            err = (result.stderr or result.stdout or 'unknown error')[:300]
+            console.print(f"  [red]Export error:[/red] {err}")
             return False
         return True
     except FileNotFoundError:
