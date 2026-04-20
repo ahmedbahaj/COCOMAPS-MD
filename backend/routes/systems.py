@@ -81,6 +81,19 @@ def _get_job_info_from_metadata(system_path):
     return result
 
 
+def _is_example_system(system_path):
+    """Check if a system is a bundled example (has isExample: true in _metadata.json)."""
+    meta = system_path / '_metadata.json'
+    if not meta.exists():
+        return False
+    try:
+        with open(meta, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return bool(data.get('isExample'))
+    except Exception:
+        return False
+
+
 def _set_display_name(system_path, display_name, owner_email=None):
     """Set display name and optionally owner email in .metadata.json"""
     metadata_file = system_path / '.metadata.json'
@@ -143,10 +156,11 @@ def list_systems():
                         'chain1': chain1,
                         'chain2': chain2,
                         'dateCreated': date_created,
-                        'status': 'ready',  # All loaded systems are ready
+                        'status': 'ready',
                         'jobId': job_info['jobId'],
                         'jobCreatedAt': job_info['jobCreatedAt'],
                         'jobExpiresAt': job_info['jobExpiresAt'],
+                        'isExample': _is_example_system(item),
                     })
         
         # Sort by name
@@ -199,6 +213,7 @@ def get_system(system_id):
             'jobId': job_info['jobId'],
             'jobCreatedAt': job_info['jobCreatedAt'],
             'jobExpiresAt': job_info['jobExpiresAt'],
+            'isExample': _is_example_system(system_path),
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -14,7 +14,7 @@
     
     <div v-else class="systems-list">
       <div
-        v-for="system in systemsStore.systems"
+        v-for="system in userSystems"
         :key="system.id"
         :class="['system-item', { active: systemsStore.currentSystem?.id === system.id }]"
         @click="selectSystem(system.id)"
@@ -28,6 +28,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSystemsStore } from '../../stores/systemsStore'
 
@@ -42,6 +43,8 @@ const emit = defineEmits(['close', 'select-system'])
 
 const systemsStore = useSystemsStore()
 const router = useRouter()
+
+const userSystems = computed(() => systemsStore.systems.filter(s => !s.isExample))
 
 const selectSystem = async (systemId) => {
   await systemsStore.setCurrentSystem(systemId)
