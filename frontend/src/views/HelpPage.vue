@@ -98,6 +98,21 @@
                 <div class="docs-card-text">
                   <h3 v-if="sub.heading">{{ sub.heading }}</h3>
                   <p v-for="(para, pi) in (sub.paragraphs || [])" :key="pi">{{ para }}</p>
+                  <div v-if="sub.links && sub.links.length" class="subsection-links">
+                    <a v-for="(link, li) in sub.links" :key="'link'+li" :href="link.url" target="_blank" rel="noopener" class="subsection-link">{{ link.label }}</a>
+                  </div>
+                  <div v-if="sub.codeBlocks && sub.codeBlocks.length" class="code-blocks">
+                    <div v-for="(cb, cbi) in sub.codeBlocks" :key="'cb'+cbi" class="code-block">
+                      <p v-if="cb.label" class="code-label">{{ cb.label }}</p>
+                      <div class="code-container">
+                        <pre><code>{{ cb.code }}</code></pre>
+                        <button class="copy-btn" @click="copyCode(cb.code, $event)" title="Copy">
+                          <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                          <svg class="icon-check" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <ol v-if="sub.criteria && sub.criteria.length" class="criteria-list">
                     <li v-for="(c, ci) in sub.criteria" :key="ci">{{ c }}</li>
                   </ol>
@@ -1154,145 +1169,104 @@ const cliSections = [
     id: 'cli-overview',
     title: 'Introduction',
     description: [
-      'The command-line tool (CLI) runs the same COCOMAPS-MD analysis as this website, but on your own computer. You type commands in a terminal window instead of uploading a file in the browser.',
-      'It is a good choice when you want to analyse more than 50 frames in one go (the website caps jobs at 50 frames), when you need to skip frames or analyse only part of a trajectory, or when you want all results and charts saved as files on your machine for offline work or publications.',
-      'The tool reads your structure file, suggests sensible defaults (which you can change), shows progress in the terminal, then writes tables and PNG figures to a folder you choose.'
-    ],
-    subsections: [
-      {
-        heading: 'Prerequisites',
-        items: [
-          'You will use a terminal (on Mac: Terminal app; on Windows: Command Prompt or PowerShell). If that is new to you, follow Setup and usage below or ask a colleague for assistance with the initial setup.',
-          'You need a working copy of the project on your computer and Python installed (version 3.10 or newer). The main project README lists how to install Python packages.',
-          'Analysis can take a long time for large trajectories because each snapshot is processed in turn—plan for coffee breaks on big runs.'
-        ]
-      }
-    ]
-  },
-  {
-    id: 'cli-start',
-    title: 'Setup and usage',
-    description: [
-      'These steps assume you already downloaded or cloned the COCOMAPS-MD project folder. If not, get the repository first, then continue here.'
-    ],
-    subsections: [
-      {
-        heading: 'Dependency installation',
-        paragraphs: [
-          'Open a terminal, go into the project folder (the one that contains the `cli` folder), then install the Python dependencies. From the project root, a common first step is `pip install -r requirements.txt` (see the main README if your lab uses a virtual environment or a different setup).',
-          'Optional: run `pip install -e .` from the same folder to register the short command `coco-md`. If you skip that, use `python -m cli` instead—both run the same program.'
-        ]
-      },
-      {
-        heading: 'Basic invocation',
-        items: [
-          '`python -m cli path/to/yourfile.pdb` — always run this from the project root folder (replace the path with your real PDB file).',
-          '`coco-md path/to/yourfile.pdb` — same as above, after you installed the `coco-md` shortcut.',
-          '`python -m cli` with no file — the tool will ask you to type the path to your PDB when it starts.'
-        ]
-      },
-      {
-        heading: 'Example command',
-        paragraphs: [
-          'This example analyses chains A and B, saves results under `results/run1`, uses frames 1 through 500, takes every frame, uses a 7 Å interface cutoff, and sets chart conservation to 70%:'
-        ],
-        items: [
-          '`coco-md trajectory.pdb -c A B -o results/run1 -s 1 -e 500 -n 1 -i 7.0 -t 70`'
-        ]
-      },
-      {
-        heading: 'Interactive configuration',
-        items: [
-          '`coco-md trajectory.pdb -C` — opens an interactive menu after showing the default settings so you can adjust pipeline and chart options step by step.',
-          'Even without `-C`, the tool may ask whether you want to customise settings before it starts—say yes if you prefer menus to memorising flags.'
-        ]
-      },
-      {
-        heading: 'Built-in help',
-        paragraphs: [
-          'For the full, up-to-date list of options, run `python -m cli --help` or `coco-md --help` in your terminal.'
-        ]
-      },
-      {
-        heading: 'Input file requirements',
-        paragraphs: [
-          'Use a standard PDB file. A trajectory is usually stored as several snapshots in one file using `MODEL` … `ENDMDL` blocks; a single static structure is fine too.',
-          'If you are unsure whether your file is valid, try opening it in a molecular viewer first. The CLI also prints how many frames and chains it detected before the run starts.'
-        ]
-      }
-    ]
-  },
-  {
-    id: 'cli-video-tutorial',
-    title: 'Video tutorial',
-    description: [
-      'A recorded walkthrough covering prerequisites and a sample analysis will be linked here when available.',
-      'In the meantime, refer to Setup and usage above—copy the example commands and adjust paths to match your environment.'
+      'The command-line tool runs the same COCOMAPS-MD analysis as this website, but on your own computer. Results \u2014 CSV tables, PNG charts, and summaries \u2014 are saved directly to your machine.',
+      'Use it when you need to analyse more than 50 frames (the website limit), control frame ranges, or keep results locally for publications.'
     ],
     subsections: []
+  },
+  {
+    id: 'cli-install',
+    title: 'Installation',
+    description: [
+      'The CLI runs inside Docker \u2014 no Python, compilers, or scientific libraries to install. Docker handles all dependencies automatically. On first use, Docker downloads the analysis image (~1.2 GB, one-time).'
+    ],
+    subsections: [
+      {
+        heading: 'Step 1 \u2014 Install Docker Desktop',
+        paragraphs: [
+          'Download and install Docker Desktop. It is free for academic use. After installing, open it once so the Docker engine starts.'
+        ],
+        links: [{ label: 'Download Docker Desktop', url: 'https://www.docker.com/products/docker-desktop/' }]
+      },
+      {
+        heading: 'Step 2 \u2014 Install coco-md (macOS / Linux)',
+        paragraphs: [
+          'Open the Terminal app and run these two commands:'
+        ],
+        codeBlocks: [
+          { code: 'sudo curl -fsSL https://raw.githubusercontent.com/sattamaltwaim/COCOMAPS-MD/master/coco-md -o /usr/local/bin/coco-md' },
+          { code: 'sudo chmod +x /usr/local/bin/coco-md' }
+        ]
+      },
+      {
+        heading: 'Step 2 \u2014 Install coco-md (Windows)',
+        paragraphs: [
+          'Right-click the PowerShell icon and choose \u201CRun as administrator\u201D, then run:'
+        ],
+        codeBlocks: [
+          { code: 'New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\\bin"\nInvoke-WebRequest -Uri "https://raw.githubusercontent.com/sattamaltwaim/COCOMAPS-MD/master/coco-md" -OutFile "$env:USERPROFILE\\bin\\coco-md.py"' },
+          { label: 'Then add it to your PATH:', code: '[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$env:USERPROFILE\\bin", "User")' }
+        ],
+        items: [
+          'Close and reopen PowerShell for the PATH change to take effect.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'cli-usage',
+    title: 'Usage',
+    description: [
+      'Make sure Docker Desktop is open and running, then open a terminal.'
+    ],
+    subsections: [
+      {
+        heading: 'Interactive mode',
+        paragraphs: [
+          'Run with no arguments to be guided through every option step by step:'
+        ],
+        codeBlocks: [
+          { code: 'coco-md' }
+        ]
+      },
+      {
+        heading: 'Analyse a file',
+        paragraphs: [
+          'Pass the path to your PDB file \u2014 it can be in your current folder or anywhere on your machine:'
+        ],
+        codeBlocks: [
+          { code: 'coco-md my_protein.pdb' },
+          { code: 'coco-md /Users/me/data/dimer.pdb' }
+        ]
+      },
+      {
+        heading: 'Specify chains, output, and frame range',
+        codeBlocks: [
+          { code: 'coco-md trajectory.pdb -c A B -o results/ -s 1 -e 50' }
+        ]
+      },
+      {
+        heading: 'Update to the latest version',
+        codeBlocks: [
+          { code: 'coco-md --update' }
+        ]
+      }
+    ]
   },
   {
     id: 'cli-options',
     title: 'Command-line reference',
     description: [
-      'Summary of the main options. Defaults suit many protein–protein interfaces; leave them unchanged for a standard run. Use `-C`, or confirm when prompted, to open interactive configuration instead of passing flags.'
+      'Full list of options. Defaults work well for most protein\u2013protein interfaces \u2014 leave them unchanged for a standard run.'
     ],
     subsections: [
       {
-        heading: 'Chains, interface, and output',
-        items: [
-          '`-c` / `--chains A B` — Which two chains define the interface (for example the two proteins). If you skip this, the tool guesses from the first frame.',
-          '`-o` / `--output FOLDER` — Where to save everything. If you do not set it, the tool suggests a folder under `systems/` based on your file name and asks you to confirm.',
-          '`-r` / `--reduce` — Turns on the “reduce” mode of CoCoMaps when your project supports it (see technical docs if you need this).',
-          '`-i` / `--cutoff` — How close two chains must be (in Ångström) to count as the interface region. Larger values keep more atoms; default is 5 Å.',
-          '`-w` / `--water` — How far bridging waters are included near the interface. If omitted, it matches the interface cutoff.',
-          '`-p` / `--params FILE` — Advanced: point to a JSON file to override detailed CoCoMaps distance and angle settings. Most users rely on defaults.'
-        ]
-      },
-      {
-        heading: 'Trajectory sampling',
-        items: [
-          '`-s` / `--start N` — First snapshot to use. Frame numbers start at 1 for the first snapshot in the file.',
-          '`-e` / `--end N` — Last snapshot to include in that range. If you omit it, the run goes to the end of the file.',
-          '`-n` / `--step N` — Analyse every Nth snapshot (for example `2` uses every other frame to save time). Default is 1 (every frame in range).'
-        ]
-      },
-      {
-        heading: 'Charts and axes',
-        items: [
-          '`-t` / `--threshold N` — Conservation threshold for charts, as a percent from 0 to 100 (default 50). Higher means stricter “how often must this contact appear”.',
-          '`-u` / `--unit LABEL` — Label for the horizontal axis on time-based charts, for example `ps` or `ns` if your frames map to real time. Leave unset or use `Frame` to show frame number.',
-          '`-C` / `--customize` — Always show the interactive configuration screens after the summary, before analysis starts.'
+        codeBlocks: [
+          { code: 'coco-md [pdb_file] [OPTIONS]\n\n  -c A B         Chain IDs to analyse (default: auto-detect from PDB)\n  -o DIR         Output directory (default: systems/<pdb_name>)\n  -r             Add hydrogens with Reduce before analysis\n  -i CUTOFF      Interface cutoff in \u00C5 (default: 5.0)\n  -w CUTOFF      Water bridge cutoff in \u00C5 (default: same as -i)\n  -s N           Start frame, 1-indexed (default: first)\n  -e N           End frame, 1-indexed inclusive (default: last)\n  -n N           Frame step \u2014 analyse every Nth frame (default: 1)\n  -t N           Conservation threshold % for charts (0\u2013100, default: 50)\n  -u UNIT        Time axis label for charts (fs, ps, ns; default: Frame)\n  -p FILE        JSON file with CoCoMaps parameter overrides\n  -C             Enter interactive parameter customisation before running' }
         ]
       }
     ]
   },
-  {
-    id: 'cli-pipeline',
-    title: 'Workflow and outputs',
-    description: [
-      'After you confirm the settings, the tool runs through fixed stages and prints progress in the terminal. When it finishes, your output folder contains data tables and chart images you can open or move like any other files.'
-    ],
-    subsections: [
-      {
-        heading: 'Pipeline stages',
-        items: [
-          'Your trajectory is split into one file per snapshot. Atoms far from the interface can be trimmed so each step stays focused on the binding region.',
-          'Input files for CoCoMaps are prepared for each snapshot.',
-          'CoCoMaps runs on each snapshot—the same kind of calculation the web server uses.',
-          'Results are combined: conserved “islands” are detected and small per-frame tables are merged into system-wide CSV files.',
-          'PNG charts are generated (trends, heatmaps, buried surface area, distance distributions, and similar views). Conserved-island summaries can also appear in the terminal if enabled.'
-        ]
-      },
-      {
-        heading: 'Optional chart dependencies',
-        paragraphs: [
-          'Most of the Python stack is installed with the project. A few figure types need extra tools: line and heatmap-style PNGs that go through Highcharts need the Node.js tool `highcharts-export-server` installed separately; violin-style plots use Plotly with Kaleido (often already pulled in via pip).',
-          'If a chart type is missing from your output, check the `cli/README.md` file in the project for the exact install commands. Full analysis also relies on the same CoCoMaps-related pieces as a local run of the app—see the main README if something fails to start.'
-        ]
-      }
-    ]
-  }
 ]
 
 const tabs = [
@@ -1345,6 +1319,13 @@ function scrollToSection(sectionId) {
     el.scrollIntoView({ behavior: 'smooth' })
     sidebarOpen.value = false
   }
+}
+
+function copyCode(code, event) {
+  navigator.clipboard.writeText(code)
+  const btn = event.currentTarget
+  btn.classList.add('copied')
+  setTimeout(() => btn.classList.remove('copied'), 1500)
 }
 
 function restoreFromURL() {
@@ -1704,6 +1685,110 @@ watch(activeSection, (id) => {
   font-weight: 600;
 }
 
+/* ── Code Blocks ── */
+.code-blocks {
+  margin: 12px 0 16px;
+}
+
+.code-block {
+  margin-bottom: 10px;
+}
+
+.code-block:last-child {
+  margin-bottom: 0;
+}
+
+.code-label {
+  font-size: 14px;
+  color: #6e6e73;
+  margin: 0 0 6px;
+}
+
+.code-container {
+  position: relative;
+  background: #1d1d1f;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.code-container pre {
+  margin: 0;
+  padding: 14px 48px 14px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.code-container code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #f5f5f7;
+  white-space: pre;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #a1a1a6;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.copy-btn.copied {
+  background: rgba(52, 199, 89, 0.2);
+}
+
+.copy-btn .icon-check {
+  display: none;
+}
+
+.copy-btn.copied .icon-copy {
+  display: none;
+}
+
+.copy-btn.copied .icon-check {
+  display: inline;
+  stroke: #34c759;
+}
+
+/* ── Subsection Links ── */
+.subsection-links {
+  margin: 8px 0 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subsection-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: #0071e3;
+  text-decoration: none;
+  padding: 6px 14px;
+  background: #f0f5ff;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.subsection-link:hover {
+  background: #dce8ff;
+}
 
 /* ── Status List ── */
 .status-list {
@@ -1934,6 +2019,14 @@ watch(activeSection, (id) => {
   .section-references {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .code-container pre {
+    padding: 12px 40px 12px 12px;
+  }
+
+  .code-container code {
+    font-size: 12px;
   }
 }
 
