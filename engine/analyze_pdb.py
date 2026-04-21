@@ -567,6 +567,28 @@ def run_cocomaps_analysis(
     return elapsed, successful, failed
 
 
+def cleanup_frame_folders(output_dir, verbose=True):
+    """Remove all frame_* subdirectories from a system directory.
+
+    Called after aggregation (and viewer PDB generation) since the per-frame
+    CSVs / PDBs are no longer needed — all data lives in the system-level
+    aggregate files.
+    """
+    system_path = Path(output_dir)
+    frame_dirs = sorted(
+        [d for d in system_path.iterdir() if d.is_dir() and d.name.startswith('frame_')],
+        key=lambda d: d.name,
+    )
+    if not frame_dirs:
+        return
+    if verbose:
+        print(f"\nCleaning up {len(frame_dirs)} frame folder(s)...")
+    for d in frame_dirs:
+        shutil.rmtree(d, ignore_errors=True)
+    if verbose:
+        print(f"✓ Removed {len(frame_dirs)} frame folder(s)")
+
+
 def run_pipeline(
     pdb_file,
     output_dir,
@@ -811,6 +833,10 @@ Environment Variables:
         print(f"STEP {step_num}: Aggregating system CSVs")
         print(f"{'='*80}")
         aggregate_system(output_dir, verbose=True)
+        step_num += 1
+
+        # STEP 6: Clean up frame folders
+        cleanup_frame_folders(output_dir, verbose=True)
         step_num += 1
 
         # Final summary

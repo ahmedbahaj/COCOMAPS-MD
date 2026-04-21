@@ -162,6 +162,13 @@ def process_pdb_async(app, job_id, pdb_file, pdb_name, system_dir, use_reduce=Tr
             except Exception as viewer_err:
                 print(f"[jobs] Warning: viewer PDB not written: {viewer_err}")
 
+            # Frame folders no longer needed after aggregation + viewer PDB
+            try:
+                from engine.analyze_pdb import cleanup_frame_folders
+                cleanup_frame_folders(system_dir, verbose=False)
+            except Exception as cleanup_err:
+                print(f"[jobs] Warning: frame cleanup failed: {cleanup_err}")
+
             # Attach public analysis jobId (from _metadata.json) so frontend can link to /analysis/<jobId>
             analysis_job_id = None
             metadata_path = os.path.join(system_dir, '_metadata.json')
