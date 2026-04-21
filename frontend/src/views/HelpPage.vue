@@ -1412,7 +1412,7 @@ watch(activeSection, (id) => {
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding: 0 40px 24px;
+  padding: 16px 40px 24px;
   position: sticky;
   top: 57px;
   z-index: 50;
