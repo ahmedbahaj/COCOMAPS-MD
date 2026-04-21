@@ -92,15 +92,9 @@ def get_frame_pdb(system_id, frame_num):
         if not frame_folder.exists() or not frame_folder.is_dir():
             return jsonify({'error': f'Frame {frame_num} not found'}), 404
 
-        # Web pipeline may write viewer.pdb at system root (full frame 1, minus non-interacting waters/metals)
+        # Frame 1 is always served from viewer.pdb at system root
         if frame_num == 1:
-            viewer_pdb = system_path / 'viewer.pdb'
-            if viewer_pdb.is_file():
-                pdb_file = viewer_pdb
-            else:
-                pdb_file = frame_folder / f'frame_{frame_num}.pdb'
-                if not pdb_file.exists():
-                    pdb_file = frame_folder / f'frame_{frame_num}.pd_h.pdb'
+            pdb_file = system_path / 'viewer.pdb'
         else:
             pdb_file = frame_folder / f'frame_{frame_num}.pdb'
             if not pdb_file.exists():
