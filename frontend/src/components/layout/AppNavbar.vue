@@ -11,7 +11,9 @@
         <span></span>
         <span></span>
       </button>
-      <router-link to="/" class="nav-logo">COCOMAPS-MD</router-link>
+      <router-link to="/" class="nav-logo">
+        <img src="/images/cocomaps.png" alt="COCOMAPS-MD" class="nav-logo-img" />
+      </router-link>
       <div class="nav-links">
         <router-link to="/" class="nav-link" exact>Home</router-link>
         <router-link to="/jobs" class="nav-link">Jobs</router-link>
@@ -46,7 +48,7 @@ const showHamburger = computed(() => route.name === 'Analysis')
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 40px;
+  padding: 16px 40px 16px 24px;
   background: #ffffff;
   border-bottom: 1px solid #e8e8ed;
   position: sticky;
@@ -61,10 +63,19 @@ const showHamburger = computed(() => route.name === 'Analysis')
 }
 
 .nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 20px;
   font-weight: 700;
   color: #1d1d1f;
   text-decoration: none;
+}
+
+.nav-logo-img {
+  display: block;
+  height: 29px;
+  width: auto;
 }
 
 .nav-links {
