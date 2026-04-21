@@ -26,6 +26,9 @@ _jobs_lock = threading.Lock()
 
 ALLOWED_EXTENSIONS = {'pdb'}
 
+MAX_WEB_FRAMES = 50
+MAX_WEB_FRAMES_SLACK = 53
+
 # ---------------------------------------------------------------------------
 # Persistent job helpers
 # ---------------------------------------------------------------------------
@@ -81,6 +84,36 @@ def _init_jobs_for_app(app):
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def count_pdb_frames(filepath):
+    """Count frames in a PDB file using the same logic as CLI inspect_pdb.
+
+    Counts MODEL records first; falls back to END records for files that
+    delimit frames with END instead of MODEL/ENDMDL.
+    """
+    model_count = 0
+    end_count = 0
+    with open(filepath, 'r') as fh:
+        for line in fh:
+            rec = line[:6].strip()
+            if rec == 'MODEL':
+                model_count += 1
+            elif rec == 'END':
+                end_count += 1
+    if model_count > 0:
+        return model_count
+    if end_count > 1:
+        return end_count
+    return 1
+
+
+def compute_effective_frames(total_frames, start_frame, end_frame, frame_step):
+    """Return the number of frames that will actually be processed."""
+    eff_end = total_frames if (end_frame == -1 or end_frame > total_frames) else end_frame
+    eff_start = max(0, start_frame)
+    step = max(1, frame_step)
+    return len(range(eff_start, eff_end, step))
 
 
 def process_pdb_async(app, job_id, pdb_file, pdb_name, system_dir, use_reduce=True, chain1='A', chain2='B', interface_cutoff=5.0, start_frame=0, end_frame=-1, frame_step=1, job_name=None, email=None):
@@ -201,8 +234,10 @@ def upload_file():
         filepath = os.path.join(temp_dir, filename)
         file.save(filepath)
 
+        file_size = os.path.getsize(filepath)
+
         # Reject empty uploads (avoids "No frames to process" from empty temp file)
-        if os.path.getsize(filepath) == 0:
+        if file_size == 0:
             try:
                 os.unlink(filepath)
                 os.rmdir(temp_dir)
@@ -242,6 +277,27 @@ def upload_file():
                 use_reduce = bool(strtobool(str(reduce_param)))
             except ValueError:
                 use_reduce = False
+
+        # ── Backend frame-count verification ──
+        total_frames_in_file = count_pdb_frames(filepath)
+        effective = compute_effective_frames(total_frames_in_file, start_frame, end_frame, frame_step)
+
+        if effective > MAX_WEB_FRAMES_SLACK:
+            suggested_step = -(-total_frames_in_file // MAX_WEB_FRAMES)  # ceil division
+            try:
+                os.unlink(filepath)
+                os.rmdir(temp_dir)
+            except OSError:
+                pass
+            return jsonify({
+                'error': (
+                    f'Too many frames to process ({effective}). '
+                    f'The web app allows at most {MAX_WEB_FRAMES_SLACK} frames per job. '
+                    f'Your file contains {total_frames_in_file} frames — use a step size '
+                    f'of at least {suggested_step} to stay within the limit, '
+                    f'or use the CLI for unlimited trajectory length.'
+                )
+            }), 400
 
         # Generate a unique job ID
         job_id = str(uuid.uuid4())

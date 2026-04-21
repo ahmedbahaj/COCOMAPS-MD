@@ -79,8 +79,8 @@
           </div>
         </div>
 
-        <!-- Frame Selection Section (only shown when > maxFrames) -->
-        <template v-if="totalFrames > maxFrames">
+        <!-- Frame Selection Section (only shown when > maxFramesSlack) -->
+        <template v-if="totalFrames > maxFramesSlack">
           <div class="setting-section-divider"></div>
           <h4 class="setting-section-title">Frame Sampling</h4>
           
@@ -88,17 +88,18 @@
           <div class="setting-row">
             <div class="setting-label">
               <span>Step Size</span>
-              <TooltipIcon text="Sample every Nth frame from the trajectory. A step size of 2 means every other frame (1, 3, 5, ...). Disabled when using custom interval." />
+              <TooltipIcon :text="`Sample every Nth frame. Minimum ${minStepSize} to stay within the ${maxFramesSlack}-frame web limit. Disabled when using custom interval.`" />
             </div>
             <div class="setting-control">
               <input 
                 type="number" 
                 v-model.number="settings.frameStep"
-                min="1" 
+                :min="minStepSize" 
                 :max="Math.ceil(totalFrames / 2)"
                 :disabled="settings.useCustomInterval"
                 class="number-input"
                 :class="{ disabled: settings.useCustomInterval }"
+                @change="clampStepSize"
               />
               <span class="unit">frames</span>
             </div>
@@ -109,8 +110,8 @@
             <div class="setting-label">
               <span>Frames to Analyze</span>
             </div>
-            <div class="setting-value">
-              {{ Math.ceil(totalFrames / (settings.frameStep || 1)) }} frames (1 to {{ totalFrames }})
+            <div class="setting-value" :class="{ 'value-warning': computedFrameCount > maxFramesSlack }">
+              {{ computedFrameCount }} frames (1 to {{ totalFrames }})
             </div>
           </div>
 
@@ -136,7 +137,7 @@
           <div v-if="settings.useCustomInterval" class="interval-selector-wrapper">
             <FrameIntervalSelector
               :totalFrames="totalFrames"
-              :maxFrames="maxFrames"
+              :maxFrames="maxFramesSlack"
               v-model="frameInterval"
             />
           </div>
@@ -168,7 +169,6 @@ const props = defineProps({
       endFrame: 50
     })
   },
-  /** PDB file stem; used as placeholder and to suggest default job name */
   defaultJobName: {
     type: String,
     default: ''
@@ -180,6 +180,14 @@ const props = defineProps({
   maxFrames: {
     type: Number,
     default: 50
+  },
+  maxFramesSlack: {
+    type: Number,
+    default: 53
+  },
+  minStepSize: {
+    type: Number,
+    default: 1
   }
 })
 
@@ -198,10 +206,20 @@ const settings = reactive({
   endFrame: props.modelValue.endFrame ?? 50
 })
 
+const computedFrameCount = computed(() => {
+  return Math.ceil(props.totalFrames / (settings.frameStep || 1))
+})
+
+const clampStepSize = () => {
+  if (settings.frameStep < props.minStepSize) {
+    settings.frameStep = props.minStepSize
+  }
+}
+
 // Frame interval for FrameIntervalSelector v-model
 const frameInterval = ref({
   startFrame: settings.startFrame,
-  endFrame: Math.min(settings.endFrame, props.maxFrames)
+  endFrame: Math.min(settings.endFrame, props.maxFramesSlack)
 })
 
 // Sync frameInterval changes back to settings
@@ -467,6 +485,10 @@ watch(settings, (newSettings) => {
   font-size: 14px;
   font-weight: 600;
   color: #0066cc;
+}
+
+.setting-value.value-warning {
+  color: #d32f2f;
 }
 
 .number-input.disabled {

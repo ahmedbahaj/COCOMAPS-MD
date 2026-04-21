@@ -29,10 +29,22 @@ def create_app():
     
     # Configuration
     app.config['UPLOAD_FOLDER'] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2 GB max
+    app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB max for web uploads
     app.config['DATA_FOLDER'] = app.config['UPLOAD_FOLDER']  # Root folder containing system folders
 
     _seed_example_systems(app.config['DATA_FOLDER'])
+
+    # Return a JSON error when upload exceeds MAX_CONTENT_LENGTH
+    from werkzeug.exceptions import RequestEntityTooLarge
+    from flask import jsonify as _jsonify
+
+    @app.errorhandler(RequestEntityTooLarge)
+    def handle_too_large(e):
+        max_mb = app.config['MAX_CONTENT_LENGTH'] // (1024 * 1024)
+        return _jsonify({
+            'error': f'File too large. The web app accepts files up to {max_mb} MB. '
+                     f'For larger files, use the command-line interface (CLI).'
+        }), 413
     
     # Register blueprints
     from backend.routes import data, upload, systems

@@ -26,11 +26,6 @@
     <!-- Main Content -->
     <main class="content">
       <div class="container">
-        <p class="cli-frame-note">
-          The web app analyzes at most 50 frames per job (longer trajectories are subsampled). For full trajectories or other very large PDBs, use the command-line interface, for more help
-          <router-link :to="{ name: 'Help', query: { tab: 'cli' } }" class="cli-frame-note-link">Help (CLI)</router-link>.
-        </p>
-
         <!-- Upload Section -->
         <section class="upload-section" v-if="!uploadedFile">
           <div 
@@ -65,7 +60,7 @@
                 <strong>Drop your PDB file here</strong>
                 <span>or click to browse</span>
               </p>
-              <p class="dropzone-hint">.pdb files supported</p>
+              <p class="dropzone-hint">.pdb files up to 200 MB</p>
             </div>
             <div class="dropzone-loading" v-else>
               <div class="spinner"></div>
@@ -109,9 +104,13 @@
             v-model="chainSelection"
           />
 
-          <!-- Frame Sampling Info (shown when > 50 frames) -->
-          <p v-if="detectedFrames > 50" class="frame-sampling-note">
-            Analyzing {{ effectiveFrameCount }} frames from 1 to {{ detectedFrames }} with step size {{ defaultStepSize }}.
+          <!-- Frame Sampling Info (shown when subsampling is active) -->
+          <p v-if="detectedFrames > MAX_WEB_FRAMES_SLACK && !advancedSettings.useCustomInterval" class="frame-sampling-note">
+            Trajectory has {{ detectedFrames }} frames — sampling {{ effectiveFrameCount }} frames (every {{ advancedSettings.frameStep || defaultStepSize }}th frame).
+          </p>
+          <p v-if="detectedFrames > MAX_WEB_FRAMES_SLACK && !advancedSettings.useCustomInterval" class="frame-sampling-note">
+            The web app analyzes at most 50 frames per job. For full trajectories, use the
+            <router-link :to="{ name: 'Help', query: { tab: 'cli' } }" class="frame-sampling-link">command-line interface</router-link>.
           </p>
 
           <!-- Advanced Settings -->
@@ -120,7 +119,9 @@
             @update:settings="advancedSettings = $event"
             :defaultJobName="pdbStem"
             :totalFrames="detectedFrames"
-            :maxFrames="50"
+            :maxFrames="MAX_WEB_FRAMES"
+            :maxFramesSlack="MAX_WEB_FRAMES_SLACK"
+            :minStepSize="minStepSize"
           />
 
           <!-- Start Analysis Button -->
@@ -178,12 +179,18 @@ const route = useRoute()
 const chartUiStore = useChartUiStore()
 const fileInput = ref(null)
 
+// Web upload limits
+const MAX_FILE_SIZE = 200 * 1024 * 1024 // 200 MB
+const MAX_WEB_FRAMES = 50
+const MAX_WEB_FRAMES_SLACK = 53
+
 // Upload state
 const isDragging = ref(false)
 const isUploading = ref(false)
 const uploadedFile = ref(null)
 const detectedChains = ref([])
 const detectedFrames = ref(0)
+const fileSizeError = ref('')
 
 // Configuration state
 const chainSelection = ref({ chain1: '', chain2: '', isValid: false })
@@ -208,17 +215,28 @@ const pdbStem = computed(() => {
   return file.name.replace(/\.pdb$/i, '')
 })
 
-// Computed: default step size to cover full trajectory in ~50 frames
+// Computed: default step size to keep frame count within limit
 const defaultStepSize = computed(() => {
-  if (detectedFrames.value <= 50) return 1
-  return Math.floor(detectedFrames.value / 50) || 1
+  if (detectedFrames.value <= MAX_WEB_FRAMES_SLACK) return 1
+  return Math.ceil(detectedFrames.value / MAX_WEB_FRAMES)
+})
+
+// Computed: minimum allowed step size (prevents exceeding 53 frames)
+const minStepSize = computed(() => {
+  if (detectedFrames.value <= MAX_WEB_FRAMES_SLACK) return 1
+  let step = 1
+  while (Math.ceil(detectedFrames.value / step) > MAX_WEB_FRAMES_SLACK) {
+    step++
+  }
+  return step
 })
 
 // Computed: effective frame count with current step size
 const effectiveFrameCount = computed(() => {
-  const step = advancedSettings.value.useCustomInterval 
-    ? 1 
-    : (advancedSettings.value.frameStep || defaultStepSize.value)
+  if (advancedSettings.value.useCustomInterval) {
+    return advancedSettings.value.endFrame - advancedSettings.value.startFrame + 1
+  }
+  const step = advancedSettings.value.frameStep || defaultStepSize.value
   return Math.ceil(detectedFrames.value / step)
 })
 
@@ -294,8 +312,19 @@ const handleFileSelect = (event) => {
 }
 
 const processFile = async (file) => {
+  fileSizeError.value = ''
+
   if (!file.name.toLowerCase().endsWith('.pdb')) {
     alert('Please upload a PDB file (.pdb extension)')
+    return
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    alert(
+      `File too large (${formatFileSize(file.size)}). ` +
+      `The web app accepts files up to 200 MB. ` +
+      `For larger files, use the command-line interface (CLI).`
+    )
     return
   }
 
@@ -303,7 +332,6 @@ const processFile = async (file) => {
   uploadedFile.value = file
 
   try {
-    // Read file content to detect chains and frames
     const content = await readFileContent(file)
     const chains = detectChainsFromPDB(content)
     const frames = detectFramesFromPDB(content)
@@ -351,16 +379,25 @@ const detectChainsFromPDB = (content) => {
 }
 
 const detectFramesFromPDB = (content) => {
-  // Count MODEL records to determine number of frames
-  // If no MODEL records exist, it's a single frame structure
-  const modelMatches = content.match(/^MODEL\s/gm)
-  return modelMatches ? modelMatches.length : 1
+  // Match CLI inspect_pdb logic: count MODEL records, fall back to END records
+  let modelCount = 0
+  let endCount = 0
+  const lines = content.split('\n')
+  for (const line of lines) {
+    const rec = line.substring(0, 6).trim()
+    if (rec === 'MODEL') modelCount++
+    else if (rec === 'END') endCount++
+  }
+  if (modelCount > 0) return modelCount
+  if (endCount > 1) return endCount
+  return 1
 }
 
 const resetUpload = () => {
   uploadedFile.value = null
   detectedChains.value = []
   detectedFrames.value = 0
+  fileSizeError.value = ''
   chainSelection.value = { chain1: '', chain2: '', isValid: false }
   advancedSettings.value = {
     jobName: '',
@@ -406,18 +443,28 @@ const startAnalysis = async () => {
       waterCutoff: advancedSettings.value.waterCutoff
     }
 
-    // Always send frame range so backend processes the correct number of frames
-    if (detectedFrames.value > 50) {
-      if (advancedSettings.value.useCustomInterval) {
-        options.startFrame = advancedSettings.value.startFrame
-        options.endFrame = advancedSettings.value.endFrame
-      } else {
-        options.startFrame = 1
-        options.endFrame = detectedFrames.value
-        options.frameStep = advancedSettings.value.frameStep || defaultStepSize.value
+    // Enforce frame limits and send frame range
+    if (advancedSettings.value.useCustomInterval && detectedFrames.value > MAX_WEB_FRAMES_SLACK) {
+      const intervalSize = advancedSettings.value.endFrame - advancedSettings.value.startFrame + 1
+      if (intervalSize > MAX_WEB_FRAMES_SLACK) {
+        processingStatus.value = {
+          status: 'failed', progress: 0, step_label: 'Failed',
+          error: `Custom interval spans ${intervalSize} frames, exceeding the ${MAX_WEB_FRAMES_SLACK}-frame web limit. Use a smaller range or the CLI for full trajectories.`
+        }
+        isProcessing.value = false
+        return
       }
+      options.startFrame = advancedSettings.value.startFrame
+      options.endFrame = advancedSettings.value.endFrame
+      options.frameStep = 1
+    } else if (detectedFrames.value > MAX_WEB_FRAMES_SLACK) {
+      options.startFrame = 1
+      options.endFrame = detectedFrames.value
+      // Guarantee step yields ≤ MAX_WEB_FRAMES frames
+      const requestedStep = advancedSettings.value.frameStep || defaultStepSize.value
+      const safeStep = Math.max(requestedStep, minStepSize.value)
+      options.frameStep = safeStep
     } else {
-      // ≤50 frames: send full range explicitly so backend doesn't rely on defaults
       options.startFrame = 1
       options.endFrame = detectedFrames.value
       options.frameStep = 1
@@ -512,11 +559,17 @@ onUnmounted(() => {
 
 // Sync default step size when frames change
 watch(defaultStepSize, (newStep) => {
-  // Only update if not using custom interval and step hasn't been manually changed
   if (!advancedSettings.value.useCustomInterval) {
     advancedSettings.value.frameStep = newStep
   }
 }, { immediate: true })
+
+// Clamp user-entered step size so it never produces > MAX_WEB_FRAMES_SLACK frames
+watch(() => advancedSettings.value.frameStep, (step) => {
+  if (detectedFrames.value > MAX_WEB_FRAMES_SLACK && step < minStepSize.value) {
+    advancedSettings.value.frameStep = minStepSize.value
+  }
+})
 </script>
 
 <style scoped>
@@ -620,23 +673,6 @@ watch(defaultStepSize, (newStep) => {
   margin: 0 auto;
 }
 
-.cli-frame-note {
-  font-size: 15px;
-  line-height: 1.45;
-  font-weight: 400;
-  text-align: center;
-  color: #6e6e73;
-  margin: 0 0 28px;
-}
-
-.cli-frame-note-link {
-  color: #0066cc;
-  text-decoration: none;
-}
-
-.cli-frame-note-link:hover {
-  text-decoration: underline;
-}
 
 /* Upload Section */
 .upload-section {
@@ -835,6 +871,15 @@ watch(defaultStepSize, (newStep) => {
   color: #86868b;
   margin: 16px 0 0 0;
   text-align: center;
+}
+
+.frame-sampling-link {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.frame-sampling-link:hover {
+  text-decoration: underline;
 }
 
 /* Action Section */
