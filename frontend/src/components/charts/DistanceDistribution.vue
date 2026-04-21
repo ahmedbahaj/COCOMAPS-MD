@@ -198,6 +198,42 @@ const loadDistanceData = async () => {
   }
 }
 
+const selectFirstTypeWithData = async () => {
+  if (!systemsStore.currentSystem || availableInteractionTypes.value.length === 0) {
+    updateChart()
+    return
+  }
+
+  loading.value = true
+  updateChart()
+
+  const threshold = chartUiStore.currentThreshold
+
+  for (const type of availableInteractionTypes.value) {
+    try {
+      const response = await api.getDistanceDistributions(
+        systemsStore.currentSystem.id,
+        [type]
+      )
+      const pairs = response.pairs || []
+      if (pairs.some(p => p.consistency >= threshold)) {
+        selectedInteractionType.value = type
+        distanceData.value = pairs
+        loading.value = false
+        updateChart()
+        return
+      }
+    } catch {
+      // skip this type, try next
+    }
+  }
+
+  selectedInteractionType.value = availableInteractionTypes.value[0]
+  distanceData.value = []
+  loading.value = false
+  updateChart()
+}
+
 const updateChart = () => {
   if (!chartContainer.value) return
 
@@ -483,10 +519,8 @@ const updateChart = () => {
 }
 
 onMounted(() => {
-  // Auto-select first interaction type if available
   if (availableInteractionTypes.value.length > 0 && !selectedInteractionType.value) {
-    selectedInteractionType.value = availableInteractionTypes.value[0]
-    loadDistanceData()
+    selectFirstTypeWithData()
   } else {
     updateChart()
   }
@@ -505,11 +539,9 @@ watch([
   () => availableInteractionTypes.value
 ], () => {
   if (chartUiStore.currentChartType === 'violinPlot') {
-    // Update selected type if current one is no longer available
     if (selectedInteractionType.value && !availableInteractionTypes.value.includes(selectedInteractionType.value)) {
       if (availableInteractionTypes.value.length > 0) {
-        selectedInteractionType.value = availableInteractionTypes.value[0]
-        loadDistanceData()
+        selectFirstTypeWithData()
       } else {
         selectedInteractionType.value = ''
         distanceData.value = null
