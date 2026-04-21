@@ -713,7 +713,7 @@ def write_viewer_frame_pdb(
     verbose: bool = False,
 ) -> bool:
     """
-    Write ``frame_1/frame_1_viewer.pdb`` containing:
+    Write ``viewer.pdb`` at the system directory root containing:
 
     * All chains (protein / DNA / ligand) from the first processed frame of the
       original uploaded PDB.
@@ -788,9 +788,7 @@ def write_viewer_frame_pdb(
         if not groups and not mediated_lines:
             return False
 
-        out_dir = system_path / "frame_1"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / "frame_1_viewer.pdb"
+        out_path = system_path / "viewer.pdb"
 
         if groups:
             combined = universe.atoms[:0]

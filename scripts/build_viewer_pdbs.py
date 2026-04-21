@@ -1,5 +1,5 @@
 """
-Build frame_1/frame_1_viewer.pdb for existing systems that still have their original PDB.
+Build viewer.pdb for existing systems that still have their original PDB.
 
 Only systems with `<systems_dir>/<name>/<name>.pdb` are processed (same name as the folder).
 Systems without that file (e.g. deleted to save space) are skipped.
@@ -42,7 +42,7 @@ def iter_system_dirs(systems_dir: Path):
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate frame_1_viewer.pdb for systems that have <name>/<name>.pdb"
+        description="Generate viewer.pdb for systems that have <name>/<name>.pdb"
     )
     parser.add_argument(
         "--systems-dir",
@@ -58,7 +58,7 @@ def main() -> None:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Regenerate even if frame_1/frame_1_viewer.pdb already exists",
+        help="Regenerate even if viewer.pdb already exists",
     )
     args = parser.parse_args()
 
@@ -76,7 +76,7 @@ def main() -> None:
         name = system_dir.name
         orig = original_pdb_path(system_dir)
         interactions = system_dir / "_interactions.csv"
-        viewer_out = system_dir / "frame_1" / "frame_1_viewer.pdb"
+        viewer_out = system_dir / "viewer.pdb"
 
         if not orig.is_file():
             skipped_no_pdb += 1
@@ -91,7 +91,7 @@ def main() -> None:
             if dry:
                 print(f"[dry-run] skip (viewer exists): {name}")
             else:
-                print(f"[skip] {name}: frame_1_viewer.pdb exists (use --force to overwrite)")
+                print(f"[skip] {name}: viewer.pdb exists (use --force to overwrite)")
             skipped_exists += 1
             continue
 
