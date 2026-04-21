@@ -943,7 +943,9 @@ const chartsSections = [
           'Clicking any heatmap cell opens the Trajectory Analysis panel. This modal shows the binary timeline (present or absent) for that specific residue pair and interaction type across every frame of the simulation.',
           'The timeline bar at the top uses blue segments for frames where the interaction is present and gray for absent frames. Click on any segment to highlight it and see atom-level details for that frame\u2014which atoms are connected, bond distance, and the individual conservation of each atom pair.',
           'Statistical summary cards show the overall persistence, average distance, and the longest consecutive stretch where the interaction persists without interruption.'
-        ]
+        ],
+        image: IMG + 'screenshots/trajectory-analysis.png',
+        imageAlt: 'Trajectory analysis panel showing binary timeline and atom-level details'
       }
     ]
   },
