@@ -11,7 +11,6 @@
             :key="type"
             type="button"
             :class="['interaction-chip', { active: selectedInteractionType === type }]"
-            :style="getChipStyle(type)"
             @click="selectInteractionType(type)"
           >
             <span class="chip-color-dot" :style="{ backgroundColor: getInteractionBaseColor(type) }"></span>
@@ -138,37 +137,6 @@ const availableInteractionTypes = computed(() => {
   })
   return Array.from(typesSet).sort()
 })
-
-// Chip styling helpers
-const getChipStyle = (type) => {
-  const baseColor = getInteractionBaseColor(type)
-  const isActive = selectedInteractionType.value === type
-  
-  if (isActive) {
-    return {
-      backgroundColor: baseColor,
-      borderColor: baseColor,
-      color: getContrastColor(baseColor)
-    }
-  }
-  return {
-    backgroundColor: 'transparent',
-    borderColor: baseColor,
-    color: '#1d1d1f'
-  }
-}
-
-// Get contrasting text color (white or black) based on background
-const getContrastColor = (hexColor) => {
-  // Remove # if present
-  const hex = hexColor.replace('#', '')
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
-  // Calculate luminance
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.5 ? '#1d1d1f' : '#ffffff'
-}
 
 const selectInteractionType = (type) => {
   selectedInteractionType.value = type
@@ -589,44 +557,44 @@ watch([
 .interaction-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .interaction-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 7px;
+  padding: 6px 14px;
   font-size: 14px;
-  font-weight: 600;
-  border: 2px solid;
+  font-weight: 500;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border: 2px solid transparent;
   border-radius: 980px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   font-family: inherit;
-  background: transparent;
 }
 
 .interaction-chip:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #e8e8ed;
 }
 
 .interaction-chip.active {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: #1d1d1f;
+  color: #ffffff;
+  border-color: #1d1d1f;
 }
 
 .chip-color-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .interaction-chip.active .chip-color-dot {
-  background-color: currentColor !important;
-  opacity: 0.3;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
 }
 
 .no-types-message {
