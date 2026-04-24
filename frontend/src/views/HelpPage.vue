@@ -449,7 +449,6 @@ const interactionSections = [
     color: '#FFC107',
     description: 'The only covalent bonds considered in this analysis. They form intra- or inter-molecularly between sulfur atoms at the γ position (SG) of Cysteine side chains.',
     image: IMG + 'ss-bonds.png',
-    imageClass: 'section-image--ss-bonds',
     imageAlt: 'Disulfide bridge diagram',
     references: ['10.1016/0022-2836(81)90515-5'],
     subsections: [
@@ -1630,15 +1629,6 @@ watch(activeSection, (id) => {
   border-radius: 8px;
 }
 
-/* Small intrinsic asset (117×227); max-height only caps growth, so set height to scale up */
-.section-image--ss-bonds img {
-  height: 360px;
-  max-height: none; /* taller than .section-image img max-height (340px) */
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
-}
-
 /* ── Subsections ── */
 .docs-subsection {
   margin-bottom: 28px;
@@ -1990,11 +1980,6 @@ watch(activeSection, (id) => {
   .section-image img {
     max-height: 260px;
   }
-
-  .section-image--ss-bonds img {
-    max-height: none;
-    height: 300px;
-  }
 }
 
 @media (max-width: 600px) {
@@ -2031,12 +2016,6 @@ watch(activeSection, (id) => {
 
   .section-image img {
     max-height: 200px;
-  }
-
-  .section-image--ss-bonds img {
-    /* Override the 200px cap from .section-image img in this breakpoint */
-    max-height: 320px;
-    height: 280px;
   }
 
   .section-references {
