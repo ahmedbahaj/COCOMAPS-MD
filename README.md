@@ -8,7 +8,7 @@ The **public-facing** README, `docker-compose.yml` (image-only), and `coco-md` w
 
 - Docker Engine + Docker Compose
 - Node.js 20+ (frontend dev only)
-- Python 3.11+ (local engine/backend dev only)
+- Python 3.11+ (local engine/backend dev only) -
 
 ## Building
 
