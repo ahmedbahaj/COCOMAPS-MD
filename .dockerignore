@@ -22,6 +22,7 @@ documentation/
 .cursor/
 *.md
 !backend/README.md
+!scripts/README.md
 
 # Tests (not needed in production image)
 tests/
