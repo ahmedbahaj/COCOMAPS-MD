@@ -207,6 +207,21 @@ def process_frames(pdb_file, output_dir, chain_a='A', chain_b='B',
     _tmp_first.close()
     _first_universe = mda.Universe(_tmp_first.name)
 
+    # Validate that requested chains exist in the PDB
+    _detected_chains = sorted(set(_first_universe.atoms.chainIDs))
+    if not _detected_chains or _detected_chains == ['']:
+        _detected_chains = sorted(set(_first_universe.atoms.segids))
+    _missing = [c for c in (chain_a, chain_b) if c not in _detected_chains]
+    if _missing:
+        _first_universe.trajectory.close()
+        del _first_universe
+        os.unlink(_tmp_first.name)
+        avail = ", ".join(_detected_chains) if _detected_chains else "none detected"
+        raise ValueError(
+            f"Chain(s) {', '.join(repr(c) for c in _missing)} not found in PDB. "
+            f"Available chains: {avail}"
+        )
+
     # Pre-compute atom selections if doing interface selection (from first frame)
     selections = None
     if select_interface:

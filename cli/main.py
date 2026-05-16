@@ -125,11 +125,28 @@ def main():
 
     # ── Resolve chain selection ──
     chains = info['chains']
+
+    if len(chains) < 2:
+        console.print(
+            f"\n[red]Error: PDB contains {'no chains' if not chains else 'only one chain (' + chains[0] + ')'}. "
+            f"At least two chains are required for interaction analysis.[/red]"
+        )
+        sys.exit(1)
+
     if args.chains:
         chain_a, chain_b = args.chains
+        bad = [c for c in (chain_a, chain_b) if c not in chains]
+        if bad:
+            chain_list = ", ".join(chains)
+            console.print(
+                f"\n[red]Error: chain{'s' if len(bad) > 1 else ''} "
+                f"{', '.join(repr(c) for c in bad)} not found in this PDB.[/red]"
+            )
+            console.print(f"  Available chains: [bold]{chain_list}[/bold]")
+            console.print(f"  Example: [dim]coco-md {args.pdb_file} -c {chains[0]} {chains[1]}[/dim]")
+            sys.exit(1)
     else:
-        chain_a = chains[0] if len(chains) >= 1 else 'A'
-        chain_b = chains[1] if len(chains) >= 2 else 'B'
+        chain_a, chain_b = chains[0], chains[1]
 
     # ── Resolve trajectory scope ──
     total_frames = info['total_frames']

@@ -105,6 +105,33 @@ def run_pipeline(
 
     total_frames_raw = len(raw_frames)
 
+    # ── Validate chains exist in the first frame ──
+    if total_frames_raw > 0:
+        import tempfile as _tmpmod
+        import MDAnalysis as _mda_chk
+        _tmp_chk = _tmpmod.NamedTemporaryFile(suffix='.pdb', delete=False, mode='w')
+        _tmp_chk.write(raw_frames[0])
+        if not raw_frames[0].rstrip().endswith('END'):
+            _tmp_chk.write('END\n')
+        _tmp_chk.close()
+        _chk_u = _mda_chk.Universe(_tmp_chk.name)
+        _detected = sorted(set(_chk_u.atoms.chainIDs))
+        if not _detected or _detected == ['']:
+            _detected = sorted(set(_chk_u.atoms.segids))
+        _chk_u.trajectory.close()
+        del _chk_u
+        os.unlink(_tmp_chk.name)
+
+        missing = [c for c in (chain_a, chain_b) if c not in _detected]
+        if missing:
+            chain_list = ", ".join(_detected) if _detected else "none detected"
+            console.print(
+                f"\n[red]Error: chain{'s' if len(missing) > 1 else ''} "
+                f"{', '.join(repr(c) for c in missing)} not found in PDB.[/red]"
+            )
+            console.print(f"  Available chains: [bold]{chain_list}[/bold]")
+            raise SystemExit(1)
+
     # Determine slice
     if end_frame == -1 or end_frame > total_frames_raw:
         end_frame = total_frames_raw
