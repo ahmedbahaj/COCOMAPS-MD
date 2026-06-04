@@ -84,14 +84,13 @@ def inspect_pdb(pdb_path: str) -> dict:
     finally:
         os.unlink(tmp.name)
 
-    # Collect unique chain (segment) IDs
-    chain_ids = sorted(set(u.atoms.segids))
-    # Fallback: if segids are blank, try chainIDs attribute
+    # Collect unique chain IDs — prefer chainIDs (PDB col 22), fall back to segids
+    try:
+        chain_ids = sorted(set(u.atoms.chainIDs))
+    except AttributeError:
+        chain_ids = []
     if not chain_ids or chain_ids == ['']:
-        try:
-            chain_ids = sorted(set(u.atoms.chainIDs))
-        except AttributeError:
-            chain_ids = []
+        chain_ids = sorted(set(u.atoms.segids))
 
     return {
         'total_frames': total_frames,
