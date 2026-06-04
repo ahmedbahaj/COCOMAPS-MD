@@ -56,22 +56,27 @@ def get_atom_selections(universe, chain_a='A', chain_b='B'):
     metal_resnames = " ".join(METALS)
     exclude_selection = f"not resname {water_resnames} {non_metal_ions} {metal_resnames}"
     
-    # Select chain atoms
-    chain_a_atoms = universe.select_atoms(f"segid {chain_a} and {exclude_selection}")
-    chain_b_atoms = universe.select_atoms(f"segid {chain_b} and {exclude_selection}")
-    
-    # Fallback if segid doesn't work
+    # Select chain atoms — prefer chainID (PDB col 22), fall back to segid
+    kw = "chainID"
+    chain_a_atoms = universe.select_atoms(f"chainID {chain_a} and {exclude_selection}")
+    chain_b_atoms = universe.select_atoms(f"chainID {chain_b} and {exclude_selection}")
+
     if len(chain_a_atoms) == 0 or len(chain_b_atoms) == 0:
-        chain_a_atoms = universe.select_atoms(f"segid {chain_a}")
-        chain_b_atoms = universe.select_atoms(f"segid {chain_b}")
-    
+        kw = "segid"
+        chain_a_atoms = universe.select_atoms(f"segid {chain_a} and {exclude_selection}")
+        chain_b_atoms = universe.select_atoms(f"segid {chain_b} and {exclude_selection}")
+
+    if len(chain_a_atoms) == 0 or len(chain_b_atoms) == 0:
+        chain_a_atoms = universe.select_atoms(f"{kw} {chain_a}")
+        chain_b_atoms = universe.select_atoms(f"{kw} {chain_b}")
+
     # Heavy atoms for water bridging
-    chain_a_heavy = universe.select_atoms(f"segid {chain_a} and {exclude_selection} and not name H*")
-    chain_b_heavy = universe.select_atoms(f"segid {chain_b} and {exclude_selection} and not name H*")
-    
+    chain_a_heavy = universe.select_atoms(f"{kw} {chain_a} and {exclude_selection} and not name H*")
+    chain_b_heavy = universe.select_atoms(f"{kw} {chain_b} and {exclude_selection} and not name H*")
+
     if len(chain_a_heavy) == 0 or len(chain_b_heavy) == 0:
-        chain_a_heavy = universe.select_atoms(f"segid {chain_a} and not name H*")
-        chain_b_heavy = universe.select_atoms(f"segid {chain_b} and not name H*")
+        chain_a_heavy = universe.select_atoms(f"{kw} {chain_a} and not name H*")
+        chain_b_heavy = universe.select_atoms(f"{kw} {chain_b} and not name H*")
     
     # Water oxygens - try multiple naming conventions
     try:
@@ -98,7 +103,8 @@ def get_atom_selections(universe, chain_a='A', chain_b='B'):
         'chain_a_heavy': chain_a_heavy,
         'chain_b_heavy': chain_b_heavy,
         'water_oxygens': water_oxygens,
-        'metal_atoms': metal_atoms
+        'metal_atoms': metal_atoms,
+        'chain_keyword': kw,
     }
 
 
@@ -155,7 +161,8 @@ def select_interface_atoms(universe, selections, chain_a='A', chain_b='B',
     
     # Build selection for interface protein atoms
     if keep_list:
-        protein_selections = [f"(segid {c} and resid {r})" for c, r in keep_list]
+        kw = selections.get('chain_keyword', 'segid')
+        protein_selections = [f"({kw} {c} and resid {r})" for c, r in keep_list]
         protein_selection_string = " or ".join(protein_selections)
         interface_protein_atoms = universe.select_atoms(protein_selection_string)
     else:
