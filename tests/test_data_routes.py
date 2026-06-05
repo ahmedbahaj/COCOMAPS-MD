@@ -13,6 +13,10 @@ class TestInteractions:
         resp = client.get("/api/systems/nonexistent/interactions")
         assert resp.status_code == 404
 
+    def test_traversal_system_id_404(self, client):
+        resp = client.get("/api/systems/%2e%2e/interactions")
+        assert resp.status_code == 404
+
 
 class TestArea:
     def test_returns_data(self, client):

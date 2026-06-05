@@ -2,11 +2,12 @@
 Routes for system management
 """
 from flask import Blueprint, jsonify, current_app, request
-from pathlib import Path
 import os
 import re
 from datetime import datetime
 import json
+
+from backend.system_paths import get_system_path, get_systems_dir
 
 bp = Blueprint('systems', __name__)
 
@@ -116,8 +117,7 @@ def _set_display_name(system_path, display_name, owner_email=None):
 def list_systems():
     """List all available systems"""
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        systems_folder = Path(data_folder) / 'systems'
+        systems_folder = get_systems_dir(current_app)
         
         # Check if systems folder exists
         if not systems_folder.exists():
@@ -174,11 +174,9 @@ def list_systems():
 def get_system(system_id):
     """Get details for a specific system"""
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        systems_folder = Path(data_folder) / 'systems'
-        system_path = systems_folder / system_id
+        system_path = get_system_path(current_app, system_id)
         
-        if not system_path.exists() or not system_path.is_dir():
+        if system_path is None or not system_path.exists() or not system_path.is_dir():
             return jsonify({'error': 'System not found'}), 404
         
         # Use totalFrames from _metadata.json when available (deployment: CSVs only)
@@ -223,11 +221,9 @@ def get_system(system_id):
 def rename_system(system_id):
     """Rename a system (updates display name, not folder)"""
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        systems_folder = Path(data_folder) / 'systems'
-        system_path = systems_folder / system_id
+        system_path = get_system_path(current_app, system_id)
         
-        if not system_path.exists() or not system_path.is_dir():
+        if system_path is None or not system_path.exists() or not system_path.is_dir():
             return jsonify({'error': 'System not found'}), 404
         
         data = request.get_json()
@@ -246,4 +242,3 @@ def rename_system(system_id):
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-

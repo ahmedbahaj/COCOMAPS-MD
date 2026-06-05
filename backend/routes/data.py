@@ -2,10 +2,11 @@
 Routes for data retrieval
 """
 from flask import Blueprint, jsonify, current_app, send_file
-from pathlib import Path
 import csv
 import json
 import os
+
+from backend.system_paths import get_system_path
 
 bp = Blueprint('data', __name__)
 
@@ -52,8 +53,9 @@ def get_conserved_islands(system_id):
     """
     import json
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
         islands_file = system_path / '_conserved_islands.json'
 
         if not system_path.exists():
@@ -83,8 +85,9 @@ def get_frame_pdb(system_id, frame_num):
     Used by Mol* viewer to display the first-frame structure.
     """
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
         frame_folder = system_path / f'frame_{frame_num}'
 
         if not system_path.exists():
@@ -184,8 +187,9 @@ def get_interactions(system_id):
     Requires _interactions.csv and _metadata.json (no fallback).
     """
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
 
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -221,8 +225,9 @@ def get_area_data(system_id):
     Requires _area.csv (no fallback).
     """
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
 
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -265,8 +270,9 @@ def get_interaction_trends(system_id):
     Requires _trends.csv (no fallback).
     """
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
 
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -459,8 +465,9 @@ def get_atom_pairs(system_id):
         if not all([res_name1, res_num1, chain1, res_name2, res_num2, chain2]):
             return jsonify({'error': 'Missing required parameters: resName1, resNum1, chain1, resName2, resNum2, chain2'}), 400
 
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
 
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -508,8 +515,9 @@ def get_atom_pairs_batch(system_id):
         if not pairs or len(pairs) == 0:
             return jsonify({}), 200
 
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
 
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -566,8 +574,9 @@ def get_interaction_distances(system_id):
     Requires _atom_pairs.csv. Returns {pair_key: {frame: {type: distance}}}.
     """
     try:
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
 
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404
@@ -630,8 +639,9 @@ def get_distance_distributions(system_id):
         interaction_types_param = request.args.get('interaction_types', '')
         selected_types = [t.strip() for t in interaction_types_param.split(',') if t.strip()]
 
-        data_folder = current_app.config['DATA_FOLDER']
-        system_path = Path(data_folder) / 'systems' / system_id
+        system_path = get_system_path(current_app, system_id)
+        if system_path is None:
+            return jsonify({'error': 'System not found'}), 404
 
         if not system_path.exists():
             return jsonify({'error': 'System not found'}), 404

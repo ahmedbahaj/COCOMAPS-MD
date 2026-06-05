@@ -35,6 +35,10 @@ class TestSystemDetail:
         resp = client.get("/api/systems/no_such_system")
         assert resp.status_code == 404
 
+    def test_traversal_system_id_404(self, client):
+        resp = client.get("/api/systems/%2e%2e")
+        assert resp.status_code == 404
+
 
 class TestRename:
     def test_rename_system(self, client, fake_system):
@@ -49,3 +53,15 @@ class TestRename:
         with open(meta_path) as f:
             meta = json.load(f)
         assert meta.get("displayName") == "Renamed System"
+
+    def test_traversal_rename_does_not_write_outside_systems(self, client, fake_system):
+        root = os.path.dirname(os.path.dirname(fake_system))
+        escaped_meta = os.path.join(root, ".metadata.json")
+
+        resp = client.post(
+            "/api/systems/%2e%2e/rename",
+            json={"name": "Escaped"},
+        )
+
+        assert resp.status_code == 404
+        assert not os.path.exists(escaped_meta)
