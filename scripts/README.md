@@ -2,15 +2,20 @@
 
 ## `cleanup_expired_systems.py`
 
-Removes subfolders under **`systems/`** whose **`_metadata.json`** has **`jobExpiresAt`** in the past (compared with current time in UTC). This matches the expiry fields managed by **`engine/job_id.py`**.
+Removes stale data under **`systems/`**:
 
-Directories are **skipped** when:
+- Completed analysis folders whose **`_metadata.json`** has **`jobExpiresAt`** in the past (60 days by default, managed by **`engine/job_id.py`**).
+- Failed job records in **`.jobs.json`** after **7 days** by default. If the failed job left a partial system folder and that folder has no valid **`_metadata.json`**, the partial folder is removed too.
+
+Completed analysis directories are **skipped** when:
 
 - **`isExample`** is **`true`** (bundled demo data),
 - **`_metadata.json`** is missing or invalid,
 - **`jobExpiresAt`** is missing or not parseable,
 
 so ambiguous or legacy runs are not wiped automatically.
+
+Failed-job cleanup also skips deleting any system folder that already has valid **`_metadata.json`**; only the stale failed job record is pruned in that case.
 
 ### Usage
 
@@ -37,6 +42,12 @@ Custom directory:
 
 ```bash
 python scripts/cleanup_expired_systems.py --systems-dir /path/to/systems --apply
+```
+
+Custom failed-job retention:
+
+```bash
+python scripts/cleanup_expired_systems.py --failed-days 14 --apply
 ```
 
 From **repository root**, Python can resolve **`engine`** automatically. Else set **`PYTHONPATH`** to the repo root.
