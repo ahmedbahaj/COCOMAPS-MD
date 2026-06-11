@@ -262,8 +262,8 @@ def run_pipeline(
             env = os.environ.copy()
             env['PYTHONPATH'] = _STUBS_DIR + os.pathsep + env.get('PYTHONPATH', '')
 
-            from engine.analyze_pdb import _create_hbplus_stub
-            _create_hbplus_stub(frame_path, frame_folder)
+            from engine.analyze_pdb import _ensure_hbplus_stub
+            _ensure_hbplus_stub(frame_path, frame_folder)
 
             try:
                 subprocess.run(

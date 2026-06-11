@@ -463,23 +463,26 @@ def create_input_jsons(output_dir, frame_count, chains=None, interface_cutoff=5.
     print(f"✓ Created {frame_count} input JSON files")
 
 
-def _create_hbplus_stub(frame_path, frame_name):
+def _ensure_hbplus_stub(frame_path, frame_name):
     """
-    Create a stub .hb2 file so CoCoMaps does not crash when hbplus binaries
-    are unavailable (e.g. Linux ELF on macOS).
+    Create a stub .hb2 file ONLY if the hbplus binary is not available.
 
-    The vendored CoCoMaps ``hb_plus.py`` opens ``<pdb_formatted_stem>.hb2`` in
-    the cwd.  If the file is missing the entire ``process()`` call dies inside a
-    bare ``except: pass`` in ``begin.py``, silently preventing ALL interaction
-    CSVs from being written.
+    When the hbplus binary exists (Docker/Linux), we must NOT pre-create the
+    stub — doing so prevents ``hb_plus.py``'s fallback path from running
+    hbplus without ``-f``, which causes zero H-bonds to be detected and
+    real H-bond pairs to be misclassified as clashes.
 
-    A stub containing only the hbplus header line causes the parser to return
-    empty hydrogen-bond / water-mediated dicts — all other interaction types
-    still run normally.
+    When the binary is unavailable (e.g. macOS dev), a stub prevents
+    ``begin.py``'s bare ``except: pass`` from silently killing ALL
+    interaction CSVs.
     """
-    # CoCoMaps: pdb_file = frame_N.pdb  →  formatted = frame_N.pdb_formatted.pdb
-    # hb_plus.py line 54: stem = "frame_N.pdb_formatted"  →  "frame_N.pdb_formatted.hb2"
-    # hb_plus.py line 55: path = os.path.join(os.getcwd(), stem + ".hb2")
+    import shutil
+    if shutil.which('hbplus') or os.path.isfile(
+        os.environ.get('COCOMAPS_DEPS_DIR', os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), '..', 'deps'
+        )) + '/hbplus/hbplus'
+    ):
+        return  # hbplus available — let it run properly
     hb2_name = f"{frame_name}.pdb_formatted.hb2"
     hb2_path = os.path.join(frame_path, hb2_name)
     if not os.path.exists(hb2_path):
@@ -548,7 +551,7 @@ def run_cocomaps_analysis(
         env = os.environ.copy()
         env['PYTHONPATH'] = _STUBS_DIR + os.pathsep + env.get('PYTHONPATH', '')
         
-        _create_hbplus_stub(frame_path, frame_folder)
+        _ensure_hbplus_stub(frame_path, frame_folder)
         print(f"Processing frame {i}...", end=" ", flush=True)
         
         try:
