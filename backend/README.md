@@ -19,7 +19,9 @@ The API will be available at `http://localhost:5001`.
 |--------|----------|-------------|
 | `GET` | `/api/systems` | List all available systems (name, frames, chains, job info) |
 | `GET` | `/api/systems/<id>` | Get details for a specific system |
-| `POST` | `/api/systems/<id>/rename` | Update display name (stored in `.metadata.json`) |
+
+Job aliases created from the frontend's "Your Jobs" page are stored only in
+that browser's local storage. The API does not expose a system rename endpoint.
 
 ### Data
 

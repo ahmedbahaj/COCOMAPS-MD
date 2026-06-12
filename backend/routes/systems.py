@@ -1,7 +1,7 @@
 """
 Routes for system management
 """
-from flask import Blueprint, jsonify, current_app, request
+from flask import Blueprint, jsonify, current_app
 import os
 import re
 from datetime import datetime
@@ -212,33 +212,6 @@ def get_system(system_id):
             'jobCreatedAt': job_info['jobCreatedAt'],
             'jobExpiresAt': job_info['jobExpiresAt'],
             'isExample': _is_example_system(system_path),
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@bp.route('/systems/<system_id>/rename', methods=['POST'])
-def rename_system(system_id):
-    """Rename a system (updates display name, not folder)"""
-    try:
-        system_path = get_system_path(current_app, system_id)
-        
-        if system_path is None or not system_path.exists() or not system_path.is_dir():
-            return jsonify({'error': 'System not found'}), 404
-        
-        data = request.get_json()
-        new_name = data.get('name', '').strip()
-        
-        if not new_name:
-            return jsonify({'error': 'Name is required'}), 400
-        
-        # Save display name to metadata
-        _set_display_name(system_path, new_name)
-        
-        return jsonify({
-            'success': True,
-            'id': system_id,
-            'name': new_name
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

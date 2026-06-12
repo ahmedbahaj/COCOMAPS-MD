@@ -1,5 +1,4 @@
 """Tests for the systems API routes."""
-import json
 import os
 
 import pytest
@@ -40,21 +39,18 @@ class TestSystemDetail:
         assert resp.status_code == 404
 
 
-class TestRename:
-    def test_rename_system(self, client, fake_system):
+class TestRenameDisabled:
+    def test_rename_endpoint_is_not_exposed(self, client, fake_system):
         resp = client.post(
             "/api/systems/test_system/rename",
             json={"name": "Renamed System"},
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 404
 
-        # _set_display_name writes to .metadata.json (dot prefix)
         meta_path = os.path.join(fake_system, ".metadata.json")
-        with open(meta_path) as f:
-            meta = json.load(f)
-        assert meta.get("displayName") == "Renamed System"
+        assert not os.path.exists(meta_path)
 
-    def test_traversal_rename_does_not_write_outside_systems(self, client, fake_system):
+    def test_traversal_rename_is_not_exposed(self, client, fake_system):
         root = os.path.dirname(os.path.dirname(fake_system))
         escaped_meta = os.path.join(root, ".metadata.json")
 

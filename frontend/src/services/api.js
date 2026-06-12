@@ -45,11 +45,6 @@ export default {
     return response.data
   },
 
-  async renameSystem(systemId, newName) {
-    const response = await api.post(`/systems/${systemId}/rename`, { name: newName })
-    return response.data
-  },
-
   // Data
   async getInteractions(systemId) {
     const response = await api.get(`/systems/${systemId}/interactions`)
@@ -206,4 +201,3 @@ export default {
     return response.data
   }
 }
-

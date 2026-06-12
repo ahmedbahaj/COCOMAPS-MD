@@ -182,6 +182,7 @@
               class="rename-input"
               ref="renameInput"
             />
+            <p class="rename-note">This alias is saved only in this browser.</p>
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" @click="closeRenameModal">Cancel</button>
@@ -204,7 +205,12 @@ import { useRouter } from 'vue-router'
 import { useSystemsStore } from '../stores/systemsStore'
 import api from '../services/api'
 import AppFooter from '../components/layout/AppFooter.vue'
-import { getSubmittedJobIds, jobRowMatchesSubmitted } from '../utils/cocomapsmdJobIds.js'
+import {
+  getJobAlias,
+  getSubmittedJobIds,
+  jobRowMatchesSubmitted,
+  setJobAlias
+} from '../utils/cocomapsmdJobIds.js'
 
 const router = useRouter()
 const systemsStore = useSystemsStore()
@@ -326,7 +332,10 @@ const loadAllJobs = async () => {
       }
     }
 
-    const rows = Array.from(merged.values())
+    const rows = Array.from(merged.values()).map((job) => ({
+      ...job,
+      name: getJobAlias(job) || job.name
+    }))
     const submitted = new Set(getSubmittedJobIds())
     allJobs.value = rows.filter((job) => jobRowMatchesSubmitted(job, submitted))
   } catch (error) {
@@ -474,21 +483,18 @@ const closeRenameModal = () => {
   }
 }
 
-const confirmRename = async () => {
+const confirmRename = () => {
   const { system, newName } = renameModal.value
   if (!system || !newName.trim()) return
-  
-  try {
-    await api.renameSystem(system.id, newName.trim())
-    const idx = allJobs.value.findIndex(s => s.id === system.id)
-    if (idx !== -1) {
-      allJobs.value[idx].name = newName.trim()
-    }
-    closeRenameModal()
-  } catch (error) {
-    console.error('Failed to rename system:', error)
-    alert('Failed to rename job. Please try again.')
+
+  const cleanName = newName.trim()
+  if (!setJobAlias(system, cleanName)) return
+
+  const idx = allJobs.value.findIndex(s => s.id === system.id)
+  if (idx !== -1) {
+    allJobs.value[idx].name = cleanName
   }
+  closeRenameModal()
 }
 </script>
 
@@ -1064,6 +1070,12 @@ const confirmRename = async () => {
 .rename-input:focus {
   outline: none;
   border-color: #1d1d1f;
+}
+
+.rename-note {
+  margin: 10px 0 0;
+  color: #6e6e73;
+  font-size: 13px;
 }
 
 .modal-footer {
